@@ -89,9 +89,37 @@ class ParameterAnalyzer:
             else:
                 return 'default_symbol'
         
-        # 日期相关
-        elif any(keyword in param_lower for keyword in ['date', 'time']):
+        # 凭证/令牌类参数
+        elif param_lower in {'token', 'api_key', 'apikey', 'access_token'}:
+            return 'token_value'
+        
+        # 超时/重试等参数应为数值型（秒/次数等）
+        elif param_lower in {'timeout', 'retry', 'retries', 'sleep', 'wait'}:
+            return 'timeout_seconds'
+        
+        # 时间点参数（HH:MM:SS）
+        elif param_lower.endswith('_time') or param_lower in {'time', 'start_time', 'end_time'}:
+            return 'time_value'
+        
+        # 年度/季度等时间周期参数
+        elif param_lower in {'year', 'start_year', 'end_year'} or param_lower.endswith('year'):
+            return 'year_value'
+        elif param_lower == 'quarter' or param_lower.endswith('quarter'):
+            return 'quarter_value'
+        
+        # 日期相关（收紧识别范围，避免误判 timeout 等）
+        elif (param_lower in {'date', 'trade_date', 'start_date', 'end_date'}) or param_lower.endswith('_date'):
             return 'date_value'
+        
+        # 领域/行业/关键词/名称/ID
+        elif param_lower in {'sector', 'industry'}:
+            return 'sector_value'
+        elif 'keyword' in param_lower:
+            return 'keyword_value'
+        elif param_lower == 'name':
+            return 'name_value'
+        elif param_lower.endswith('_id') or param_lower == 'id' or param_lower == 'analyst_id':
+            return 'id_value'
         
         # 有选择项的参数
         elif choices:
@@ -135,6 +163,28 @@ class ParameterAnalyzer:
                 return ['000001', '000002', '600000']
             else:
                 return ['000001', 'sh000001', '000001.SZ']
+        elif strategy == 'token_value':
+            # 对凭证类参数不提供示例值，避免生成占位符
+            return []
+        elif strategy == 'timeout_seconds':
+            return [5, 10, 30]
+        elif strategy == 'time_value':
+            if 'start' in param_lower:
+                return ['09:00:00', '09:15:00', '09:30:00']
+            elif 'end' in param_lower:
+                return ['15:40:00', '15:30:00', '15:00:00']
+            else:
+                return ['09:30:00', '10:00:00', '14:00:00']
+        elif strategy == 'year_value':
+            if param_type == 'int':
+                return [2023, 2022, 2021]
+            else:
+                return ['2023', '2022', '2021']
+        elif strategy == 'quarter_value':
+            if param_type == 'int':
+                return [1, 2, 3]
+            else:
+                return ['1', '2', '3']
         elif strategy == 'date_value':
             if 'start' in param_lower:
                 return ['20230101', '20230301', '20230601']
@@ -142,6 +192,18 @@ class ParameterAnalyzer:
                 return ['20231231', '20230331', '20230630']
             else:
                 return ['20231201', '20231101', '20231001']
+        elif strategy == 'sector_value':
+            return ['银行', '消费', '科技']
+        elif strategy == 'keyword_value':
+            return ['银行', '新能源', '芯片']
+        elif strategy == 'name_value':
+            return ['平安银行', '贵州茅台', '招商银行']
+        elif strategy == 'id_value':
+            # ID 通常为数字或数字字符串
+            if param_type == 'int':
+                return [1000001, 1000002, 1000003]
+            else:
+                return ['1000001', '1000002', '1000003']
         elif strategy == 'choice_value' and choices:
             return choices[:3] if len(choices) >= 3 else choices
         elif strategy == 'numeric_value':
@@ -162,7 +224,7 @@ class ParameterAnalyzer:
             elif 'indicator' in param_lower:
                 return ['按报告期', '按单季度', '按年度']
             else:
-                return ['test', 'default', 'sample']
+                return ['demo', '示例', '样例']
         
         return ['default']
 
@@ -292,7 +354,13 @@ class InterfaceParser:
                         interface_info['enhanced_input_params'].append(enhanced_param)
                         
                         # 区分必需参数和可选参数
-                        if param_info.get('default') is not None or '可选' in param_desc or 'optional' in param_desc.lower():
+                        known_optional = {'timeout', 'adjust', 'indicator', 'exchange', 'market', 'token', 'api_key', 'apikey', 'access_token', 'start_time', 'end_time'}
+                        if (
+                            param_info.get('default') is not None
+                            or '可选' in param_desc
+                            or 'optional' in param_desc.lower()
+                            or param_name in known_optional
+                        ):
                             interface_info['optional_params'].append(param_name)
                         else:
                             interface_info['required_params'].append(param_name)
@@ -514,8 +582,12 @@ class CodeGenerator:
         # 生成示例参数
         example_params = {}
         smart_params_dict = {}
+        sensitive_names = {'token', 'api_key', 'apikey', 'access_token'}
         
         for param in interface.get('input_params', []):
+            # 跳过敏感参数（不生成示例值与注释）
+            if param['name'].lower() in sensitive_names:
+                continue
             # 查找对应的增强参数信息
             enhanced_param = next((ep for ep in enhanced_parameters if ep['name'] == param['name']), None)
             if enhanced_param and enhanced_param.get('test_values'):
@@ -561,15 +633,10 @@ class CodeGenerator:
         
         # 添加示例参数
         if example_params:
-            # 将示例参数转换为字符串格式，处理特殊字符
+            # 将示例参数转换为字符串格式，使用 repr 生成安全的 Python 字面量
             params_items = []
             for k, v in example_params.items():
-                if isinstance(v, str):
-                    # 清理参数值中的特殊字符，避免JSON格式错误
-                    clean_v = str(v).replace('"', '').replace("'", '').split(':')[0].strip()
-                    params_items.append(f'"{k}": "{clean_v}"')
-                else:
-                    params_items.append(f'"{k}": {v}')
+                params_items.append(f'"{k}": {repr(v)}')
             params_dict_str = '{' + ', '.join(params_items) + '}'
             code += f'                .with_example_params({params_dict_str})\\\n'
         
