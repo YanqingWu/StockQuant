@@ -61,7 +61,7 @@ class ErrorClassifier:
     @staticmethod
     def should_retry(error_type: ErrorType, attempt: int, max_retries: int) -> bool:
         """判断是否应该重试"""
-        if attempt >= max_retries:
+        if attempt >= max_retries - 1:
             return False
         
         # 这些错误类型应该重试
@@ -390,7 +390,7 @@ class InterfaceExecutor:
             except Exception as e:
                 logger.warning(f"Plugin {plugin.__class__.__name__} before_execute failed: {e}")
         
-        for attempt in range(task.retry_count + 1):
+        for attempt in range(task.retry_count):
             total_attempts += 1
             try:
                 # 应用频率限制
@@ -464,7 +464,7 @@ class InterfaceExecutor:
                     logger.info(f"Not retrying {task.interface_name} due to error type: {error_type.value}")
                     break
                 
-                if attempt < task.retry_count:
+                if attempt < task.retry_count - 1:
                     # 计算退避延迟（增加jitter避免雷群效应）
                     base_delay = self.config.retry_config.base_delay * (self.config.retry_config.exponential_base ** attempt)
                     jitter = random.uniform(0.1, 0.3) * base_delay  # 添加10-30%的随机抖动
