@@ -434,6 +434,26 @@ class InterfaceBuilder:
         self.metadata.cache_duration = cache_duration
         return self
     
+    def with_return_type(self, return_type: str) -> 'InterfaceBuilder':
+        """设置返回类型"""
+        self.metadata.return_type = return_type
+        return self
+    
+    def with_example_params(self, example_params: Dict[str, Any]) -> 'InterfaceBuilder':
+        """设置示例参数"""
+        self.metadata.example_params = example_params
+        return self
+    
+    def with_deprecated(self, is_deprecated: bool = True) -> 'InterfaceBuilder':
+        """设置是否已废弃"""
+        self.metadata.is_deprecated = is_deprecated
+        return self
+    
+    def with_version(self, version: str) -> 'InterfaceBuilder':
+        """设置版本号"""
+        self.metadata.version = version
+        return self
+    
     def build(self) -> InterfaceMetadata:
         """构建接口元数据"""
         return self.metadata
