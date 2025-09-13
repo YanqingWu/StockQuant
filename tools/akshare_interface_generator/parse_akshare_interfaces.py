@@ -454,65 +454,133 @@ class AKShareInterfaceParser:
         if func_name in self.category_mapping:
             return self.category_mapping[func_name]
         
-        # 如果映射表中没有找到，使用原有的关键词匹配逻辑
-        name = func_name.lower()
-        description = doc.lower()
+        # 如果映射表中没有找到，使用更新后的分类逻辑
+        name_lower = func_name.lower()
+        desc_lower = doc.lower()
         
-        # 技术指标（优先匹配，避免落入行情）
-        technical_keywords = [
-            'technical', 'indicator', 'macd', 'rsi', 'kdj', 'boll', 'ema', 'dma', 'sar', 'cci', 'wr', 'atr'
-        ]
-        if any(keyword in name for keyword in technical_keywords):
-            return 'STOCK_TECHNICAL'
+        # 股票财务数据 - 优先级最高，先检查
+        if any(keyword in name_lower or keyword in desc_lower for keyword in [
+            'financial', '财务', 'balance_sheet', '资产负债表', 'cash_flow', '现金流量表',
+            'profit_sheet', '利润表', 'abstract', '摘要', 'benefit', '收益', 'debt', '负债',
+            'analysis_indicator', '分析指标', 'report', '报告', 'forecast', '预测',
+            'yjbb', '业绩报表', 'yjkb', '业绩快报', 'yjyg', '业绩预告', 'quarterly', '季度',
+            'yearly', '年度', 'delisted', '退市', 'kcb_report', '科创板报告'
+        ]) or 'yjbb_em' in name_lower or 'yjkb_em' in name_lower or 'financial_hk_report' in name_lower or 'financial_us_report' in name_lower:
+            # 排除非财务数据的接口
+            if not any(exclude in name_lower for exclude in [
+                'rank_forecast', 'disclosure_report'
+            ]):
+                return 'STOCK_FINANCIAL'
         
-        # 股票财务数据
-        if any(keyword in name for keyword in ['financial', 'balance', 'profit', 'cash_flow', 'fina', 'income']):
-            return 'STOCK_FINANCIAL'
-        
-        # 股票行情数据
-        elif any(keyword in name for keyword in ['daily', 'hist', 'minute', 'spot', 'real_time', 'kline']):
-            return 'STOCK_QUOTE'
-        
-        # 股票基础信息
-        elif any(keyword in name for keyword in ['stock_info', 'stock_basic', 'stock_list', 'info_']):
+        # 股票基础信息 - 排除已被行情数据匹配的接口
+        if (any(keyword in name_lower or keyword in desc_lower for keyword in [
+            'info', 'name', 'code', 'basic', '基础', '信息', '名称', '代码', 'profile', '资料',
+            'delist', '退市', 'st_em', 'new', '新股', 'ipo', '上市', 'gdhs', '股东户数',
+            'allotment', '配股', 'repurchase', '回购', 'dividend', '分红', 'fhps', '分红送配',
+            'share_change', '股本变动', 'restricted', '限售', 'pledge', '质押', 'gpzy',
+            'hold_', '持股', 'gdfx', '股东', 'management', '高管', 'control', '控制',
+            'statistics', '统计', 'pb', '市净率', 'ttm', '市盈率', 'below_net', '破净',
+            'high_low', '新高新低', 'concept_cons', '概念成份', 'concept_name', '概念名称',
+            'concept_info', '概念简介', 'industry_info', '行业简介', 'board_', '板块',
+            'changes', '异动', 'comment', '千股千评', 'keyword', '关键词', 'search', '搜索',
+            'xgsglb', '限购股', 'staq', 'register', '注册制', 'concept_summary', '概念摘要',
+            'industry_summary', '行业摘要', 'industry_cons', '行业成份', 'board_concept_name', '板块概念名称',
+            'board_industry_name', '板块行业名称', 'board_concept_info', '板块概念信息',
+            'board_industry_info', '板块行业信息', 'concept_index', '概念指数', 'industry_index', '行业指数',
+            'rank_forecast', 'disclosure_report'
+        ]) and not any(hist_keyword in name_lower for hist_keyword in [
+            'hist', 'daily', 'spot', 'minute', 'min_em', 'hot_rank_latest', 'hsgt_board_rank', 'sector_fund_flow_rank'
+        ])):
             return 'STOCK_BASIC'
         
+        # 股票行情数据 - 优先级第二，在基础信息之前检查
+        if any(keyword in name_lower or keyword in desc_lower for keyword in [
+            'spot', '实时', 'hist', '历史', 'daily', '日线', 'minute', '分钟', 'min_em',
+            'quote', '行情', 'price', '价格', 'bid_ask', '买卖盘', 'intraday', '盘中',
+            'tick', '逐笔', 'cdr_daily', 'ah_', 'b_', 'kcb_', 'cy_a', 'bj_a', 'sh_a', 'sz_a',
+            'us_', 'hk_', 'zh_a', 'zh_b', 'famous_spot', '知名', 'pink_spot', 'main_board_spot',
+            'hot_rank', '人气榜', 'hot_deal', '热门交易', 'hot_follow', '热门关注', 'hot_up', '热门上涨',
+            'hsgt_', '沪深港通', 'individual_fund_flow', '个股资金流', 'lhb_', '龙虎榜',
+            'margin_', '融资融券', 'qsjy', '券商交易', 'sse_deal', '上交所成交', 'tfp', '停复牌',
+            'zt_pool', '涨停板', 'dzjy_mrmx', '大宗交易明细', 'dzjy_sctj', '大宗交易统计',
+            'concept_hist', '概念历史', 'industry_hist', '行业历史', 'board_concept_hist', '板块概念历史',
+            'board_industry_hist', '板块行业历史', 'sector_fund_flow_hist', '板块资金流历史',
+            'inner_trade', '内幕交易', 'clf_hist', '分类历史', 'new_a_spot', '新A股现货',
+            'sector_spot', '板块现货', 'industry_spot', '行业现货'
+        ]):
+            return 'STOCK_QUOTE'
+        
+        # 股票技术指标
+        if any(keyword in name_lower or keyword in desc_lower for keyword in [
+            'technical', '技术', 'indicator', '指标', 'analysis_indicator_em', 'hk_analysis_indicator',
+            'us_analysis_indicator', 'hk_indicator', 'a_indicator', 'gxl', '股息率',
+            'rank_', '排名', 'buffett_index', '巴菲特指标', 'hot_rank_latest', '人气榜最新',
+            'board_rank', '板块排名', 'fund_flow_rank', '资金流排名', 'hsgt_board_rank', 'sector_fund_flow_rank'
+        ]):
+            return 'STOCK_TECHNICAL'
+        
         # 市场指数
-        elif any(keyword in name for keyword in ['index_', 'stock_index']):
+        if any(keyword in name_lower or keyword in desc_lower for keyword in [
+            'index', '指数', 'buffett_index', '巴菲特指标', 'concept_index', '概念指数',
+            'industry_index', '行业指数', 'csindex', '中证指数', 'value_csindex', '指数估值'
+        ]):
             return 'MARKET_INDEX'
         
-        # 市场概览/总体
-        elif any(keyword in name for keyword in ['market_overview', 'market_summary', 'overview']) or \
-             any(kw in description for kw in ['市场概览', '市场总览', '全市场', '市场热度']):
+        # 市场概览
+        if any(keyword in name_lower or keyword in desc_lower for keyword in [
+            'market_activity', '市场活跃度', 'market_fund_flow', '市场资金流',
+            'scrd_desire_em', '市场情绪', 'scrd_focus_em', '市场焦点'
+        ]):
             return 'MARKET_OVERVIEW'
         
-        # 宏观经济
-        elif any(keyword in name for keyword in ['macro_', 'macro', 'economy', 'gdp', 'cpi', 'ppi']) or \
-             ('宏观' in description):
-            return 'MACRO_ECONOMY'
-        
-        # 基金数据
-        elif any(keyword in name for keyword in ['fund_', 'etf_']):
-            return 'FUND_DATA'
-        
-        # 债券数据
-        elif any(keyword in name for keyword in ['bond_', 'convertible_']):
-            return 'BOND_DATA'
-        
-        # 外汇数据
-        elif any(keyword in name for keyword in ['forex_', 'currency_', 'fx_', 'exchange_rate']):
-            return 'FOREX_DATA'
-        
-        # 期货数据
-        elif any(keyword in name for keyword in ['futures_', 'option_', 'fut_']):
-            return 'FUTURES_DATA'
-        
-        # 行业/资讯/报告
-        elif any(keyword in name for keyword in ['news_', 'report_', 'industry_']):
+        # 行业数据 - 更精确的匹配
+        if any(keyword in name_lower or keyword in desc_lower for keyword in [
+            'yysj_em', '营业收入', 'fund_flow_industry', '行业资金流', 'gpzy_industry', '股权质押行业',
+            'industry_category_cninfo', '行业分类', 'industry_change_cninfo', '行业变更'
+        ]):
             return 'INDUSTRY_DATA'
         
-        else:
+        # 基金数据 - 更精确的匹配
+        if any(keyword in name_lower or keyword in desc_lower for keyword in [
+            'fund_flow_big_deal', '大单资金流', 'fund_flow_concept', '概念资金流', 
+            'main_fund_flow', '主力资金流', 'fund_stock_holder', '基金持股',
+            'report_fund_hold', '基金持有报告'
+        ]):
+            return 'FUND_DATA'
+        
+        # 其他分类的特殊情况 - 精简并重新组织
+        if any(keyword in name_lower or keyword in desc_lower for keyword in [
+            'cyq', '筹码', 'esg', '环境社会治理', 'valuation_baidu', '百度估值',
+            'vote_baidu', '百度投票', 'js_weibo_nlp', '金十微博情感', 'classify_sina', '新浪分类',
+            'congestion_lg', '拥挤度', 'ebs_lg', 'add_stock', '增发', 'dzjy_yybph', '大宗交易营业部排行',
+            'gsrl_gsdt', '公司动态', 'hot_tweet_xq', '雪球热门', 'institute_recommend', '机构推荐',
+            'jgdy_detail', '机构调研详情', 'sse_summary', '上交所摘要', 'sy_em', '首页',
+            'sy_yq_em', '首页舆情', 'szse_area_summary', '深交所地区摘要', 'value_em', '估值',
+            'yzxdr_em', '一字涨跌', 'zdhtmx_em', '重大合同明细', 'zygc_em', '重要公告',
+            'zyjs_ths', '主要介绍'
+        ]):
             return 'OTHER'
+        
+        # 股票特殊数据类型 - 归类到OTHER
+        if any(keyword in name_lower or keyword in desc_lower for keyword in [
+            'congestion', '拥挤度', 'add_stock', '增发', 'suspend', '停牌', 'resume', '复牌',
+            'announcement', '公告', 'notice', '通知', 'news', '新闻', 'research', '研报',
+            'rating', '评级', 'recommendation', '推荐', 'target_price', '目标价',
+            'institutional', '机构', 'analyst', '分析师', 'coverage', '覆盖',
+            'event', '事件', 'calendar', '日历', 'earnings_calendar', '财报日历'
+        ]):
+            return 'OTHER'
+        
+        # 市场监管和交易规则 - 归类到OTHER
+        if any(keyword in name_lower or keyword in desc_lower for keyword in [
+            'rule', '规则', 'regulation', '监管', 'policy', '政策', 'law', '法规',
+            'compliance', '合规', 'audit', '审计', 'inspection', '检查',
+            'violation', '违规', 'penalty', '处罚', 'warning', '警告'
+        ]):
+            return 'OTHER'
+        
+        # 默认分类
+        return 'OTHER'
     
     def parse_all_interfaces(self, output_file: str, max_interfaces: Optional[int] = None) -> Dict[str, Any]:
         """解析所有接口并保存到JSON文件"""
