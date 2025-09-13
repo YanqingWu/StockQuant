@@ -295,6 +295,34 @@ class ComprehensiveInterfaceTester:
             for r in self.test_results if not r.success
         ]
         
+        # 最快接口
+        top_performers = [
+            {
+                'name': r.interface_name,
+                'execution_time': r.execution_time,
+                'data_size': r.data_size
+            }
+            for r in sorted(
+                [r for r in self.test_results if r.success],
+                key=lambda x: x.execution_time
+            )[:5]
+        ]
+        
+        # 最慢接口
+        slowest_interfaces = [
+            {
+                'name': r.interface_name,
+                'execution_time': r.execution_time,
+                'success': r.success,
+                'error': r.error_message if not r.success else None
+            }
+            for r in sorted(
+                self.test_results,
+                key=lambda x: x.execution_time,
+                reverse=True
+            )[:5]
+        ]
+        
         report = {
             'summary': {
                 'total_tests': total_tests,
@@ -307,15 +335,8 @@ class ComprehensiveInterfaceTester:
             'by_test_type': by_type,
             'by_category': by_category,
             'failed_interfaces': failed_interfaces,
-            'top_performers': sorted(
-                [r for r in self.test_results if r.success],
-                key=lambda x: x.execution_time
-            )[:5],
-            'slowest_interfaces': sorted(
-                self.test_results,
-                key=lambda x: x.execution_time,
-                reverse=True
-            )[:5]
+            'top_performers': top_performers,
+            'slowest_interfaces': slowest_interfaces
         }
         
         return report

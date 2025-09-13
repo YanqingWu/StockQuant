@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 AKShare数据源接口提供者
-自动生成于 2025-09-13 22:42:58
-总共 366 个接口
+自动生成于 2025-09-13 23:38:08
+总共 367 个接口
 """
 
 from typing import List
@@ -21,11 +21,11 @@ class AkshareProvider(BaseAPIProvider):
         """注册所有接口"""
         interfaces = []
 
+        interfaces.extend(self._register_stock_basic_interfaces())
         interfaces.extend(self._register_other_interfaces())
         interfaces.extend(self._register_stock_financial_interfaces())
         interfaces.extend(self._register_stock_quote_interfaces())
         interfaces.extend(self._register_market_index_interfaces())
-        interfaces.extend(self._register_stock_basic_interfaces())
         interfaces.extend(self._register_industry_data_interfaces())
         interfaces.extend(self._register_market_overview_interfaces())
         interfaces.extend(self._register_stock_technical_interfaces())
@@ -35,92 +35,52 @@ class AkshareProvider(BaseAPIProvider):
         # 批量注册所有接口
         self.registry.register_interfaces(interfaces)
 
-    def _register_other_interfaces(self) -> List[InterfaceMetadata]:
-        """注册OTHER接口"""
+    def _register_stock_basic_interfaces(self) -> List[InterfaceMetadata]:
+        """注册STOCK_BASIC接口"""
         return [
         create_interface("stock_a_all_pb")\
             .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
             .with_description("全部A股-等权重市净率、中位数市净率")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("pb", "all", "A股", "a", "stock")\
+            .with_keywords("pb", "all", "stock", "a", "A股")\
             .build(),
 
         create_interface("stock_a_below_net_asset_statistics")\
             .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
             .with_description("破净股统计历史走势")\
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("A股", "a", "below", "asset", "statistics")\
+            .with_keywords("below", "asset", "statistics", "net", "stock")\
             .with_example_params({"symbol": '全部A股'})\
-            .build(),
-
-        create_interface("stock_a_code_to_symbol")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("输入股票代码判断股票市场")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("a", "stock", "code", "股票", "symbol")\
-            .with_example_params({"symbol": '000300'})\
-            .build(),
-
-        create_interface("stock_a_congestion_lg")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("乐咕乐股-大盘拥挤度")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "lg", "a", "congestion")\
-            .build(),
-
-        create_interface("stock_a_gxl_lg")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("乐咕乐股-股息率-A 股股息率")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("A股", "a", "gxl", "stock", "lg")\
-            .with_example_params({"symbol": '上证A股'})\
             .build(),
 
         create_interface("stock_a_high_low_statistics")\
             .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
             .with_description("乐咕乐股-创新高、新低的股票数量")\
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("int")\
-            .with_keywords("a", "high", "statistics", "stock", "股票")\
+            .with_keywords("股票", "statistics", "high", "stock", "a")\
             .with_example_params({"symbol": 'all'})\
             .build(),
 
         create_interface("stock_a_ttm_lyr")\
             .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
             .with_description("全部 A 股-等权重市盈率、中位数市盈率")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("A股", "a", "stock", "ttm", "lyr")\
-            .build(),
-
-        create_interface("stock_account_statistics_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-数据中心-特色数据-股票账户统计")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("int")\
-            .with_keywords("em", "statistics", "stock", "股票", "account")\
+            .with_keywords("ttm", "stock", "a", "A股", "lyr")\
             .build(),
 
         create_interface("stock_add_stock")\
             .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
             .with_description("新浪财经-发行与分配-增发")\
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
@@ -131,13 +91,646 @@ class AkshareProvider(BaseAPIProvider):
 
         create_interface("stock_allotment_cninfo")\
             .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
             .with_description("巨潮资讯-个股-配股实施方案")\
             .with_optional_params("symbol", "start_date", "end_date")\
             .with_pattern(ParameterPattern.from_params(["symbol", "start_date", "end_date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "股票", "cninfo", "allotment")\
+            .with_keywords("allotment", "cninfo", "stock", "股票")\
             .with_example_params({"symbol": '600030', "start_date": '19700101', "end_date": '22220222'})\
+            .build(),
+
+        create_interface("stock_board_concept_cons_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("东方财富-沪深板块-概念板块-板块成份")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("em", "cons", "concept", "stock", "board")\
+            .with_example_params({"symbol": '融资融券'})\
+            .build(),
+
+        create_interface("stock_board_concept_info_ths")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("同花顺-板块-概念板块-板块简介")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("ths", "info", "concept", "stock", "board")\
+            .with_example_params({"symbol": '阿里巴巴概念'})\
+            .build(),
+
+        create_interface("stock_board_concept_name_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("东方财富网-行情中心-沪深京板块-概念板块-名称")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("em", "name", "concept", "stock", "board")\
+            .build(),
+
+        create_interface("stock_board_concept_name_ths")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("同花顺-板块-概念板块-概念")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("ths", "name", "concept", "stock", "board")\
+            .build(),
+
+        create_interface("stock_board_industry_info_ths")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("同花顺-板块-行业板块-板块简介")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("industry", "ths", "info", "stock", "board")\
+            .with_example_params({"symbol": '半导体'})\
+            .build(),
+
+        create_interface("stock_changes_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("东方财富-行情中心-盘口异动")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("changes", "stock", "em")\
+            .with_example_params({"symbol": '大笔买入'})\
+            .build(),
+
+        create_interface("stock_comment_detail_zlkp_jgcyd_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("东方财富网-数据中心-特色数据-千股千评-主力控盘-机构参与度")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("股票", "em", "detail", "comment", "zlkp")\
+            .with_example_params({"symbol": '600000'})\
+            .build(),
+
+        create_interface("stock_comment_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("东方财富网-数据中心-特色数据-千股千评")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("comment", "stock", "em")\
+            .build(),
+
+        create_interface("stock_dxsyl_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("东方财富网-数据中心-新股申购-打新收益率")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("stock", "em", "dxsyl")\
+            .build(),
+
+        create_interface("stock_fhps_detail_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("东方财富网-数据中心-分红送配-分红送配详情")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("股票", "em", "detail", "fhps", "stock")\
+            .with_example_params({"symbol": '300073'})\
+            .build(),
+
+        create_interface("stock_fhps_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("东方财富网-数据中心-年报季报-分红送配")\
+            .with_optional_params("date")\
+            .with_pattern(ParameterPattern.from_params(["date"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("fhps", "stock", "em")\
+            .with_example_params({"date": '20231231'})\
+            .build(),
+
+        create_interface("stock_gdfx_free_holding_analyse_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("东方财富网-数据中心-股东分析-股东持股分析-十大流通股东")\
+            .with_optional_params("date")\
+            .with_pattern(ParameterPattern.from_params(["date"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("em", "gdfx", "stock", "holding", "analyse")\
+            .with_example_params({"date": '20230930'})\
+            .build(),
+
+        create_interface("stock_gdfx_free_holding_change_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("东方财富网-数据中心-股东分析-股东持股变动统计-十大流通股东")\
+            .with_optional_params("date")\
+            .with_pattern(ParameterPattern.from_params(["date"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("change", "gdfx", "em", "stock", "holding")\
+            .with_example_params({"date": '20210930'})\
+            .build(),
+
+        create_interface("stock_gdfx_free_holding_detail_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("东方财富网-数据中心-股东分析-股东持股明细-十大流通股东")\
+            .with_optional_params("date")\
+            .with_pattern(ParameterPattern.from_params(["date"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("em", "gdfx", "detail", "stock", "holding")\
+            .with_example_params({"date": '20210930'})\
+            .build(),
+
+        create_interface("stock_gdfx_free_top_10_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("东方财富网-个股-十大流通股东")\
+            .with_optional_params("symbol", "date")\
+            .with_pattern(ParameterPattern.from_params(["symbol", "date"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("股票", "em", "gdfx", "10", "stock")\
+            .with_example_params({"symbol": 'sh688686', "date": '20240930'})\
+            .build(),
+
+        create_interface("stock_gdfx_holding_analyse_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("东方财富网-数据中心-股东分析-股东持股分析-十大股东")\
+            .with_optional_params("date")\
+            .with_pattern(ParameterPattern.from_params(["date"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("em", "gdfx", "stock", "holding", "analyse")\
+            .with_example_params({"date": '20230331'})\
+            .build(),
+
+        create_interface("stock_gdfx_holding_change_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("东方财富网-数据中心-股东分析-股东持股变动统计-十大股东")\
+            .with_optional_params("date")\
+            .with_pattern(ParameterPattern.from_params(["date"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("change", "gdfx", "em", "stock", "holding")\
+            .with_example_params({"date": '20210930'})\
+            .build(),
+
+        create_interface("stock_gdfx_holding_detail_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("东方财富网-数据中心-股东分析-股东持股明细-十大股东")\
+            .with_optional_params("date", "indicator", "symbol")\
+            .with_pattern(ParameterPattern.from_params(["date", "indicator", "symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("em", "gdfx", "detail", "stock", "基金")\
+            .with_example_params({"date": '20230331', "indicator": '个人', "symbol": '新进'})\
+            .build(),
+
+        create_interface("stock_gdfx_top_10_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("东方财富网-个股-十大股东")\
+            .with_optional_params("symbol", "date")\
+            .with_pattern(ParameterPattern.from_params(["symbol", "date"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("股票", "em", "gdfx", "10", "stock")\
+            .with_example_params({"symbol": 'sh688686', "date": '20210630'})\
+            .build(),
+
+        create_interface("stock_gpzy_distribute_statistics_bank_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("东方财富网-数据中心-特色数据-股权质押-质押机构分布统计-银行")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("bank", "em", "statistics", "gpzy", "stock")\
+            .build(),
+
+        create_interface("stock_gpzy_distribute_statistics_company_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("东方财富网-数据中心-特色数据-股权质押-质押机构分布统计-证券公司")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("em", "statistics", "gpzy", "stock", "company")\
+            .build(),
+
+        create_interface("stock_gpzy_pledge_ratio_detail_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("东方财富网-数据中心-特色数据-股权质押-重要股东股权质押明细")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("em", "detail", "pledge", "gpzy", "stock")\
+            .build(),
+
+        create_interface("stock_gpzy_pledge_ratio_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("东方财富网-数据中心-特色数据-股权质押-上市公司质押比例")\
+            .with_optional_params("date")\
+            .with_pattern(ParameterPattern.from_params(["date"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("em", "pledge", "gpzy", "stock", "ratio")\
+            .with_example_params({"date": '20240906'})\
+            .build(),
+
+        create_interface("stock_history_dividend_detail")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("新浪财经-发行与分配-分红配股详情")\
+            .with_optional_params("symbol", "indicator", "date")\
+            .with_pattern(ParameterPattern.from_params(["symbol", "indicator", "date"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("股票", "history", "detail", "dividend", "stock")\
+            .with_example_params({"symbol": '000002', "indicator": '分红', "date": '2024-01-01'})\
+            .build(),
+
+        create_interface("stock_hold_control_cninfo")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("巨潮资讯-数据中心-专题统计-股东股本-实际控制人持股变动")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("hold", "cninfo", "stock", "control")\
+            .with_example_params({"symbol": '全部'})\
+            .build(),
+
+        create_interface("stock_hold_management_detail_cninfo")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("巨潮资讯-数据中心-专题统计-股东股本-高管持股变动明细")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("detail", "management", "stock", "hold", "cninfo")\
+            .with_example_params({"symbol": '增持'})\
+            .build(),
+
+        create_interface("stock_hold_num_cninfo")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("巨潮资讯-数据中心-专题统计-股东股本-股东人数及持股集中度")\
+            .with_optional_params("date")\
+            .with_pattern(ParameterPattern.from_params(["date"]))\
+            .with_return_type("int")\
+            .with_keywords("hold", "num", "stock", "cninfo")\
+            .with_example_params({"date": '20210630'})\
+            .build(),
+
+        create_interface("stock_hot_keyword_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("东方财富-个股人气榜-热门关键词")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("stock", "em", "hot", "keyword")\
+            .with_example_params({"symbol": 'SZ000665'})\
+            .build(),
+
+        create_interface("stock_hot_search_baidu")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("百度股市通-热搜股票")\
+            .with_optional_params("symbol", "date", "time")\
+            .with_pattern(ParameterPattern.from_params(["symbol", "date", "time"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("股票", "hot", "search", "baidu", "stock")\
+            .with_example_params({"symbol": 'A股', "date": '20250616', "time": '今日'})\
+            .build(),
+
+        create_interface("stock_individual_info_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("东方财富-个股-股票信息")\
+            .with_optional_params("symbol", "timeout")\
+            .with_pattern(ParameterPattern.from_params(["symbol", "timeout"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("股票", "individual", "em", "info", "stock")\
+            .with_example_params({"symbol": '603777'})\
+            .build(),
+
+        create_interface("stock_info_a_code_name")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("沪深京 A 股列表")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("List[str]")\
+            .with_keywords("code", "info", "name", "stock", "a")\
+            .build(),
+
+        create_interface("stock_info_bj_name_code")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("北京证券交易所-股票列表")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("List[str]")\
+            .with_keywords("股票", "code", "info", "name", "stock")\
+            .build(),
+
+        create_interface("stock_info_change_name")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("新浪财经-股票曾用名")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("股票", "change", "info", "name", "stock")\
+            .with_example_params({"symbol": '000503'})\
+            .build(),
+
+        create_interface("stock_info_cjzc_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("东方财富-财经早餐")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("info", "stock", "em", "cjzc")\
+            .build(),
+
+        create_interface("stock_info_global_cls")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("财联社-电报")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("info", "stock", "cls", "global")\
+            .with_example_params({"symbol": '全部'})\
+            .build(),
+
+        create_interface("stock_info_global_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("东方财富-全球财经快讯")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("info", "stock", "em", "global")\
+            .build(),
+
+        create_interface("stock_info_global_futu")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("富途牛牛-快讯")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("info", "stock", "global", "futu")\
+            .build(),
+
+        create_interface("stock_info_global_sina")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("新浪财经-全球财经快讯")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("info", "stock", "global", "sina")\
+            .build(),
+
+        create_interface("stock_info_global_ths")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("同花顺财经-全球财经直播")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("info", "stock", "global", "ths")\
+            .build(),
+
+        create_interface("stock_info_sh_delist")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("上海证券交易所-终止上市公司")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("List[str]")\
+            .with_keywords("delist", "info", "sh", "stock")\
+            .with_example_params({"symbol": '全部'})\
+            .build(),
+
+        create_interface("stock_info_sh_name_code")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("上海证券交易所-股票列表")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("List[str]")\
+            .with_keywords("B股", "股票", "code", "info", "name")\
+            .with_example_params({"symbol": '主板A股'})\
+            .build(),
+
+        create_interface("stock_info_sz_change_name")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("深证证券交易所-市场数据-股票数据-名称变更")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("股票", "change", "info", "name", "stock")\
+            .with_example_params({"symbol": '全称变更'})\
+            .build(),
+
+        create_interface("stock_info_sz_delist")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("深证证券交易所-暂停上市公司-终止上市公司")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("List[str]")\
+            .with_keywords("sz", "info", "delist", "stock")\
+            .with_example_params({"symbol": '终止上市公司'})\
+            .build(),
+
+        create_interface("stock_info_sz_name_code")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("深圳证券交易所-股票列表")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("List[str]")\
+            .with_keywords("B股", "股票", "code", "info", "name")\
+            .with_example_params({"symbol": 'A股列表'})\
+            .build(),
+
+        create_interface("stock_ipo_info")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("新浪财经-发行与分配-新股发行")\
+            .with_optional_params("stock")\
+            .with_pattern(ParameterPattern.from_params(["stock"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("ipo", "info", "stock", "股票")\
+            .with_example_params({"stock": '600004'})\
+            .build(),
+
+        create_interface("stock_ipo_summary_cninfo")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("巨潮资讯-个股-上市相关")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("summary", "股票", "ipo", "stock", "cninfo")\
+            .with_example_params({"symbol": '600030'})\
+            .build(),
+
+        create_interface("stock_news_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("东方财富-个股新闻-最近 100 条新闻")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("股票", "em", "新闻", "news", "stock")\
+            .with_example_params({"symbol": '603777'})\
+            .build(),
+
+        create_interface("stock_notice_report")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("东方财富网-数据中心-公告大全-沪深京 A 股公告")\
+            .with_optional_params("symbol", "date")\
+            .with_pattern(ParameterPattern.from_params(["symbol", "date"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("财务", "stock", "report", "notice")\
+            .with_example_params({"symbol": '全部', "date": '20220511'})\
+            .build(),
+
+        create_interface("stock_repurchase_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("东方财富网-数据中心-股票回购-股票回购数据")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("repurchase", "stock", "em", "股票")\
+            .build(),
+
+        create_interface("stock_restricted_release_queue_sina")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("新浪财经-发行分配-限售解禁")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("release", "股票", "restricted", "sina", "stock")\
+            .with_example_params({"symbol": '600000'})\
+            .build(),
+
+        create_interface("stock_share_change_cninfo")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("巨潮资讯-股本股东-公司股本变动")\
+            .with_optional_params("symbol", "start_date", "end_date")\
+            .with_pattern(ParameterPattern.from_params(["symbol", "start_date", "end_date"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("股票", "change", "share", "stock", "cninfo")\
+            .with_example_params({"symbol": '002594', "start_date": '20091227', "end_date": '20241021'})\
+            .build(),
+
+        create_interface("stock_staq_net_stop")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("东方财富网-行情中心-沪深个股-两网及退市")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("net", "stop", "stock", "staq")\
+            .build(),
+
+        create_interface("stock_xgsglb_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("新股申购与中签查询")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("stock", "em", "xgsglb", "股票")\
+            .with_example_params({"symbol": '全部股票'})\
+            .build(),
+
+        create_interface("stock_zh_a_gdhs")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("东方财富网-数据中心-特色数据-股东户数")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("zh", "stock", "gdhs", "a")\
+            .with_example_params({"symbol": '20230930'})\
+            .build(),
+
+        create_interface("stock_zh_a_new")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("新浪财经-行情中心-沪深股市-次新股")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("new", "zh", "stock", "a")\
+            .build(),
+
+        create_interface("stock_zh_a_st_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("东方财富网-行情中心-沪深个股-风险警示板")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("em", "st", "stock", "a", "zh")\
+            .build(),
+
+        create_interface("stock_zh_ah_name")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_BASIC)\
+            .with_description("腾讯财经-港股-AH-股票名称")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("股票", "ah", "name", "stock", "zh")\
+            .build(),
+        ]
+
+    def _register_other_interfaces(self) -> List[InterfaceMetadata]:
+        """注册OTHER接口"""
+        return [
+        create_interface("stock_a_code_to_symbol")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.OTHER)\
+            .with_description("输入股票代码判断股票市场")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("to", "股票", "code", "symbol", "stock")\
+            .with_example_params({"symbol": '000300'})\
+            .build(),
+
+        create_interface("stock_a_congestion_lg")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.OTHER)\
+            .with_description("乐咕乐股-大盘拥挤度")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("congestion", "stock", "lg", "a")\
+            .build(),
+
+        create_interface("stock_a_gxl_lg")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.OTHER)\
+            .with_description("乐咕乐股-股息率-A 股股息率")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("stock", "lg", "a", "A股", "gxl")\
+            .with_example_params({"symbol": '上证A股'})\
+            .build(),
+
+        create_interface("stock_account_statistics_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.OTHER)\
+            .with_description("东方财富网-数据中心-特色数据-股票账户统计")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("int")\
+            .with_keywords("股票", "em", "statistics", "stock", "account")\
             .build(),
 
         create_interface("stock_analyst_detail_em")\
@@ -147,7 +740,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("analyst_id", "indicator")\
             .with_pattern(ParameterPattern.from_params(["analyst_id", "indicator"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("em", "stock", "detail", "指数", "analyst")\
+            .with_keywords("指数", "em", "detail", "analyst", "stock")\
             .with_example_params({"analyst_id": '11000200926', "indicator": '最新跟踪成分股'})\
             .build(),
 
@@ -158,19 +751,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("year")\
             .with_pattern(ParameterPattern.from_params(["year"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("em", "stock", "指数", "analyst", "rank")\
+            .with_keywords("指数", "em", "analyst", "stock", "rank")\
             .with_example_params({"year": '2024'})\
-            .build(),
-
-        create_interface("stock_bid_ask_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富-行情报价")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("bid", "em", "stock", "股票", "ask")\
-            .with_example_params({"symbol": '000001'})\
             .build(),
 
         create_interface("stock_board_change_em")\
@@ -179,27 +761,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富-行情中心-当日板块异动详情")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "change", "em", "board")\
-            .build(),
-
-        create_interface("stock_board_concept_cons_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富-沪深板块-概念板块-板块成份")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("cons", "board", "em", "stock", "concept")\
-            .with_example_params({"symbol": '融资融券'})\
-            .build(),
-
-        create_interface("stock_board_concept_name_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-行情中心-沪深京板块-概念板块-名称")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("name", "board", "em", "stock", "concept")\
+            .with_keywords("change", "stock", "board", "em")\
             .build(),
 
         create_interface("stock_board_concept_name_em_async")\
@@ -208,16 +770,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-行情中心-沪深京板块-概念板块-名称 (同步接口)")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("name", "board", "em", "stock", "async")\
-            .build(),
-
-        create_interface("stock_board_concept_name_ths")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("同花顺-板块-概念板块-概念")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("name", "board", "stock", "ths", "concept")\
+            .with_keywords("em", "name", "concept", "stock", "board")\
             .build(),
 
         create_interface("stock_board_concept_summary_ths")\
@@ -226,7 +779,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("同花顺-数据中心-概念板块-概念时间表")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("summary", "board", "stock", "ths", "concept")\
+            .with_keywords("summary", "ths", "concept", "stock", "board")\
             .build(),
 
         create_interface("stock_cg_equity_mortgage_cninfo")\
@@ -236,7 +789,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("date")\
             .with_pattern(ParameterPattern.from_params(["date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("equity", "cg", "mortgage", "stock", "cninfo")\
+            .with_keywords("mortgage", "cg", "equity", "stock", "cninfo")\
             .with_example_params({"date": '20210930'})\
             .build(),
 
@@ -247,19 +800,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "start_date", "end_date")\
             .with_pattern(ParameterPattern.from_params(["symbol", "start_date", "end_date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "cg", "cninfo", "guarantee")\
+            .with_keywords("cg", "cninfo", "stock", "guarantee")\
             .with_example_params({"symbol": '全部', "start_date": '20180630', "end_date": '20210927'})\
-            .build(),
-
-        create_interface("stock_changes_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富-行情中心-盘口异动")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "changes", "em")\
-            .with_example_params({"symbol": '大笔买入'})\
             .build(),
 
         create_interface("stock_circulate_stock_holder")\
@@ -269,7 +811,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "股票", "holder", "circulate")\
+            .with_keywords("holder", "stock", "circulate", "股票")\
             .with_example_params({"symbol": '600000'})\
             .build(),
 
@@ -280,7 +822,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("行业", "stock", "股票", "classify", "sina")\
+            .with_keywords("股票", "sina", "stock", "classify", "行业")\
             .with_example_params({"symbol": '热门概念'})\
             .build(),
 
@@ -291,28 +833,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("zhpj", "lspf", "em", "stock", "股票")\
+            .with_keywords("股票", "em", "detail", "comment", "lspf")\
             .with_example_params({"symbol": '600000'})\
-            .build(),
-
-        create_interface("stock_comment_detail_zlkp_jgcyd_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-数据中心-特色数据-千股千评-主力控盘-机构参与度")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("jgcyd", "zlkp", "em", "stock", "股票")\
-            .with_example_params({"symbol": '600000'})\
-            .build(),
-
-        create_interface("stock_comment_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-数据中心-特色数据-千股千评")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "em", "comment")\
             .build(),
 
         create_interface("stock_concept_cons_futu")\
@@ -322,7 +844,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "futu", "cons", "concept")\
+            .with_keywords("concept", "stock", "futu", "cons")\
             .with_example_params({"symbol": '特朗普概念股'})\
             .build(),
 
@@ -333,7 +855,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "adjust")\
             .with_pattern(ParameterPattern.from_params(["symbol", "adjust"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "股票", "em", "cyq")\
+            .with_keywords("stock", "em", "股票", "cyq")\
             .with_example_params({"symbol": '000001', "adjust": ''})\
             .build(),
 
@@ -344,17 +866,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "股票", "cninfo", "dividend")\
+            .with_keywords("dividend", "cninfo", "stock", "股票")\
             .with_example_params({"symbol": '600009'})\
-            .build(),
-
-        create_interface("stock_dxsyl_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-数据中心-新股申购-打新收益率")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "dxsyl", "em")\
             .build(),
 
         create_interface("stock_dzjy_hygtj")\
@@ -364,7 +877,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "hygtj", "dzjy")\
+            .with_keywords("stock", "dzjy", "hygtj")\
             .with_example_params({"symbol": '近三月'})\
             .build(),
 
@@ -375,19 +888,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "hyyybtj", "dzjy")\
+            .with_keywords("hyyybtj", "stock", "dzjy")\
             .with_example_params({"symbol": '近3日'})\
-            .build(),
-
-        create_interface("stock_dzjy_mrmx")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-数据中心-大宗交易-每日明细")\
-            .with_optional_params("symbol", "start_date", "end_date")\
-            .with_pattern(ParameterPattern.from_params(["symbol", "start_date", "end_date"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("mrmx", "A股", "B股", "基金", "stock")\
-            .with_example_params({"symbol": '基金', "start_date": '20220104', "end_date": '20220104'})\
             .build(),
 
         create_interface("stock_dzjy_mrtj")\
@@ -397,17 +899,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("start_date", "end_date")\
             .with_pattern(ParameterPattern.from_params(["start_date", "end_date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "mrtj", "dzjy")\
+            .with_keywords("mrtj", "stock", "dzjy")\
             .with_example_params({"start_date": '20220105', "end_date": '20220105'})\
-            .build(),
-
-        create_interface("stock_dzjy_sctj")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-数据中心-大宗交易-市场统计")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "sctj", "dzjy")\
             .build(),
 
         create_interface("stock_dzjy_yybph")\
@@ -417,7 +910,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "yybph", "dzjy")\
+            .with_keywords("stock", "dzjy", "yybph")\
             .with_example_params({"symbol": '近三月'})\
             .build(),
 
@@ -436,7 +929,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("新浪财经-ESG评级中心-ESG评级-华证指数")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("esg", "stock", "hz", "指数", "sina")\
+            .with_keywords("指数", "hz", "sina", "stock", "esg")\
             .build(),
 
         create_interface("stock_esg_msci_sina")\
@@ -445,7 +938,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("新浪财经-ESG评级中心-ESG评级-MSCI")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "msci", "esg", "sina")\
+            .with_keywords("sina", "msci", "stock", "esg")\
             .build(),
 
         create_interface("stock_esg_rate_sina")\
@@ -454,7 +947,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("新浪财经-ESG评级中心-ESG评级-ESG评级数据")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "esg", "sina", "rate")\
+            .with_keywords("sina", "stock", "rate", "esg")\
             .build(),
 
         create_interface("stock_esg_rft_sina")\
@@ -463,7 +956,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("新浪财经-ESG评级中心-ESG评级-路孚特")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "rft", "esg", "sina")\
+            .with_keywords("sina", "rft", "stock", "esg")\
             .build(),
 
         create_interface("stock_esg_zd_sina")\
@@ -472,18 +965,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("新浪财经-ESG评级中心-ESG评级-秩鼎")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "zd", "esg", "sina")\
-            .build(),
-
-        create_interface("stock_fhps_detail_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-数据中心-分红送配-分红送配详情")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("em", "stock", "股票", "detail", "fhps")\
-            .with_example_params({"symbol": '300073'})\
+            .with_keywords("sina", "stock", "esg", "zd")\
             .build(),
 
         create_interface("stock_fhps_detail_ths")\
@@ -493,19 +975,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "股票", "detail", "fhps", "ths")\
+            .with_keywords("股票", "detail", "ths", "fhps", "stock")\
             .with_example_params({"symbol": '603444'})\
-            .build(),
-
-        create_interface("stock_fhps_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-数据中心-年报季报-分红送配")\
-            .with_optional_params("date")\
-            .with_pattern(ParameterPattern.from_params(["date"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "fhps", "em")\
-            .with_example_params({"date": '20231231'})\
             .build(),
 
         create_interface("stock_gddh_em")\
@@ -514,7 +985,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-数据中心-股东大会")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "gddh", "em")\
+            .with_keywords("stock", "em", "gddh")\
             .build(),
 
         create_interface("stock_ggcg_em")\
@@ -524,46 +995,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "em", "ggcg")\
+            .with_keywords("ggcg", "stock", "em")\
             .with_example_params({"symbol": '全部'})\
-            .build(),
-
-        create_interface("stock_gpzy_distribute_statistics_bank_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-数据中心-特色数据-股权质押-质押机构分布统计-银行")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("gpzy", "bank", "statistics", "em", "stock")\
-            .build(),
-
-        create_interface("stock_gpzy_distribute_statistics_company_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-数据中心-特色数据-股权质押-质押机构分布统计-证券公司")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("gpzy", "company", "statistics", "em", "stock")\
-            .build(),
-
-        create_interface("stock_gpzy_pledge_ratio_detail_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-数据中心-特色数据-股权质押-重要股东股权质押明细")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("gpzy", "pledge", "em", "stock", "ratio")\
-            .build(),
-
-        create_interface("stock_gpzy_pledge_ratio_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-数据中心-特色数据-股权质押-上市公司质押比例")\
-            .with_optional_params("date")\
-            .with_pattern(ParameterPattern.from_params(["date"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("gpzy", "pledge", "em", "stock", "ratio")\
-            .with_example_params({"date": '20240906'})\
             .build(),
 
         create_interface("stock_gpzy_profile_em")\
@@ -572,7 +1005,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-数据中心-特色数据-股权质押-股权质押市场概况")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "gpzy", "profile", "em")\
+            .with_keywords("gpzy", "profile", "stock", "em")\
             .build(),
 
         create_interface("stock_gsrl_gsdt_em")\
@@ -593,7 +1026,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("company", "hk", "em", "stock", "股票")\
+            .with_keywords("股票", "em", "hk", "profile", "stock")\
             .with_example_params({"symbol": '03900'})\
             .build(),
 
@@ -604,7 +1037,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("fhpx", "hk", "stock", "detail", "ths")\
+            .with_keywords("detail", "hk", "ths", "fhpx", "stock")\
             .with_example_params({"symbol": '0700'})\
             .build(),
 
@@ -614,7 +1047,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-行情中心-港股市场-港股通成份股")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("components", "hk", "em", "ggt", "stock")\
+            .with_keywords("em", "hk", "stock", "ggt", "components")\
             .build(),
 
         create_interface("stock_hk_gxl_lg")\
@@ -623,7 +1056,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("乐咕乐股-股息率-恒生指数股息率")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("gxl", "hk", "stock", "lg", "指数")\
+            .with_keywords("指数", "hk", "stock", "lg", "gxl")\
             .build(),
 
         create_interface("stock_hk_hot_rank_detail_em")\
@@ -633,7 +1066,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("hk", "em", "hot", "stock", "detail")\
+            .with_keywords("em", "hot", "detail", "hk", "stock")\
             .with_example_params({"symbol": '00700'})\
             .build(),
 
@@ -644,7 +1077,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("hk", "em", "hot", "stock", "realtime")\
+            .with_keywords("em", "hot", "detail", "hk", "realtime")\
             .with_example_params({"symbol": '00700'})\
             .build(),
 
@@ -654,7 +1087,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富-个股人气榜-人气榜-港股市场")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("hk", "em", "hot", "stock", "rank")\
+            .with_keywords("em", "hot", "hk", "stock", "rank")\
             .build(),
 
         create_interface("stock_hk_hot_rank_latest_em")\
@@ -664,7 +1097,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("latest", "hk", "em", "hot", "stock")\
+            .with_keywords("em", "hot", "hk", "latest", "stock")\
             .with_example_params({"symbol": '00700'})\
             .build(),
 
@@ -675,7 +1108,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("hk", "em", "stock", "股票", "security")\
+            .with_keywords("股票", "em", "hk", "profile", "stock")\
             .with_example_params({"symbol": '03900'})\
             .build(),
 
@@ -686,7 +1119,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "indicator", "period")\
             .with_pattern(ParameterPattern.from_params(["symbol", "indicator", "period"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("hk", "baidu", "stock", "股票", "财务")\
+            .with_keywords("股票", "hk", "财务", "baidu", "stock")\
             .with_example_params({"symbol": '06969', "indicator": '总市值', "period": 'daily'})\
             .build(),
 
@@ -697,30 +1130,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "change", "cninfo", "hold")\
+            .with_keywords("hold", "cninfo", "stock", "change")\
             .with_example_params({"symbol": '全部'})\
-            .build(),
-
-        create_interface("stock_hold_control_cninfo")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("巨潮资讯-数据中心-专题统计-股东股本-实际控制人持股变动")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "cninfo", "control", "hold")\
-            .with_example_params({"symbol": '全部'})\
-            .build(),
-
-        create_interface("stock_hold_management_detail_cninfo")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("巨潮资讯-数据中心-专题统计-股东股本-高管持股变动明细")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "management", "detail", "cninfo", "hold")\
-            .with_example_params({"symbol": '增持'})\
             .build(),
 
         create_interface("stock_hold_management_detail_em")\
@@ -729,7 +1140,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-数据中心-特色数据-高管持股-董监高及相关人员持股变动明细")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("em", "stock", "detail", "management", "hold")\
+            .with_keywords("em", "detail", "management", "stock", "hold")\
             .build(),
 
         create_interface("stock_hold_management_person_em")\
@@ -739,94 +1150,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "name")\
             .with_pattern(ParameterPattern.from_params(["symbol", "name"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("person", "em", "stock", "股票", "management")\
+            .with_keywords("股票", "em", "management", "person", "stock")\
             .with_example_params({"symbol": '001308', "name": '吴远'})\
-            .build(),
-
-        create_interface("stock_hold_num_cninfo")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("巨潮资讯-数据中心-专题统计-股东股本-股东人数及持股集中度")\
-            .with_optional_params("date")\
-            .with_pattern(ParameterPattern.from_params(["date"]))\
-            .with_return_type("int")\
-            .with_keywords("stock", "cninfo", "hold", "num")\
-            .with_example_params({"date": '20210630'})\
-            .build(),
-
-        create_interface("stock_hot_deal_xq")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("雪球-沪深股市-热度排行榜-分享交易排行榜")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "xq", "deal", "hot")\
-            .with_example_params({"symbol": '最热门'})\
-            .build(),
-
-        create_interface("stock_hot_follow_xq")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("雪球-沪深股市-热度排行榜-关注排行榜")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "xq", "follow", "hot")\
-            .with_example_params({"symbol": '最热门'})\
-            .build(),
-
-        create_interface("stock_hot_keyword_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富-个股人气榜-热门关键词")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "em", "hot", "keyword")\
-            .with_example_params({"symbol": 'SZ000665'})\
-            .build(),
-
-        create_interface("stock_hot_rank_detail_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富-个股人气榜-历史趋势及粉丝特征")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("em", "hot", "stock", "detail", "rank")\
-            .with_example_params({"symbol": 'SZ000665'})\
-            .build(),
-
-        create_interface("stock_hot_rank_detail_realtime_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富-个股人气榜-实时变动")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("em", "hot", "stock", "realtime", "detail")\
-            .with_example_params({"symbol": 'SZ000665'})\
-            .build(),
-
-        create_interface("stock_hot_rank_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富-个股人气榜-人气榜")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "em", "hot", "rank")\
-            .build(),
-
-        create_interface("stock_hot_rank_latest_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富-个股人气榜-最新排名")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("latest", "em", "hot", "stock", "rank")\
-            .with_example_params({"symbol": 'SZ000665'})\
             .build(),
 
         create_interface("stock_hot_rank_relate_em")\
@@ -836,19 +1161,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("em", "relate", "hot", "stock", "股票")\
+            .with_keywords("股票", "em", "hot", "relate", "stock")\
             .with_example_params({"symbol": 'SZ000665'})\
-            .build(),
-
-        create_interface("stock_hot_search_baidu")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("百度股市通-热搜股票")\
-            .with_optional_params("symbol", "date", "time")\
-            .with_pattern(ParameterPattern.from_params(["symbol", "date", "time"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("A股", "hot", "baidu", "stock", "search")\
-            .with_example_params({"symbol": 'A股', "date": '20250616', "time": '今日'})\
             .build(),
 
         create_interface("stock_hot_tweet_xq")\
@@ -858,17 +1172,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "xq", "tweet", "hot")\
+            .with_keywords("tweet", "xq", "stock", "hot")\
             .with_example_params({"symbol": '最热门'})\
-            .build(),
-
-        create_interface("stock_hot_up_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富-个股人气榜-飙升榜")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "up", "em", "hot")\
             .build(),
 
         create_interface("stock_hsgt_board_rank_em")\
@@ -878,50 +1183,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "indicator")\
             .with_pattern(ParameterPattern.from_params(["symbol", "indicator"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("行业", "board", "em", "stock", "hsgt")\
+            .with_keywords("em", "hsgt", "stock", "board", "行业")\
             .with_example_params({"symbol": '北向资金增持行业板块排行', "indicator": '今日'})\
-            .build(),
-
-        create_interface("stock_hsgt_hold_stock_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富-数据中心-沪深港通持股-个股排行")\
-            .with_optional_params("market", "indicator")\
-            .with_pattern(ParameterPattern.from_params(["market", "indicator"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "em", "hold", "hsgt")\
-            .with_example_params({"market": '沪股通', "indicator": '5日排行'})\
-            .build(),
-
-        create_interface("stock_hsgt_individual_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富-数据中心-沪深港通-沪深港通持股-具体股票")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("em", "individual", "stock", "股票", "hsgt")\
-            .with_example_params({"symbol": '002008'})\
-            .build(),
-
-        create_interface("stock_hsgt_stock_statistics_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-数据中心-沪深港通-沪深港通持股-每日个股统计")\
-            .with_optional_params("symbol", "start_date", "end_date")\
-            .with_pattern(ParameterPattern.from_params(["symbol", "start_date", "end_date"]))\
-            .with_return_type("int")\
-            .with_keywords("stock", "em", "statistics", "hsgt")\
-            .with_example_params({"symbol": '北向持股', "start_date": '20240110', "end_date": '20240110'})\
-            .build(),
-
-        create_interface("stock_inner_trade_xq")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("雪球-行情中心-沪深股市-内部交易")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "xq", "inner", "trade")\
             .build(),
 
         create_interface("stock_institute_hold")\
@@ -931,7 +1194,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "institute", "股票", "hold")\
+            .with_keywords("hold", "stock", "股票", "institute")\
             .with_example_params({"symbol": '20051'})\
             .build(),
 
@@ -942,7 +1205,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("stock", "quarter")\
             .with_pattern(ParameterPattern.from_params(["stock", "quarter"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("institute", "stock", "股票", "detail", "hold")\
+            .with_keywords("股票", "detail", "institute", "stock", "hold")\
             .with_example_params({"stock": '600433', "quarter": '20201'})\
             .build(),
 
@@ -953,7 +1216,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("行业", "institute", "recommend", "stock", "股票")\
+            .with_keywords("股票", "institute", "stock", "recommend", "行业")\
             .with_example_params({"symbol": '投资评级选股'})\
             .build(),
 
@@ -964,41 +1227,19 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("institute", "recommend", "stock", "股票", "detail")\
+            .with_keywords("股票", "detail", "institute", "stock", "recommend")\
             .with_example_params({"symbol": '000001'})\
             .build(),
 
-        create_interface("stock_intraday_em")\
+        create_interface("stock_intraday_sina")\
             .with_source(DataSource.AKSHARE)\
             .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富-分时数据")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_description("新浪财经-日内分时数据")\
+            .with_optional_params("symbol", "date")\
+            .with_pattern(ParameterPattern.from_params(["symbol", "date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "股票", "intraday", "em")\
-            .with_example_params({"symbol": '000001'})\
-            .build(),
-
-        create_interface("stock_ipo_info")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("新浪财经-发行与分配-新股发行")\
-            .with_optional_params("stock")\
-            .with_pattern(ParameterPattern.from_params(["stock"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "info", "股票", "ipo")\
-            .with_example_params({"stock": '600004'})\
-            .build(),
-
-        create_interface("stock_ipo_summary_cninfo")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("巨潮资讯-个股-上市相关")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("ipo", "summary", "stock", "股票", "cninfo")\
-            .with_example_params({"symbol": '600030'})\
+            .with_keywords("sina", "stock", "intraday", "股票")\
+            .with_example_params({"symbol": 'sz000001', "date": '20240321'})\
             .build(),
 
         create_interface("stock_irm_ans_cninfo")\
@@ -1008,7 +1249,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "irm", "cninfo", "ans")\
+            .with_keywords("cninfo", "stock", "irm", "ans")\
             .with_example_params({"symbol": '1513586704097333248'})\
             .build(),
 
@@ -1019,7 +1260,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "irm", "股票", "cninfo")\
+            .with_keywords("cninfo", "stock", "irm", "股票")\
             .with_example_params({"symbol": '002594'})\
             .build(),
 
@@ -1030,7 +1271,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("date")\
             .with_pattern(ParameterPattern.from_params(["date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "jgdy", "em", "detail")\
+            .with_keywords("em", "stock", "jgdy", "detail")\
             .with_example_params({"date": '20241211'})\
             .build(),
 
@@ -1041,7 +1282,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("date")\
             .with_pattern(ParameterPattern.from_params(["date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "tj", "jgdy", "em")\
+            .with_keywords("em", "stock", "jgdy", "tj")\
             .with_example_params({"date": '20220101'})\
             .build(),
 
@@ -1051,7 +1292,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("https://datacenter.jin10.com/market")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("weibo", "time", "stock", "js", "nlp")\
+            .with_keywords("weibo", "js", "nlp", "stock", "time")\
             .build(),
 
         create_interface("stock_js_weibo_report")\
@@ -1061,7 +1302,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("time_period")\
             .with_pattern(ParameterPattern.from_params(["time_period"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "weibo", "report", "js")\
+            .with_keywords("weibo", "stock", "report", "js")\
             .with_example_params({"time_period": 'CNHOUR12'})\
             .build(),
 
@@ -1071,7 +1312,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("同花顺-数据中心-营业部排名-资金实力最强")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "lh", "capital", "yyb")\
+            .with_keywords("capital", "lh", "stock", "yyb")\
             .build(),
 
         create_interface("stock_lh_yyb_control")\
@@ -1080,7 +1321,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("同花顺-数据中心-营业部排名-抱团操作实力")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "lh", "control", "yyb")\
+            .with_keywords("lh", "stock", "control", "yyb")\
             .build(),
 
         create_interface("stock_lh_yyb_most")\
@@ -1089,18 +1330,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("同花顺-数据中心-营业部排名-上榜次数最多")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "lh", "yyb", "most")\
-            .build(),
-
-        create_interface("stock_lhb_detail_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-数据中心-龙虎榜单-龙虎榜详情")\
-            .with_optional_params("start_date", "end_date")\
-            .with_pattern(ParameterPattern.from_params(["start_date", "end_date"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "em", "lhb", "detail")\
-            .with_example_params({"start_date": '20230403', "end_date": '20230417'})\
+            .with_keywords("lh", "stock", "yyb", "most")\
             .build(),
 
         create_interface("stock_lhb_ggtj_sina")\
@@ -1110,19 +1340,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "ggtj", "lhb", "sina")\
+            .with_keywords("ggtj", "sina", "stock", "lhb")\
             .with_example_params({"symbol": '5'})\
-            .build(),
-
-        create_interface("stock_lhb_hyyyb_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-数据中心-龙虎榜单-每日活跃营业部")\
-            .with_optional_params("start_date", "end_date")\
-            .with_pattern(ParameterPattern.from_params(["start_date", "end_date"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "hyyyb", "em", "lhb")\
-            .with_example_params({"start_date": '20220324', "end_date": '20220324'})\
             .build(),
 
         create_interface("stock_lhb_jgmmtj_em")\
@@ -1132,7 +1351,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("start_date", "end_date")\
             .with_pattern(ParameterPattern.from_params(["start_date", "end_date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "jgmmtj", "em", "lhb")\
+            .with_keywords("stock", "em", "jgmmtj", "lhb")\
             .with_example_params({"start_date": '20240417', "end_date": '20240430'})\
             .build(),
 
@@ -1142,18 +1361,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("龙虎榜-机构席位成交明细")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "sina", "lhb", "jgmx")\
-            .build(),
-
-        create_interface("stock_lhb_jgstatistic_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-数据中心-龙虎榜单-机构席位追踪")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "em", "lhb", "jgstatistic")\
-            .with_example_params({"symbol": '近一月'})\
+            .with_keywords("sina", "stock", "jgmx", "lhb")\
             .build(),
 
         create_interface("stock_lhb_jgzz_sina")\
@@ -1163,7 +1371,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "jgzz", "lhb", "sina")\
+            .with_keywords("jgzz", "stock", "sina", "lhb")\
             .with_example_params({"symbol": '5'})\
             .build(),
 
@@ -1174,7 +1382,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("date", "em", "lhb", "stock", "股票")\
+            .with_keywords("股票", "em", "detail", "lhb", "stock")\
             .with_example_params({"symbol": '600077'})\
             .build(),
 
@@ -1185,30 +1393,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "date", "flag")\
             .with_pattern(ParameterPattern.from_params(["symbol", "date", "flag"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("em", "lhb", "stock", "股票", "detail")\
+            .with_keywords("股票", "em", "detail", "lhb", "stock")\
             .with_example_params({"symbol": '000788', "date": '20220315', "flag": '卖出'})\
-            .build(),
-
-        create_interface("stock_lhb_stock_statistic_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-数据中心-龙虎榜单-个股上榜统计")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "statistic", "em", "lhb")\
-            .with_example_params({"symbol": '近一月'})\
-            .build(),
-
-        create_interface("stock_lhb_traderstatistic_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-数据中心-龙虎榜单-营业部统计")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "em", "lhb", "traderstatistic")\
-            .with_example_params({"symbol": '近一月'})\
             .build(),
 
         create_interface("stock_lhb_yyb_detail_em")\
@@ -1218,19 +1404,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("em", "yyb", "lhb", "stock", "detail")\
+            .with_keywords("em", "detail", "lhb", "yyb", "stock")\
             .with_example_params({"symbol": '10188715'})\
-            .build(),
-
-        create_interface("stock_lhb_yybph_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-数据中心-龙虎榜单-营业部排行")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "em", "lhb", "yybph")\
-            .with_example_params({"symbol": '近一月'})\
             .build(),
 
         create_interface("stock_lhb_yytj_sina")\
@@ -1240,7 +1415,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "yytj", "lhb", "sina")\
+            .with_keywords("yytj", "stock", "sina", "lhb")\
             .with_example_params({"symbol": '5'})\
             .build(),
 
@@ -1262,7 +1437,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("stock")\
             .with_pattern(ParameterPattern.from_params(["stock"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "main", "holder", "股票")\
+            .with_keywords("holder", "stock", "股票", "main")\
             .with_example_params({"stock": '600004'})\
             .build(),
 
@@ -1273,7 +1448,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("change", "stock", "股票", "management", "ths")\
+            .with_keywords("股票", "change", "ths", "management", "stock")\
             .with_example_params({"symbol": '688981'})\
             .build(),
 
@@ -1283,7 +1458,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-数据中心-融资融券-融资融券账户统计-两融账户信息")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("int")\
-            .with_keywords("stock", "info", "account", "margin")\
+            .with_keywords("margin", "info", "account", "stock")\
             .build(),
 
         create_interface("stock_margin_detail_sse")\
@@ -1293,19 +1468,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("date")\
             .with_pattern(ParameterPattern.from_params(["date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "sse", "margin", "detail")\
+            .with_keywords("margin", "stock", "sse", "detail")\
             .with_example_params({"date": '20230922'})\
-            .build(),
-
-        create_interface("stock_margin_detail_szse")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("深证证券交易所-融资融券数据-融资融券交易明细")\
-            .with_optional_params("date")\
-            .with_pattern(ParameterPattern.from_params(["date"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "szse", "margin", "detail")\
-            .with_example_params({"date": '20230925'})\
             .build(),
 
         create_interface("stock_margin_ratio_pa")\
@@ -1315,39 +1479,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("date")\
             .with_pattern(ParameterPattern.from_params(["date"]))\
             .with_return_type("List[str]")\
-            .with_keywords("stock", "ratio", "pa", "margin")\
+            .with_keywords("margin", "pa", "ratio", "stock")\
             .with_example_params({"date": '20231013'})\
-            .build(),
-
-        create_interface("stock_margin_sse")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("上海证券交易所-融资融券数据-融资融券汇总")\
-            .with_optional_params("start_date", "end_date")\
-            .with_pattern(ParameterPattern.from_params(["start_date", "end_date"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "sse", "margin")\
-            .with_example_params({"start_date": '20010106', "end_date": '20230922'})\
-            .build(),
-
-        create_interface("stock_margin_szse")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("深圳证券交易所-融资融券数据-融资融券汇总")\
-            .with_optional_params("date")\
-            .with_pattern(ParameterPattern.from_params(["date"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "szse", "margin")\
-            .with_example_params({"date": '20240411'})\
-            .build(),
-
-        create_interface("stock_market_activity_legu")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("乐咕乐股网-赚钱效应分析")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "legu", "market", "activity")\
             .build(),
 
         create_interface("stock_new_ipo_cninfo")\
@@ -1356,18 +1489,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("巨潮资讯-数据中心-新股数据-新股发行")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "cninfo", "ipo", "new")\
-            .build(),
-
-        create_interface("stock_notice_report")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-数据中心-公告大全-沪深京 A 股公告")\
-            .with_optional_params("symbol", "date")\
-            .with_pattern(ParameterPattern.from_params(["symbol", "date"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "report", "notice", "财务")\
-            .with_example_params({"symbol": '全部', "date": '20220511'})\
+            .with_keywords("new", "cninfo", "stock", "ipo")\
             .build(),
 
         create_interface("stock_pg_em")\
@@ -1376,7 +1498,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-数据中心-新股数据-配股")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "em", "pg")\
+            .with_keywords("pg", "stock", "em")\
             .build(),
 
         create_interface("stock_price_js")\
@@ -1386,7 +1508,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "price", "js")\
+            .with_keywords("js", "stock", "price")\
             .with_example_params({"symbol": 'us'})\
             .build(),
 
@@ -1397,7 +1519,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "股票", "profile", "cninfo")\
+            .with_keywords("profile", "cninfo", "stock", "股票")\
             .with_example_params({"symbol": '600030'})\
             .build(),
 
@@ -1410,17 +1532,6 @@ class AkshareProvider(BaseAPIProvider):
             .with_keywords("stock", "em", "qbzf")\
             .build(),
 
-        create_interface("stock_qsjy_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-数据中心-特色数据-券商业绩月报")\
-            .with_optional_params("date")\
-            .with_pattern(ParameterPattern.from_params(["date"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "em", "qsjy")\
-            .with_example_params({"date": '20200731'})\
-            .build(),
-
         create_interface("stock_rank_cxd_ths")\
             .with_source(DataSource.AKSHARE)\
             .with_category(FunctionCategory.OTHER)\
@@ -1428,37 +1539,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "cxd", "ths", "rank")\
+            .with_keywords("stock", "rank", "cxd", "ths")\
             .with_example_params({"symbol": '创月新低'})\
-            .build(),
-
-        create_interface("stock_rank_cxfl_ths")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("同花顺-数据中心-技术选股-持续放量")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "ths", "cxfl", "rank")\
-            .build(),
-
-        create_interface("stock_rank_cxg_ths")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("同花顺-数据中心-技术选股-创新高")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "cxg", "ths", "rank")\
-            .with_example_params({"symbol": '创月新高'})\
-            .build(),
-
-        create_interface("stock_rank_cxsl_ths")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("同花顺-数据中心-技术选股-持续缩量")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "cxsl", "ths", "rank")\
             .build(),
 
         create_interface("stock_rank_forecast_cninfo")\
@@ -1468,7 +1550,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("date")\
             .with_pattern(ParameterPattern.from_params(["date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "cninfo", "forecast", "rank")\
+            .with_keywords("forecast", "cninfo", "stock", "rank")\
             .with_example_params({"date": '20230817'})\
             .build(),
 
@@ -1478,25 +1560,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("同花顺-数据中心-技术选股-量价齐跌")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "ljqd", "ths", "rank")\
-            .build(),
-
-        create_interface("stock_rank_ljqs_ths")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("同花顺-数据中心-技术选股-量价齐升")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "ljqs", "ths", "rank")\
-            .build(),
-
-        create_interface("stock_rank_lxsz_ths")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("同花顺-数据中心-技术选股-连续上涨")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "lxsz", "ths", "rank")\
+            .with_keywords("ths", "stock", "rank", "ljqd")\
             .build(),
 
         create_interface("stock_rank_lxxd_ths")\
@@ -1505,18 +1569,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("同花顺-数据中心-技术选股-连续下跌")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "lxxd", "ths", "rank")\
-            .build(),
-
-        create_interface("stock_rank_xstp_ths")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("同花顺-数据中心-技术选股-向上突破")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "ths", "xstp", "rank")\
-            .with_example_params({"symbol": '500日均线'})\
+            .with_keywords("stock", "rank", "lxxd", "ths")\
             .build(),
 
         create_interface("stock_rank_xxtp_ths")\
@@ -1526,7 +1579,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "xxtp", "ths", "rank")\
+            .with_keywords("stock", "rank", "xxtp", "ths")\
             .with_example_params({"symbol": '500日均线'})\
             .build(),
 
@@ -1536,7 +1589,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("同花顺-数据中心-技术选股-险资举牌")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "xzjp", "ths", "rank")\
+            .with_keywords("ths", "stock", "rank", "xzjp")\
             .build(),
 
         create_interface("stock_register_bj")\
@@ -1545,7 +1598,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-数据中心-新股数据-IPO审核信息-北交所")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "register", "bj")\
+            .with_keywords("stock", "bj", "register")\
             .build(),
 
         create_interface("stock_register_cyb")\
@@ -1554,7 +1607,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-数据中心-新股数据-IPO审核信息-创业板")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "cyb", "register")\
+            .with_keywords("cyb", "stock", "register")\
             .build(),
 
         create_interface("stock_register_db")\
@@ -1563,7 +1616,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-数据中心-新股数据-IPO审核信息-达标企业")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "db", "register")\
+            .with_keywords("stock", "register", "db")\
             .build(),
 
         create_interface("stock_register_kcb")\
@@ -1581,7 +1634,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-数据中心-新股数据-IPO审核信息-上海主板")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "register", "sh")\
+            .with_keywords("sh", "stock", "register")\
             .build(),
 
         create_interface("stock_register_sz")\
@@ -1590,16 +1643,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-数据中心-新股数据-IPO审核信息-深圳主板")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "register", "sz")\
-            .build(),
-
-        create_interface("stock_repurchase_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-数据中心-股票回购-股票回购数据")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "股票", "repurchase", "em")\
+            .with_keywords("sz", "stock", "register")\
             .build(),
 
         create_interface("stock_restricted_release_detail_em")\
@@ -1609,7 +1653,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("start_date", "end_date")\
             .with_pattern(ParameterPattern.from_params(["start_date", "end_date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("em", "restricted", "stock", "detail", "release")\
+            .with_keywords("release", "em", "detail", "restricted", "stock")\
             .with_example_params({"start_date": '20221202', "end_date": '20241202'})\
             .build(),
 
@@ -1620,18 +1664,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("em", "restricted", "stock", "股票", "release")\
-            .with_example_params({"symbol": '600000'})\
-            .build(),
-
-        create_interface("stock_restricted_release_queue_sina")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("新浪财经-发行分配-限售解禁")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("restricted", "stock", "股票", "release", "queue")\
+            .with_keywords("release", "股票", "em", "restricted", "stock")\
             .with_example_params({"symbol": '600000'})\
             .build(),
 
@@ -1642,7 +1675,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "date")\
             .with_pattern(ParameterPattern.from_params(["symbol", "date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("em", "restricted", "stock", "股票", "stockholder")\
+            .with_keywords("release", "股票", "em", "stockholder", "restricted")\
             .with_example_params({"symbol": '600000', "date": '20200904'})\
             .build(),
 
@@ -1653,30 +1686,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "start_date", "end_date")\
             .with_pattern(ParameterPattern.from_params(["symbol", "start_date", "end_date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("A股", "summary", "em", "restricted", "stock")\
+            .with_keywords("summary", "release", "股票", "em", "restricted")\
             .with_example_params({"symbol": '全部股票', "start_date": '20221101', "end_date": '20221209'})\
-            .build(),
-
-        create_interface("stock_sector_detail")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("新浪行业-板块行情-成份详情")\
-            .with_optional_params("sector")\
-            .with_pattern(ParameterPattern.from_params(["sector"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "sector", "行业", "detail")\
-            .with_example_params({"sector": 'gn_gfgn'})\
-            .build(),
-
-        create_interface("stock_share_change_cninfo")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("巨潮资讯-股本股东-公司股本变动")\
-            .with_optional_params("symbol", "start_date", "end_date")\
-            .with_pattern(ParameterPattern.from_params(["symbol", "start_date", "end_date"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("change", "stock", "share", "股票", "cninfo")\
-            .with_example_params({"symbol": '002594', "start_date": '20091227', "end_date": '20241021'})\
             .build(),
 
         create_interface("stock_share_hold_change_bse")\
@@ -1686,7 +1697,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("change", "bse", "stock", "share", "股票")\
+            .with_keywords("股票", "change", "share", "bse", "stock")\
             .with_example_params({"symbol": '430489'})\
             .build(),
 
@@ -1697,7 +1708,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("sse", "change", "stock", "share", "股票")\
+            .with_keywords("股票", "change", "share", "sse", "stock")\
             .with_example_params({"symbol": '600000'})\
             .build(),
 
@@ -1708,7 +1719,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("change", "szse", "stock", "share", "股票")\
+            .with_keywords("szse", "change", "share", "股票", "stock")\
             .with_example_params({"symbol": '全部'})\
             .build(),
 
@@ -1719,7 +1730,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("change", "shareholder", "stock", "股票", "ths")\
+            .with_keywords("股票", "change", "ths", "shareholder", "stock")\
             .with_example_params({"symbol": '688981'})\
             .build(),
 
@@ -1730,7 +1741,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "股票", "sns", "sseinfo")\
+            .with_keywords("sseinfo", "stock", "股票", "sns")\
             .with_example_params({"symbol": '603119'})\
             .build(),
 
@@ -1740,16 +1751,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("上海证券交易所-总貌")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "summary", "sse")\
-            .build(),
-
-        create_interface("stock_staq_net_stop")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-行情中心-沪深个股-两网及退市")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "staq", "stop", "net")\
+            .with_keywords("summary", "stock", "sse")\
             .build(),
 
         create_interface("stock_sy_em")\
@@ -1759,7 +1761,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("date")\
             .with_pattern(ParameterPattern.from_params(["date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "sy", "em")\
+            .with_keywords("stock", "em", "sy")\
             .with_example_params({"date": '20231231'})\
             .build(),
 
@@ -1769,7 +1771,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-数据中心-特色数据-商誉-A股商誉市场概况")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("A股", "em", "stock", "sy", "profile")\
+            .with_keywords("em", "profile", "stock", "A股", "sy")\
             .build(),
 
         create_interface("stock_sy_yq_em")\
@@ -1779,7 +1781,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("date")\
             .with_pattern(ParameterPattern.from_params(["date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "sy", "em", "yq")\
+            .with_keywords("yq", "stock", "em", "sy")\
             .with_example_params({"date": '20240630'})\
             .build(),
 
@@ -1790,7 +1792,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("date")\
             .with_pattern(ParameterPattern.from_params(["date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "area", "summary", "szse")\
+            .with_keywords("summary", "szse", "area", "stock")\
             .with_example_params({"date": '2024-01-01'})\
             .build(),
 
@@ -1801,7 +1803,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "date")\
             .with_pattern(ParameterPattern.from_params(["symbol", "date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("行业", "sector", "summary", "szse", "stock")\
+            .with_keywords("summary", "szse", "股票", "sector", "stock")\
             .with_example_params({"symbol": '当月', "date": '2024-01-01'})\
             .build(),
 
@@ -1812,19 +1814,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("date")\
             .with_pattern(ParameterPattern.from_params(["date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "summary", "szse")\
+            .with_keywords("summary", "szse", "stock")\
             .with_example_params({"date": '20240830'})\
-            .build(),
-
-        create_interface("stock_tfp_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-数据中心-特色数据-停复牌信息")\
-            .with_optional_params("date")\
-            .with_pattern(ParameterPattern.from_params(["date"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "tfp", "em")\
-            .with_example_params({"date": '20240426'})\
             .build(),
 
         create_interface("stock_value_em")\
@@ -1834,19 +1825,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "股票", "em", "value")\
+            .with_keywords("value", "stock", "em", "股票")\
             .with_example_params({"symbol": '300766'})\
-            .build(),
-
-        create_interface("stock_xgsglb_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("新股申购与中签查询")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "股票", "xgsglb", "em")\
-            .with_example_params({"symbol": '全部股票'})\
             .build(),
 
         create_interface("stock_xgsr_ths")\
@@ -1855,7 +1835,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("同花顺-数据中心-新股数据-新股上市首日")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "xgsr", "ths")\
+            .with_keywords("ths", "stock", "xgsr")\
             .build(),
 
         create_interface("stock_xjll_em")\
@@ -1865,41 +1845,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("date")\
             .with_pattern(ParameterPattern.from_params(["date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "em", "xjll")\
+            .with_keywords("xjll", "stock", "em")\
             .with_example_params({"date": '20240331'})\
-            .build(),
-
-        create_interface("stock_yjbb_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富-数据中心-年报季报-业绩快报-业绩报表")\
-            .with_optional_params("date")\
-            .with_pattern(ParameterPattern.from_params(["date"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "yjbb", "em")\
-            .with_example_params({"date": '20200331'})\
-            .build(),
-
-        create_interface("stock_yjkb_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富-数据中心-年报季报-业绩快报")\
-            .with_optional_params("date")\
-            .with_pattern(ParameterPattern.from_params(["date"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "em", "yjkb")\
-            .with_example_params({"date": '20211231'})\
-            .build(),
-
-        create_interface("stock_yjyg_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富-数据中心-年报季报-业绩预告")\
-            .with_optional_params("date")\
-            .with_pattern(ParameterPattern.from_params(["date"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "yjyg", "em")\
-            .with_example_params({"date": '20200331'})\
             .build(),
 
         create_interface("stock_yysj_em")\
@@ -1909,7 +1856,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "date")\
             .with_pattern(ParameterPattern.from_params(["symbol", "date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "em", "A股", "yysj")\
+            .with_keywords("A股", "yysj", "stock", "em")\
             .with_example_params({"symbol": '沪深A股', "date": '20200331'})\
             .build(),
 
@@ -1920,7 +1867,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("date")\
             .with_pattern(ParameterPattern.from_params(["date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "em", "yzxdr")\
+            .with_keywords("yzxdr", "stock", "em")\
             .with_example_params({"date": '20240930'})\
             .build(),
 
@@ -1931,7 +1878,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("date")\
             .with_pattern(ParameterPattern.from_params(["date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "zcfz", "em", "bj")\
+            .with_keywords("stock", "zcfz", "bj", "em")\
             .with_example_params({"date": '20240331'})\
             .build(),
 
@@ -1964,7 +1911,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "market", "start_date", "end_date")\
             .with_pattern(ParameterPattern.from_params(["symbol", "market", "start_date", "end_date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("a", "zh", "disclosure", "基金", "stock")\
+            .with_keywords("股票", "relation", "stock", "基金", "a")\
             .with_example_params({"symbol": '000001', "market": '沪深京', "start_date": '20230618', "end_date": '20231219'})\
             .build(),
 
@@ -1975,19 +1922,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("gbjg", "A股", "a", "em", "zh")\
+            .with_keywords("gbjg", "股票", "em", "stock", "a")\
             .with_example_params({"symbol": '603392.SH'})\
-            .build(),
-
-        create_interface("stock_zh_a_gdhs")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-数据中心-特色数据-股东户数")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "zh", "a", "gdhs")\
-            .with_example_params({"symbol": '20230930'})\
             .build(),
 
         create_interface("stock_zh_a_gdhs_detail_em")\
@@ -1997,17 +1933,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("gdhs", "a", "zh", "em", "stock")\
+            .with_keywords("股票", "em", "detail", "gdhs", "stock")\
             .with_example_params({"symbol": '000001'})\
-            .build(),
-
-        create_interface("stock_zh_a_new")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("新浪财经-行情中心-沪深股市-次新股")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "zh", "a", "new")\
             .build(),
 
         create_interface("stock_zh_a_new_em")\
@@ -2016,16 +1943,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-行情中心-沪深个股-新股")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("a", "em", "zh", "new", "stock")\
-            .build(),
-
-        create_interface("stock_zh_a_st_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-行情中心-沪深个股-风险警示板")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("a", "em", "zh", "stock", "st")\
+            .with_keywords("em", "new", "stock", "a", "zh")\
             .build(),
 
         create_interface("stock_zh_a_stop_em")\
@@ -2034,7 +1952,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-行情中心-沪深个股-两网及退市")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("a", "em", "zh", "stock", "stop")\
+            .with_keywords("em", "stock", "a", "zh", "stop")\
             .build(),
 
         create_interface("stock_zh_a_tick_tx_js")\
@@ -2044,7 +1962,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("tick", "a", "zh", "stock", "股票")\
+            .with_keywords("tx", "股票", "js", "stock", "a")\
             .with_example_params({"symbol": 'sz000001'})\
             .build(),
 
@@ -2054,16 +1972,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-行情中心-沪深京个股-AB股比价-全部AB股比价")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("em", "zh", "comparison", "B股", "stock")\
-            .build(),
-
-        create_interface("stock_zh_ah_name")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("腾讯财经-港股-AH-股票名称")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("name", "zh", "stock", "股票", "ah")\
+            .with_keywords("B股", "em", "ab", "stock", "zh")\
             .build(),
 
         create_interface("stock_zh_valuation_baidu")\
@@ -2073,7 +1982,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "indicator", "period")\
             .with_pattern(ParameterPattern.from_params(["symbol", "indicator", "period"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("A股", "zh", "baidu", "stock", "股票")\
+            .with_keywords("股票", "财务", "baidu", "stock", "valuation")\
             .with_example_params({"symbol": '002044', "indicator": '总市值', "period": 'daily'})\
             .build(),
 
@@ -2084,52 +1993,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "indicator")\
             .with_pattern(ParameterPattern.from_params(["symbol", "indicator"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("vote", "zh", "baidu", "stock", "股票")\
+            .with_keywords("股票", "指数", "baidu", "stock", "zh")\
             .with_example_params({"symbol": '000001', "indicator": '指数'})\
-            .build(),
-
-        create_interface("stock_zt_pool_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-行情中心-涨停板行情-涨停股池")\
-            .with_optional_params("date")\
-            .with_pattern(ParameterPattern.from_params(["date"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "em", "pool", "zt")\
-            .with_example_params({"date": '20241008'})\
-            .build(),
-
-        create_interface("stock_zt_pool_previous_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-行情中心-涨停板行情-昨日涨停股池")\
-            .with_optional_params("date")\
-            .with_pattern(ParameterPattern.from_params(["date"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("pool", "zt", "em", "previous", "stock")\
-            .with_example_params({"date": '20240415'})\
-            .build(),
-
-        create_interface("stock_zt_pool_strong_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-行情中心-涨停板行情-强势股池")\
-            .with_optional_params("date")\
-            .with_pattern(ParameterPattern.from_params(["date"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("strong", "pool", "zt", "em", "stock")\
-            .with_example_params({"date": '20241231'})\
-            .build(),
-
-        create_interface("stock_zt_pool_sub_new_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.OTHER)\
-            .with_description("东方财富网-行情中心-涨停板行情-次新股池")\
-            .with_optional_params("date")\
-            .with_pattern(ParameterPattern.from_params(["date"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("pool", "zt", "sub", "em", "new")\
-            .with_example_params({"date": '20241231'})\
             .build(),
 
         create_interface("stock_zygc_em")\
@@ -2139,7 +2004,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "股票", "em", "zygc")\
+            .with_keywords("stock", "em", "zygc", "股票")\
             .with_example_params({"symbol": 'SH688041'})\
             .build(),
 
@@ -2150,7 +2015,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "股票", "zyjs", "ths")\
+            .with_keywords("ths", "stock", "股票", "zyjs")\
             .with_example_params({"symbol": '000066'})\
             .build(),
         ]
@@ -2165,7 +2030,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("List[str]")\
-            .with_keywords("delisted", "sheet", "em", "stock", "股票")\
+            .with_keywords("股票", "em", "report", "delisted", "财务")\
             .with_example_params({"symbol": 'SZ000013'})\
             .build(),
 
@@ -2176,7 +2041,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("sheet", "em", "stock", "股票", "balance")\
+            .with_keywords("股票", "em", "report", "财务", "balance")\
             .with_example_params({"symbol": 'SH600519'})\
             .build(),
 
@@ -2187,7 +2052,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("sheet", "em", "stock", "yearly", "股票")\
+            .with_keywords("股票", "em", "yearly", "财务", "balance")\
             .with_example_params({"symbol": 'SH600036'})\
             .build(),
 
@@ -2198,7 +2063,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("flow", "sheet", "em", "stock", "股票")\
+            .with_keywords("股票", "em", "quarterly", "flow", "财务")\
             .with_example_params({"symbol": 'SH600519'})\
             .build(),
 
@@ -2209,7 +2074,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("List[str]")\
-            .with_keywords("flow", "delisted", "sheet", "em", "stock")\
+            .with_keywords("股票", "em", "report", "delisted", "flow")\
             .with_example_params({"symbol": 'SZ000013'})\
             .build(),
 
@@ -2220,7 +2085,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("flow", "sheet", "em", "stock", "股票")\
+            .with_keywords("股票", "em", "report", "flow", "财务")\
             .with_example_params({"symbol": 'SH600519'})\
             .build(),
 
@@ -2231,7 +2096,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("flow", "sheet", "em", "stock", "yearly")\
+            .with_keywords("股票", "em", "yearly", "flow", "财务")\
             .with_example_params({"symbol": 'SH600519'})\
             .build(),
 
@@ -2242,7 +2107,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "股票", "financial", "财务", "abstract")\
+            .with_keywords("股票", "abstract", "财务", "stock", "financial")\
             .with_example_params({"symbol": '600004'})\
             .build(),
 
@@ -2253,8 +2118,19 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "indicator")\
             .with_pattern(ParameterPattern.from_params(["symbol", "indicator"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("财务", "stock", "股票", "financial", "abstract")\
+            .with_keywords("股票", "ths", "abstract", "财务", "stock")\
             .with_example_params({"symbol": '000063', "indicator": '按报告期'})\
+            .build(),
+
+        create_interface("stock_financial_analysis_indicator")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_FINANCIAL)\
+            .with_description("新浪财经-财务分析-财务指标")\
+            .with_optional_params("symbol", "start_year")\
+            .with_pattern(ParameterPattern.from_params(["symbol", "start_year"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("股票", "indicator", "财务", "stock", "financial")\
+            .with_example_params({"symbol": '600004', "start_year": '1900'})\
             .build(),
 
         create_interface("stock_financial_benefit_ths")\
@@ -2264,7 +2140,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "indicator")\
             .with_pattern(ParameterPattern.from_params(["symbol", "indicator"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "股票", "financial", "财务", "benefit")\
+            .with_keywords("股票", "ths", "财务", "stock", "benefit")\
             .with_example_params({"symbol": '000063', "indicator": '按报告期'})\
             .build(),
 
@@ -2275,7 +2151,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "indicator")\
             .with_pattern(ParameterPattern.from_params(["symbol", "indicator"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "股票", "financial", "财务", "cash")\
+            .with_keywords("股票", "ths", "财务", "stock", "financial")\
             .with_example_params({"symbol": '000063', "indicator": '按报告期'})\
             .build(),
 
@@ -2286,7 +2162,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "indicator")\
             .with_pattern(ParameterPattern.from_params(["symbol", "indicator"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "股票", "debt", "financial", "财务")\
+            .with_keywords("股票", "ths", "debt", "财务", "stock")\
             .with_example_params({"symbol": '000063', "indicator": '按报告期'})\
             .build(),
 
@@ -2297,7 +2173,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("stock", "symbol", "indicator")\
             .with_pattern(ParameterPattern.from_params(["stock", "symbol", "indicator"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("hk", "em", "stock", "股票", "financial")\
+            .with_keywords("股票", "em", "hk", "report", "财务")\
             .with_example_params({"stock": '00700', "symbol": '资产负债表', "indicator": '年度'})\
             .build(),
 
@@ -2308,7 +2184,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("stock", "symbol")\
             .with_pattern(ParameterPattern.from_params(["stock", "symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "股票", "financial", "财务", "report")\
+            .with_keywords("股票", "report", "财务", "sina", "stock")\
             .with_example_params({"stock": 'sh600600', "symbol": '资产负债表'})\
             .build(),
 
@@ -2319,7 +2195,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("stock", "symbol", "indicator")\
             .with_pattern(ParameterPattern.from_params(["stock", "symbol", "indicator"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("em", "us", "stock", "股票", "financial")\
+            .with_keywords("us", "股票", "em", "report", "财务")\
             .with_example_params({"stock": 'TSLA', "symbol": '资产负债表', "indicator": '年报'})\
             .build(),
 
@@ -2330,7 +2206,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "indicator")\
             .with_pattern(ParameterPattern.from_params(["symbol", "indicator"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("hk", "forecast", "stock", "股票", "profit")\
+            .with_keywords("股票", "hk", "forecast", "et", "stock")\
             .with_example_params({"symbol": '09999', "indicator": '盈利预测概览'})\
             .build(),
 
@@ -2341,7 +2217,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("行业", "em", "forecast", "stock", "profit")\
+            .with_keywords("em", "forecast", "stock", "行业", "profit")\
             .with_example_params({"symbol": '000001'})\
             .build(),
 
@@ -2352,7 +2228,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "indicator")\
             .with_pattern(ParameterPattern.from_params(["symbol", "indicator"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("forecast", "stock", "股票", "profit", "ths")\
+            .with_keywords("股票", "ths", "forecast", "stock", "profit")\
             .with_example_params({"symbol": '600519', "indicator": '预测年报每股收益'})\
             .build(),
 
@@ -2363,7 +2239,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("sheet", "em", "stock", "股票", "profit")\
+            .with_keywords("股票", "em", "quarterly", "财务", "stock")\
             .with_example_params({"symbol": 'SH600519'})\
             .build(),
 
@@ -2374,7 +2250,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("List[str]")\
-            .with_keywords("delisted", "sheet", "em", "stock", "股票")\
+            .with_keywords("股票", "em", "report", "delisted", "财务")\
             .with_example_params({"symbol": 'SZ000013'})\
             .build(),
 
@@ -2385,7 +2261,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("sheet", "em", "stock", "股票", "profit")\
+            .with_keywords("股票", "em", "report", "财务", "stock")\
             .with_example_params({"symbol": 'SH600519'})\
             .build(),
 
@@ -2396,21 +2272,65 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("sheet", "em", "stock", "yearly", "股票")\
+            .with_keywords("股票", "em", "yearly", "财务", "stock")\
             .with_example_params({"symbol": 'SH600519'})\
+            .build(),
+
+        create_interface("stock_yjbb_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_FINANCIAL)\
+            .with_description("东方财富-数据中心-年报季报-业绩快报-业绩报表")\
+            .with_optional_params("date")\
+            .with_pattern(ParameterPattern.from_params(["date"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("yjbb", "stock", "em")\
+            .with_example_params({"date": '20200331'})\
+            .build(),
+
+        create_interface("stock_yjkb_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_FINANCIAL)\
+            .with_description("东方财富-数据中心-年报季报-业绩快报")\
+            .with_optional_params("date")\
+            .with_pattern(ParameterPattern.from_params(["date"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("yjkb", "stock", "em")\
+            .with_example_params({"date": '20211231'})\
+            .build(),
+
+        create_interface("stock_yjyg_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_FINANCIAL)\
+            .with_description("东方财富-数据中心-年报季报-业绩预告")\
+            .with_optional_params("date")\
+            .with_pattern(ParameterPattern.from_params(["date"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("stock", "em", "yjyg")\
+            .with_example_params({"date": '20200331'})\
             .build(),
         ]
 
     def _register_stock_quote_interfaces(self) -> List[InterfaceMetadata]:
         """注册STOCK_QUOTE接口"""
         return [
+        create_interface("stock_bid_ask_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("东方财富-行情报价")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("股票", "em", "ask", "bid", "stock")\
+            .with_example_params({"symbol": '000001'})\
+            .build(),
+
         create_interface("stock_bj_a_spot_em")\
             .with_source(DataSource.AKSHARE)\
             .with_category(FunctionCategory.STOCK_QUOTE)\
             .with_description("东方财富网-京 A 股-实时行情")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("spot", "a", "em", "bj", "stock")\
+            .with_keywords("em", "spot", "stock", "a", "bj")\
             .build(),
 
         create_interface("stock_board_concept_hist_em")\
@@ -2420,7 +2340,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "period", "start_date", "end_date", "adjust")\
             .with_pattern(ParameterPattern.from_params(["symbol", "period", "start_date", "end_date", "adjust"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("board", "hist", "em", "stock", "concept")\
+            .with_keywords("em", "hist", "concept", "stock", "board")\
             .with_example_params({"symbol": '绿色电力', "period": 'daily', "start_date": '20220101', "end_date": '20221128', "adjust": ''})\
             .build(),
 
@@ -2431,7 +2351,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "period")\
             .with_pattern(ParameterPattern.from_params(["symbol", "period"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("board", "hist", "em", "stock", "min")\
+            .with_keywords("em", "min", "hist", "concept", "stock")\
             .with_example_params({"symbol": '长寿药', "period": '5'})\
             .build(),
 
@@ -2442,30 +2362,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("spot", "board", "em", "stock", "concept")\
+            .with_keywords("em", "concept", "spot", "stock", "board")\
             .with_example_params({"symbol": '可燃冰'})\
-            .build(),
-
-        create_interface("stock_board_industry_hist_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.STOCK_QUOTE)\
-            .with_description("东方财富网-沪深板块-行业板块-历史行情")\
-            .with_optional_params("symbol", "start_date", "end_date", "period", "adjust")\
-            .with_pattern(ParameterPattern.from_params(["symbol", "start_date", "end_date", "period", "adjust"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("行业", "board", "hist", "em", "stock")\
-            .with_example_params({"symbol": '小金属', "start_date": '20211201', "end_date": '20220401', "period": 'daily', "adjust": ''})\
-            .build(),
-
-        create_interface("stock_board_industry_hist_min_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.STOCK_QUOTE)\
-            .with_description("东方财富网-沪深板块-行业板块-分时历史行情")\
-            .with_optional_params("symbol", "period")\
-            .with_pattern(ParameterPattern.from_params(["symbol", "period"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("行业", "board", "hist", "em", "stock")\
-            .with_example_params({"symbol": '小金属', "period": '5'})\
             .build(),
 
         create_interface("stock_board_industry_spot_em")\
@@ -2475,7 +2373,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("行业", "spot", "board", "em", "stock")\
+            .with_keywords("industry", "em", "stock", "board", "spot")\
             .with_example_params({"symbol": '小金属'})\
             .build(),
 
@@ -2486,7 +2384,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("daily", "em", "scrd", "stock", "股票")\
+            .with_keywords("desire", "股票", "em", "detail", "comment")\
             .with_example_params({"symbol": '600000'})\
             .build(),
 
@@ -2497,7 +2395,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("flow", "fund", "hist", "stock", "concept")\
+            .with_keywords("flow", "hist", "fund", "concept", "stock")\
             .with_example_params({"symbol": '数据要素'})\
             .build(),
 
@@ -2507,27 +2405,27 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-创业板-实时行情")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("spot", "a", "em", "stock", "cy")\
+            .with_keywords("cy", "em", "stock", "spot", "a")\
             .build(),
 
-        create_interface("stock_history_dividend")\
+        create_interface("stock_dzjy_mrmx")\
             .with_source(DataSource.AKSHARE)\
             .with_category(FunctionCategory.STOCK_QUOTE)\
-            .with_description("新浪财经-发行与分配-历史分红")\
+            .with_description("东方财富网-数据中心-大宗交易-每日明细")\
+            .with_optional_params("symbol", "start_date", "end_date")\
+            .with_pattern(ParameterPattern.from_params(["symbol", "start_date", "end_date"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("B股", "mrmx", "dzjy", "stock", "基金")\
+            .with_example_params({"symbol": '基金', "start_date": '20220104', "end_date": '20220104'})\
+            .build(),
+
+        create_interface("stock_dzjy_sctj")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("东方财富网-数据中心-大宗交易-市场统计")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "history", "股票", "dividend")\
-            .build(),
-
-        create_interface("stock_history_dividend_detail")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.STOCK_QUOTE)\
-            .with_description("新浪财经-发行与分配-分红配股详情")\
-            .with_optional_params("symbol", "indicator", "date")\
-            .with_pattern(ParameterPattern.from_params(["symbol", "indicator", "date"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("history", "stock", "股票", "detail", "dividend")\
-            .with_example_params({"symbol": '000002', "indicator": '分红', "date": '2024-01-01'})\
+            .with_keywords("stock", "dzjy", "sctj")\
             .build(),
 
         create_interface("stock_hk_daily")\
@@ -2537,7 +2435,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "adjust")\
             .with_pattern(ParameterPattern.from_params(["symbol", "adjust"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "daily", "hk")\
+            .with_keywords("daily", "stock", "hk")\
             .with_example_params({"symbol": '00981', "adjust": ''})\
             .build(),
 
@@ -2547,7 +2445,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-行情中心-港股市场-知名港股")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("spot", "famous", "hk", "em", "stock")\
+            .with_keywords("em", "hk", "spot", "stock", "famous")\
             .build(),
 
         create_interface("stock_hk_hist")\
@@ -2568,7 +2466,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "period", "adjust", "start_date", "end_date")\
             .with_pattern(ParameterPattern.from_params(["symbol", "period", "adjust", "start_date", "end_date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("hist", "hk", "em", "stock", "股票")\
+            .with_keywords("股票", "em", "min", "hk", "hist")\
             .with_example_params({"symbol": '01611', "period": '1', "adjust": '', "start_date": '2024-01-01', "end_date": '2024-01-31'})\
             .build(),
 
@@ -2579,7 +2477,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("daily", "hk", "em", "stock", "股票")\
+            .with_keywords("股票", "em", "指数", "hk", "index")\
             .with_example_params({"symbol": 'HSTECF2L'})\
             .build(),
 
@@ -2590,7 +2488,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("daily", "hk", "stock", "index", "指数")\
+            .with_keywords("指数", "hk", "index", "sina", "daily")\
             .with_example_params({"symbol": 'CES100'})\
             .build(),
 
@@ -2600,7 +2498,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-行情中心-港股-指数实时行情")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("spot", "hk", "em", "stock", "index")\
+            .with_keywords("指数", "em", "hk", "index", "spot")\
             .build(),
 
         create_interface("stock_hk_index_spot_sina")\
@@ -2609,7 +2507,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("新浪财经-行情中心-港股指数")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("spot", "hk", "stock", "index", "指数")\
+            .with_keywords("指数", "hk", "index", "sina", "spot")\
             .build(),
 
         create_interface("stock_hk_main_board_spot_em")\
@@ -2618,7 +2516,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-港股-主板-实时行情")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("spot", "board", "hk", "em", "stock")\
+            .with_keywords("em", "hk", "main", "spot", "stock")\
             .build(),
 
         create_interface("stock_hk_spot")\
@@ -2627,7 +2525,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("新浪财经-港股的所有港股的实时行情数据")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "hk", "spot")\
+            .with_keywords("spot", "stock", "hk")\
             .build(),
 
         create_interface("stock_hk_spot_em")\
@@ -2636,7 +2534,89 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-港股-实时行情")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "hk", "em", "spot")\
+            .with_keywords("spot", "stock", "em", "hk")\
+            .build(),
+
+        create_interface("stock_hot_deal_xq")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("雪球-沪深股市-热度排行榜-分享交易排行榜")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("deal", "xq", "stock", "hot")\
+            .with_example_params({"symbol": '最热门'})\
+            .build(),
+
+        create_interface("stock_hot_follow_xq")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("雪球-沪深股市-热度排行榜-关注排行榜")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("xq", "stock", "hot", "follow")\
+            .with_example_params({"symbol": '最热门'})\
+            .build(),
+
+        create_interface("stock_hot_rank_detail_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("东方财富-个股人气榜-历史趋势及粉丝特征")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("em", "hot", "detail", "stock", "rank")\
+            .with_example_params({"symbol": 'SZ000665'})\
+            .build(),
+
+        create_interface("stock_hot_rank_detail_realtime_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("东方财富-个股人气榜-实时变动")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("em", "hot", "detail", "realtime", "stock")\
+            .with_example_params({"symbol": 'SZ000665'})\
+            .build(),
+
+        create_interface("stock_hot_rank_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("东方财富-个股人气榜-人气榜")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("stock", "rank", "hot", "em")\
+            .build(),
+
+        create_interface("stock_hot_rank_latest_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("东方财富-个股人气榜-最新排名")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("em", "hot", "latest", "stock", "rank")\
+            .with_example_params({"symbol": 'SZ000665'})\
+            .build(),
+
+        create_interface("stock_hot_up_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("东方财富-个股人气榜-飙升榜")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("up", "stock", "em", "hot")\
+            .build(),
+
+        create_interface("stock_hsgt_fund_flow_summary_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("东方财富网-数据中心-资金流向-沪深港通资金流向")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("summary", "em", "hsgt", "flow", "fund")\
             .build(),
 
         create_interface("stock_hsgt_hist_em")\
@@ -2646,8 +2626,30 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "hist", "em", "hsgt")\
+            .with_keywords("hsgt", "stock", "hist", "em")\
             .with_example_params({"symbol": '北向资金'})\
+            .build(),
+
+        create_interface("stock_hsgt_hold_stock_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("东方财富-数据中心-沪深港通持股-个股排行")\
+            .with_optional_params("market", "indicator")\
+            .with_pattern(ParameterPattern.from_params(["market", "indicator"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("hold", "hsgt", "stock", "em")\
+            .with_example_params({"market": '沪股通', "indicator": '5日排行'})\
+            .build(),
+
+        create_interface("stock_hsgt_individual_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("东方财富-数据中心-沪深港通-沪深港通持股-具体股票")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("股票", "individual", "em", "hsgt", "stock")\
+            .with_example_params({"symbol": '002008'})\
             .build(),
 
         create_interface("stock_hsgt_sh_hk_spot_em")\
@@ -2656,7 +2658,40 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-行情中心-沪深港通-港股通(沪>港)-股票")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("spot", "hk", "em", "stock", "股票")\
+            .with_keywords("股票", "em", "hk", "hsgt", "stock")\
+            .build(),
+
+        create_interface("stock_hsgt_stock_statistics_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("东方财富网-数据中心-沪深港通-沪深港通持股-每日个股统计")\
+            .with_optional_params("symbol", "start_date", "end_date")\
+            .with_pattern(ParameterPattern.from_params(["symbol", "start_date", "end_date"]))\
+            .with_return_type("int")\
+            .with_keywords("hsgt", "stock", "em", "statistics")\
+            .with_example_params({"symbol": '北向持股', "start_date": '20240110', "end_date": '20240110'})\
+            .build(),
+
+        create_interface("stock_individual_fund_flow")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("东方财富网-数据中心-资金流向-个股")\
+            .with_optional_params("stock", "market")\
+            .with_pattern(ParameterPattern.from_params(["stock", "market"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("股票", "individual", "flow", "fund", "stock")\
+            .with_example_params({"stock": '600094', "market": 'sh'})\
+            .build(),
+
+        create_interface("stock_individual_fund_flow_rank")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("东方财富网-数据中心-资金流向-排名")\
+            .with_optional_params("indicator")\
+            .with_pattern(ParameterPattern.from_params(["indicator"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("individual", "flow", "fund", "stock", "rank")\
+            .with_example_params({"indicator": '5日'})\
             .build(),
 
         create_interface("stock_industry_clf_hist_sw")\
@@ -2665,7 +2700,27 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("申万宏源研究-行业分类-全部行业分类")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("行业", "hist", "stock", "industry", "clf")\
+            .with_keywords("industry", "clf", "hist", "stock", "行业")\
+            .build(),
+
+        create_interface("stock_inner_trade_xq")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("雪球-行情中心-沪深股市-内部交易")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("xq", "inner", "stock", "trade")\
+            .build(),
+
+        create_interface("stock_intraday_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("东方财富-分时数据")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("stock", "em", "intraday", "股票")\
+            .with_example_params({"symbol": '000001'})\
             .build(),
 
         create_interface("stock_kc_a_spot_em")\
@@ -2674,7 +2729,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-科创板-实时行情")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("spot", "a", "kc", "em", "stock")\
+            .with_keywords("em", "spot", "stock", "a", "kc")\
             .build(),
 
         create_interface("stock_lhb_detail_daily_sina")\
@@ -2684,8 +2739,118 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("date")\
             .with_pattern(ParameterPattern.from_params(["date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("daily", "lhb", "stock", "detail", "sina")\
+            .with_keywords("detail", "lhb", "sina", "daily", "stock")\
             .with_example_params({"date": '20240222'})\
+            .build(),
+
+        create_interface("stock_lhb_detail_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("东方财富网-数据中心-龙虎榜单-龙虎榜详情")\
+            .with_optional_params("start_date", "end_date")\
+            .with_pattern(ParameterPattern.from_params(["start_date", "end_date"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("detail", "stock", "em", "lhb")\
+            .with_example_params({"start_date": '20230403', "end_date": '20230417'})\
+            .build(),
+
+        create_interface("stock_lhb_hyyyb_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("东方财富网-数据中心-龙虎榜单-每日活跃营业部")\
+            .with_optional_params("start_date", "end_date")\
+            .with_pattern(ParameterPattern.from_params(["start_date", "end_date"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("hyyyb", "stock", "em", "lhb")\
+            .with_example_params({"start_date": '20220324', "end_date": '20220324'})\
+            .build(),
+
+        create_interface("stock_lhb_jgstatistic_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("东方财富网-数据中心-龙虎榜单-机构席位追踪")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("jgstatistic", "stock", "em", "lhb")\
+            .with_example_params({"symbol": '近一月'})\
+            .build(),
+
+        create_interface("stock_lhb_stock_statistic_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("东方财富网-数据中心-龙虎榜单-个股上榜统计")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("statistic", "stock", "em", "lhb")\
+            .with_example_params({"symbol": '近一月'})\
+            .build(),
+
+        create_interface("stock_lhb_traderstatistic_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("东方财富网-数据中心-龙虎榜单-营业部统计")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("traderstatistic", "stock", "em", "lhb")\
+            .with_example_params({"symbol": '近一月'})\
+            .build(),
+
+        create_interface("stock_lhb_yybph_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("东方财富网-数据中心-龙虎榜单-营业部排行")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("stock", "em", "lhb", "yybph")\
+            .with_example_params({"symbol": '近一月'})\
+            .build(),
+
+        create_interface("stock_margin_detail_szse")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("深证证券交易所-融资融券数据-融资融券交易明细")\
+            .with_optional_params("date")\
+            .with_pattern(ParameterPattern.from_params(["date"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("margin", "szse", "stock", "detail")\
+            .with_example_params({"date": '20230925'})\
+            .build(),
+
+        create_interface("stock_margin_sse")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("上海证券交易所-融资融券数据-融资融券汇总")\
+            .with_optional_params("start_date", "end_date")\
+            .with_pattern(ParameterPattern.from_params(["start_date", "end_date"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("margin", "stock", "sse")\
+            .with_example_params({"start_date": '20010106', "end_date": '20230922'})\
+            .build(),
+
+        create_interface("stock_margin_szse")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("深圳证券交易所-融资融券数据-融资融券汇总")\
+            .with_optional_params("date")\
+            .with_pattern(ParameterPattern.from_params(["date"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("margin", "szse", "stock")\
+            .with_example_params({"date": '20240411'})\
+            .build(),
+
+        create_interface("stock_margin_underlying_info_szse")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("深圳证券交易所-融资融券数据-标的证券信息")\
+            .with_optional_params("date")\
+            .with_pattern(ParameterPattern.from_params(["date"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("szse", "margin", "info", "stock", "underlying")\
+            .with_example_params({"date": '20221129'})\
             .build(),
 
         create_interface("stock_new_a_spot_em")\
@@ -2694,7 +2859,76 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-新股-实时行情")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("spot", "a", "em", "new", "stock")\
+            .with_keywords("em", "new", "stock", "spot", "a")\
+            .build(),
+
+        create_interface("stock_qsjy_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("东方财富网-数据中心-特色数据-券商业绩月报")\
+            .with_optional_params("date")\
+            .with_pattern(ParameterPattern.from_params(["date"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("qsjy", "stock", "em")\
+            .with_example_params({"date": '20200731'})\
+            .build(),
+
+        create_interface("stock_rank_cxfl_ths")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("同花顺-数据中心-技术选股-持续放量")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("cxfl", "stock", "rank", "ths")\
+            .build(),
+
+        create_interface("stock_rank_cxg_ths")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("同花顺-数据中心-技术选股-创新高")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("ths", "stock", "rank", "cxg")\
+            .with_example_params({"symbol": '创月新高'})\
+            .build(),
+
+        create_interface("stock_rank_cxsl_ths")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("同花顺-数据中心-技术选股-持续缩量")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("cxsl", "stock", "rank", "ths")\
+            .build(),
+
+        create_interface("stock_rank_ljqs_ths")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("同花顺-数据中心-技术选股-量价齐升")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("ljqs", "stock", "rank", "ths")\
+            .build(),
+
+        create_interface("stock_rank_lxsz_ths")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("同花顺-数据中心-技术选股-连续上涨")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("lxsz", "stock", "rank", "ths")\
+            .build(),
+
+        create_interface("stock_rank_xstp_ths")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("同花顺-数据中心-技术选股-向上突破")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("xstp", "stock", "rank", "ths")\
+            .with_example_params({"symbol": '500日均线'})\
             .build(),
 
         create_interface("stock_sector_fund_flow_hist")\
@@ -2704,19 +2938,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("行业", "sector", "flow", "fund", "hist")\
+            .with_keywords("sector", "flow", "hist", "fund", "stock")\
             .with_example_params({"symbol": '汽车服务'})\
-            .build(),
-
-        create_interface("stock_sector_spot")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.STOCK_QUOTE)\
-            .with_description("新浪行业-板块行情")\
-            .with_optional_params("indicator")\
-            .with_pattern(ParameterPattern.from_params(["indicator"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "sector", "行业", "spot")\
-            .with_example_params({"indicator": '新浪行业'})\
             .build(),
 
         create_interface("stock_sh_a_spot_em")\
@@ -2725,7 +2948,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-沪 A 股-实时行情")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("spot", "a", "em", "stock", "sh")\
+            .with_keywords("em", "spot", "stock", "a", "sh")\
             .build(),
 
         create_interface("stock_sse_deal_daily")\
@@ -2735,7 +2958,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("date")\
             .with_pattern(ParameterPattern.from_params(["date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("sse", "daily", "stock", "股票", "deal")\
+            .with_keywords("deal", "股票", "sse", "daily", "stock")\
             .with_example_params({"date": '20241216'})\
             .build(),
 
@@ -2745,7 +2968,18 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-深 A 股-实时行情")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("spot", "a", "sz", "em", "stock")\
+            .with_keywords("em", "stock", "spot", "a", "sz")\
+            .build(),
+
+        create_interface("stock_tfp_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("东方财富网-数据中心-特色数据-停复牌信息")\
+            .with_optional_params("date")\
+            .with_pattern(ParameterPattern.from_params(["date"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("tfp", "stock", "em")\
+            .with_example_params({"date": '20240426'})\
             .build(),
 
         create_interface("stock_us_daily")\
@@ -2755,7 +2989,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "adjust")\
             .with_pattern(ParameterPattern.from_params(["symbol", "adjust"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "daily", "股票", "us")\
+            .with_keywords("daily", "us", "stock", "股票")\
             .with_example_params({"symbol": 'FB', "adjust": ''})\
             .build(),
 
@@ -2766,7 +3000,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("spot", "famous", "em", "us", "stock")\
+            .with_keywords("us", "em", "spot", "stock", "famous")\
             .with_example_params({"symbol": '科技类'})\
             .build(),
 
@@ -2777,7 +3011,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "period", "start_date", "end_date", "adjust")\
             .with_pattern(ParameterPattern.from_params(["symbol", "period", "start_date", "end_date", "adjust"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "hist", "股票", "us")\
+            .with_keywords("us", "stock", "hist", "股票")\
             .with_example_params({"symbol": '105.MSFT', "period": 'daily', "start_date": '19700101', "end_date": '22220101', "adjust": ''})\
             .build(),
 
@@ -2788,7 +3022,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "start_date", "end_date")\
             .with_pattern(ParameterPattern.from_params(["symbol", "start_date", "end_date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("hist", "em", "us", "stock", "股票")\
+            .with_keywords("us", "股票", "em", "min", "hist")\
             .with_example_params({"symbol": '105.ATER', "start_date": '2024-01-01', "end_date": '2024-01-31'})\
             .build(),
 
@@ -2798,7 +3032,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-行情中心-美股市场-粉单市场")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("pink", "spot", "em", "us", "stock")\
+            .with_keywords("pink", "us", "em", "stock", "spot")\
             .build(),
 
         create_interface("stock_us_spot")\
@@ -2807,7 +3041,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("新浪财经-所有美股的数据, 注意延迟 15 分钟")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "股票", "us", "spot")\
+            .with_keywords("spot", "us", "stock", "股票")\
             .build(),
 
         create_interface("stock_us_spot_em")\
@@ -2816,7 +3050,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-美股-实时行情")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "em", "us", "spot")\
+            .with_keywords("spot", "us", "stock", "em")\
             .build(),
 
         create_interface("stock_zh_a_cdr_daily")\
@@ -2826,7 +3060,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "start_date", "end_date")\
             .with_pattern(ParameterPattern.from_params(["symbol", "start_date", "end_date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("cdr", "A股", "a", "daily", "zh")\
+            .with_keywords("daily", "stock", "cdr", "a", "A股")\
             .with_example_params({"symbol": 'sh689009', "start_date": '19900101', "end_date": '22201116'})\
             .build(),
 
@@ -2837,7 +3071,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "start_date", "end_date", "adjust")\
             .with_pattern(ParameterPattern.from_params(["symbol", "start_date", "end_date", "adjust"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "daily", "zh", "a")\
+            .with_keywords("daily", "zh", "stock", "a")\
             .with_example_params({"symbol": 'sh603843', "start_date": '19900101', "end_date": '21000118', "adjust": ''})\
             .build(),
 
@@ -2848,7 +3082,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "period", "start_date", "end_date", "adjust", "timeout")\
             .with_pattern(ParameterPattern.from_params(["symbol", "period", "start_date", "end_date", "adjust", "timeout"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("a", "hist", "zh", "stock", "股票")\
+            .with_keywords("股票", "hist", "stock", "a", "zh")\
             .with_example_params({"symbol": '000001', "period": 'daily', "start_date": '19700101', "end_date": '20500101', "adjust": ''})\
             .build(),
 
@@ -2859,7 +3093,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "start_date", "end_date", "period", "adjust")\
             .with_pattern(ParameterPattern.from_params(["symbol", "start_date", "end_date", "period", "adjust"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("a", "hist", "zh", "em", "stock")\
+            .with_keywords("股票", "em", "min", "hist", "stock")\
             .with_example_params({"symbol": '000001', "start_date": '2024-01-01', "end_date": '2024-01-31', "period": '5', "adjust": ''})\
             .build(),
 
@@ -2870,7 +3104,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "start_time", "end_time")\
             .with_pattern(ParameterPattern.from_params(["symbol", "start_time", "end_time"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("a", "hist", "zh", "em", "pre")\
+            .with_keywords("股票", "em", "min", "hist", "pre")\
             .with_example_params({"symbol": '000001', "start_time": '09:00:00', "end_time": '15:50:00'})\
             .build(),
 
@@ -2881,7 +3115,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "start_date", "end_date", "adjust", "timeout")\
             .with_pattern(ParameterPattern.from_params(["symbol", "start_date", "end_date", "adjust", "timeout"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("a", "hist", "zh", "stock", "股票")\
+            .with_keywords("tx", "股票", "指数", "hist", "stock")\
             .with_example_params({"symbol": 'sz000001', "start_date": '19000101', "end_date": '20500101', "adjust": ''})\
             .build(),
 
@@ -2892,7 +3126,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "period", "adjust")\
             .with_pattern(ParameterPattern.from_params(["symbol", "period", "adjust"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("a", "zh", "stock", "股票", "minute")\
+            .with_keywords("股票", "指数", "minute", "stock", "a")\
             .with_example_params({"symbol": 'sh600519', "period": '1', "adjust": ''})\
             .build(),
 
@@ -2902,7 +3136,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("新浪财经-所有 A 股的实时行情数据; 重复运行本函数会被新浪暂时封 IP")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("spot", "a", "zh", "stock", "股票")\
+            .with_keywords("股票", "spot", "stock", "a", "zh")\
             .build(),
 
         create_interface("stock_zh_a_spot_em")\
@@ -2911,7 +3145,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-沪深京 A 股-实时行情")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("spot", "a", "em", "zh", "stock")\
+            .with_keywords("em", "spot", "stock", "a", "zh")\
             .build(),
 
         create_interface("stock_zh_a_spot_em_async")\
@@ -2920,7 +3154,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-沪深京 A 股-实时行情 (同步接口)")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("spot", "a", "em", "zh", "stock")\
+            .with_keywords("em", "spot", "stock", "a", "zh")\
             .build(),
 
         create_interface("stock_zh_ah_daily")\
@@ -2930,7 +3164,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "start_year", "end_year", "adjust")\
             .with_pattern(ParameterPattern.from_params(["symbol", "start_year", "end_year", "adjust"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("daily", "zh", "stock", "股票", "ah")\
+            .with_keywords("股票", "ah", "daily", "stock", "zh")\
             .with_example_params({"symbol": '02318', "start_year": '2000', "end_year": '2019', "adjust": ''})\
             .build(),
 
@@ -2940,7 +3174,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("腾讯财经-港股-AH-实时行情")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "ah", "zh", "spot")\
+            .with_keywords("spot", "zh", "stock", "ah")\
             .build(),
 
         create_interface("stock_zh_ah_spot_em")\
@@ -2949,7 +3183,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-行情中心-沪深港通-AH股比价-实时行情")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("spot", "em", "zh", "stock", "ah")\
+            .with_keywords("em", "ah", "spot", "stock", "zh")\
             .build(),
 
         create_interface("stock_zh_b_daily")\
@@ -2959,7 +3193,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "start_date", "end_date", "adjust")\
             .with_pattern(ParameterPattern.from_params(["symbol", "start_date", "end_date", "adjust"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "b", "zh", "daily")\
+            .with_keywords("daily", "zh", "stock", "b")\
             .with_example_params({"symbol": 'sh900901', "start_date": '19900101', "end_date": '21000118', "adjust": ''})\
             .build(),
 
@@ -2970,7 +3204,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "period", "adjust")\
             .with_pattern(ParameterPattern.from_params(["symbol", "period", "adjust"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("zh", "stock", "b", "股票", "minute")\
+            .with_keywords("股票", "指数", "b", "minute", "stock")\
             .with_example_params({"symbol": 'sh900901', "period": '1', "adjust": ''})\
             .build(),
 
@@ -2980,7 +3214,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("新浪财经-所有 B 股的实时行情数据; 重复运行本函数会被新浪暂时封 IP")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("spot", "zh", "stock", "b", "股票")\
+            .with_keywords("股票", "b", "spot", "stock", "zh")\
             .build(),
 
         create_interface("stock_zh_b_spot_em")\
@@ -2989,62 +3223,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网- B 股-实时行情")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("spot", "em", "zh", "stock", "b")\
-            .build(),
-
-        create_interface("stock_zh_index_daily")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.STOCK_QUOTE)\
-            .with_description("新浪财经-指数-历史行情数据, 大量抓取容易封 IP")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("daily", "zh", "stock", "index", "指数")\
-            .with_example_params({"symbol": 'sh000922'})\
-            .build(),
-
-        create_interface("stock_zh_index_daily_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.STOCK_QUOTE)\
-            .with_description("东方财富网-股票指数数据")\
-            .with_optional_params("symbol", "start_date", "end_date")\
-            .with_pattern(ParameterPattern.from_params(["symbol", "start_date", "end_date"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("daily", "zh", "em", "stock", "股票")\
-            .with_example_params({"symbol": 'csi931151', "start_date": '19900101', "end_date": '20500101'})\
-            .build(),
-
-        create_interface("stock_zh_index_daily_tx")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.STOCK_QUOTE)\
-            .with_description("腾讯证券-日频-股票或者指数历史数据")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("daily", "zh", "stock", "股票", "index")\
-            .with_example_params({"symbol": 'sz980017'})\
-            .build(),
-
-        create_interface("stock_zh_index_hist_csindex")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.STOCK_QUOTE)\
-            .with_description("中证指数-具体指数-历史行情数据")\
-            .with_optional_params("symbol", "start_date", "end_date")\
-            .with_pattern(ParameterPattern.from_params(["symbol", "start_date", "end_date"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("csindex", "hist", "zh", "stock", "index")\
-            .with_example_params({"symbol": '000928', "start_date": '20180526', "end_date": '20240604'})\
-            .build(),
-
-        create_interface("stock_zh_index_spot_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.STOCK_QUOTE)\
-            .with_description("东方财富网-行情中心-沪深京指数")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("spot", "em", "zh", "stock", "index")\
-            .with_example_params({"symbol": '上证系列指数'})\
+            .with_keywords("em", "b", "spot", "stock", "zh")\
             .build(),
 
         create_interface("stock_zh_index_spot_sina")\
@@ -3053,7 +3232,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("新浪财经-行情中心首页-A股-分类-所有指数")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("A股", "spot", "zh", "stock", "index")\
+            .with_keywords("指数", "index", "sina", "spot", "stock")\
             .build(),
 
         create_interface("stock_zh_kcb_daily")\
@@ -3063,7 +3242,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "adjust")\
             .with_pattern(ParameterPattern.from_params(["symbol", "adjust"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("daily", "zh", "stock", "kcb", "股票")\
+            .with_keywords("股票", "kcb", "daily", "stock", "zh")\
             .with_example_params({"symbol": 'sh688399', "adjust": ''})\
             .build(),
 
@@ -3073,7 +3252,51 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("新浪财经-科创板实时行情数据, 大量抓取容易封IP")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "kcb", "zh", "spot")\
+            .with_keywords("spot", "zh", "stock", "kcb")\
+            .build(),
+
+        create_interface("stock_zt_pool_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("东方财富网-行情中心-涨停板行情-涨停股池")\
+            .with_optional_params("date")\
+            .with_pattern(ParameterPattern.from_params(["date"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("zt", "pool", "stock", "em")\
+            .with_example_params({"date": '20241008'})\
+            .build(),
+
+        create_interface("stock_zt_pool_previous_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("东方财富网-行情中心-涨停板行情-昨日涨停股池")\
+            .with_optional_params("date")\
+            .with_pattern(ParameterPattern.from_params(["date"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("zt", "previous", "em", "stock", "pool")\
+            .with_example_params({"date": '20240415'})\
+            .build(),
+
+        create_interface("stock_zt_pool_strong_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("东方财富网-行情中心-涨停板行情-强势股池")\
+            .with_optional_params("date")\
+            .with_pattern(ParameterPattern.from_params(["date"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("zt", "em", "stock", "strong", "pool")\
+            .with_example_params({"date": '20241231'})\
+            .build(),
+
+        create_interface("stock_zt_pool_sub_new_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.STOCK_QUOTE)\
+            .with_description("东方财富网-行情中心-涨停板行情-次新股池")\
+            .with_optional_params("date")\
+            .with_pattern(ParameterPattern.from_params(["date"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("zt", "em", "stock", "new", "sub")\
+            .with_example_params({"date": '20241231'})\
             .build(),
         ]
 
@@ -3087,7 +3310,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "start_date", "end_date")\
             .with_pattern(ParameterPattern.from_params(["symbol", "start_date", "end_date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("board", "stock", "index", "指数", "ths")\
+            .with_keywords("指数", "ths", "index", "concept", "stock")\
             .with_example_params({"symbol": '阿里巴巴概念', "start_date": '20200101', "end_date": '20250228'})\
             .build(),
 
@@ -3098,7 +3321,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "start_date", "end_date")\
             .with_pattern(ParameterPattern.from_params(["symbol", "start_date", "end_date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("行业", "board", "stock", "industry", "index")\
+            .with_keywords("industry", "指数", "ths", "index", "stock")\
             .with_example_params({"symbol": '元件', "start_date": '20200101', "end_date": '20240108'})\
             .build(),
 
@@ -3108,7 +3331,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("乐估乐股-底部研究-巴菲特指标")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "index", "lg", "buffett")\
+            .with_keywords("stock", "lg", "buffett", "index")\
             .build(),
 
         create_interface("stock_index_pb_lg")\
@@ -3118,7 +3341,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("pb", "stock", "index", "lg", "指数")\
+            .with_keywords("指数", "pb", "index", "stock", "lg")\
             .with_example_params({"symbol": '上证50'})\
             .build(),
 
@@ -3129,196 +3352,63 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "index", "lg", "pe", "指数")\
+            .with_keywords("指数", "index", "pe", "stock", "lg")\
             .with_example_params({"symbol": '沪深300'})\
             .build(),
-        ]
 
-    def _register_stock_basic_interfaces(self) -> List[InterfaceMetadata]:
-        """注册STOCK_BASIC接口"""
-        return [
-        create_interface("stock_board_concept_info_ths")\
+        create_interface("stock_zh_index_daily")\
             .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.STOCK_BASIC)\
-            .with_description("同花顺-板块-概念板块-板块简介")\
+            .with_category(FunctionCategory.MARKET_INDEX)\
+            .with_description("新浪财经-指数-历史行情数据, 大量抓取容易封 IP")\
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("board", "stock", "info", "ths", "concept")\
-            .with_example_params({"symbol": '阿里巴巴概念'})\
+            .with_keywords("指数", "index", "daily", "stock", "zh")\
+            .with_example_params({"symbol": 'sh000922'})\
             .build(),
 
-        create_interface("stock_board_industry_info_ths")\
+        create_interface("stock_zh_index_daily_em")\
             .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.STOCK_BASIC)\
-            .with_description("同花顺-板块-行业板块-板块简介")\
+            .with_category(FunctionCategory.MARKET_INDEX)\
+            .with_description("东方财富网-股票指数数据")\
+            .with_optional_params("symbol", "start_date", "end_date")\
+            .with_pattern(ParameterPattern.from_params(["symbol", "start_date", "end_date"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("股票", "em", "指数", "index", "daily")\
+            .with_example_params({"symbol": 'csi931151', "start_date": '19900101', "end_date": '20500101'})\
+            .build(),
+
+        create_interface("stock_zh_index_hist_csindex")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.MARKET_INDEX)\
+            .with_description("中证指数-具体指数-历史行情数据")\
+            .with_optional_params("symbol", "start_date", "end_date")\
+            .with_pattern(ParameterPattern.from_params(["symbol", "start_date", "end_date"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("csindex", "指数", "hist", "index", "stock")\
+            .with_example_params({"symbol": '000928', "start_date": '20180526', "end_date": '20240604'})\
+            .build(),
+
+        create_interface("stock_zh_index_spot_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.MARKET_INDEX)\
+            .with_description("东方财富网-行情中心-沪深京指数")\
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("行业", "board", "stock", "industry", "info")\
-            .with_example_params({"symbol": '半导体'})\
+            .with_keywords("指数", "em", "index", "spot", "stock")\
+            .with_example_params({"symbol": '上证系列指数'})\
             .build(),
 
-        create_interface("stock_individual_info_em")\
+        create_interface("stock_zh_index_value_csindex")\
             .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.STOCK_BASIC)\
-            .with_description("东方财富-个股-股票信息")\
-            .with_optional_params("symbol", "timeout")\
-            .with_pattern(ParameterPattern.from_params(["symbol", "timeout"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("em", "individual", "stock", "股票", "info")\
-            .with_example_params({"symbol": '603777'})\
-            .build(),
-
-        create_interface("stock_info_a_code_name")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.STOCK_BASIC)\
-            .with_description("沪深京 A 股列表")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("List[str]")\
-            .with_keywords("name", "a", "stock", "code", "info")\
-            .build(),
-
-        create_interface("stock_info_bj_name_code")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.STOCK_BASIC)\
-            .with_description("北京证券交易所-股票列表")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("List[str]")\
-            .with_keywords("name", "bj", "stock", "code", "股票")\
-            .build(),
-
-        create_interface("stock_info_change_name")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.STOCK_BASIC)\
-            .with_description("新浪财经-股票曾用名")\
+            .with_category(FunctionCategory.MARKET_INDEX)\
+            .with_description("中证指数-指数估值数据")\
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("name", "change", "stock", "股票", "info")\
-            .with_example_params({"symbol": '000503'})\
-            .build(),
-
-        create_interface("stock_info_cjzc_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.STOCK_BASIC)\
-            .with_description("东方财富-财经早餐")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "info", "em", "cjzc")\
-            .build(),
-
-        create_interface("stock_info_global_cls")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.STOCK_BASIC)\
-            .with_description("财联社-电报")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "info", "global", "cls")\
-            .with_example_params({"symbol": '全部'})\
-            .build(),
-
-        create_interface("stock_info_global_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.STOCK_BASIC)\
-            .with_description("东方财富-全球财经快讯")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "info", "global", "em")\
-            .build(),
-
-        create_interface("stock_info_global_futu")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.STOCK_BASIC)\
-            .with_description("富途牛牛-快讯")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "info", "global", "futu")\
-            .build(),
-
-        create_interface("stock_info_global_sina")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.STOCK_BASIC)\
-            .with_description("新浪财经-全球财经快讯")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "info", "global", "sina")\
-            .build(),
-
-        create_interface("stock_info_global_ths")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.STOCK_BASIC)\
-            .with_description("同花顺财经-全球财经直播")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "info", "global", "ths")\
-            .build(),
-
-        create_interface("stock_info_sh_delist")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.STOCK_BASIC)\
-            .with_description("上海证券交易所-终止上市公司")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("List[str]")\
-            .with_keywords("stock", "info", "sh", "delist")\
-            .with_example_params({"symbol": '全部'})\
-            .build(),
-
-        create_interface("stock_info_sh_name_code")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.STOCK_BASIC)\
-            .with_description("上海证券交易所-股票列表")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("List[str]")\
-            .with_keywords("name", "A股", "B股", "stock", "code")\
-            .with_example_params({"symbol": '主板A股'})\
-            .build(),
-
-        create_interface("stock_info_sz_change_name")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.STOCK_BASIC)\
-            .with_description("深证证券交易所-市场数据-股票数据-名称变更")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("name", "sz", "change", "stock", "股票")\
-            .with_example_params({"symbol": '全称变更'})\
-            .build(),
-
-        create_interface("stock_info_sz_delist")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.STOCK_BASIC)\
-            .with_description("深证证券交易所-暂停上市公司-终止上市公司")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("List[str]")\
-            .with_keywords("stock", "info", "delist", "sz")\
-            .with_example_params({"symbol": '终止上市公司'})\
-            .build(),
-
-        create_interface("stock_info_sz_name_code")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.STOCK_BASIC)\
-            .with_description("深圳证券交易所-股票列表")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("List[str]")\
-            .with_keywords("name", "A股", "sz", "B股", "stock")\
-            .with_example_params({"symbol": 'A股列表'})\
-            .build(),
-
-        create_interface("stock_margin_underlying_info_szse")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.STOCK_BASIC)\
-            .with_description("深圳证券交易所-融资融券数据-标的证券信息")\
-            .with_optional_params("date")\
-            .with_pattern(ParameterPattern.from_params(["date"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("underlying", "szse", "margin", "stock", "info")\
-            .with_example_params({"date": '20221129'})\
+            .with_keywords("csindex", "指数", "index", "stock", "value")\
+            .with_example_params({"symbol": 'H30374'})\
             .build(),
         ]
 
@@ -3332,8 +3422,30 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("行业", "cons", "board", "em", "stock")\
+            .with_keywords("industry", "em", "cons", "stock", "board")\
             .with_example_params({"symbol": '小金属'})\
+            .build(),
+
+        create_interface("stock_board_industry_hist_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.INDUSTRY_DATA)\
+            .with_description("东方财富网-沪深板块-行业板块-历史行情")\
+            .with_optional_params("symbol", "start_date", "end_date", "period", "adjust")\
+            .with_pattern(ParameterPattern.from_params(["symbol", "start_date", "end_date", "period", "adjust"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("industry", "em", "hist", "stock", "board")\
+            .with_example_params({"symbol": '小金属', "start_date": '20211201', "end_date": '20220401', "period": 'daily', "adjust": ''})\
+            .build(),
+
+        create_interface("stock_board_industry_hist_min_em")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.INDUSTRY_DATA)\
+            .with_description("东方财富网-沪深板块-行业板块-分时历史行情")\
+            .with_optional_params("symbol", "period")\
+            .with_pattern(ParameterPattern.from_params(["symbol", "period"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("industry", "em", "min", "hist", "stock")\
+            .with_example_params({"symbol": '小金属', "period": '5'})\
             .build(),
 
         create_interface("stock_board_industry_name_em")\
@@ -3342,7 +3454,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-沪深板块-行业板块-名称")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("行业", "name", "board", "em", "stock")\
+            .with_keywords("industry", "em", "name", "stock", "board")\
             .build(),
 
         create_interface("stock_board_industry_name_ths")\
@@ -3351,7 +3463,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("同花顺-板块-行业板块-行业")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("行业", "name", "board", "stock", "industry")\
+            .with_keywords("industry", "ths", "name", "stock", "board")\
             .build(),
 
         create_interface("stock_board_industry_summary_ths")\
@@ -3360,7 +3472,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("同花顺-数据中心-行业板块-同花顺行业一览表")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("行业", "summary", "board", "stock", "industry")\
+            .with_keywords("industry", "summary", "ths", "stock", "board")\
             .build(),
 
         create_interface("stock_gpzy_industry_data_em")\
@@ -3369,7 +3481,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("东方财富网-数据中心-特色数据-股权质押-上市公司质押比例-行业数据")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("行业", "gpzy", "data", "em", "stock")\
+            .with_keywords("industry", "em", "gpzy", "stock", "行业")\
             .build(),
 
         create_interface("stock_industry_category_cninfo")\
@@ -3379,7 +3491,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("行业", "stock", "industry", "cninfo", "category")\
+            .with_keywords("industry", "stock", "category", "行业", "cninfo")\
             .with_example_params({"symbol": '巨潮行业分类标准'})\
             .build(),
 
@@ -3390,19 +3502,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "start_date", "end_date")\
             .with_pattern(ParameterPattern.from_params(["symbol", "start_date", "end_date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("行业", "change", "stock", "股票", "industry")\
+            .with_keywords("industry", "股票", "change", "stock", "行业")\
             .with_example_params({"symbol": '002594', "start_date": '20091227', "end_date": '20220713'})\
-            .build(),
-
-        create_interface("stock_news_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.INDUSTRY_DATA)\
-            .with_description("东方财富-个股新闻-最近 100 条新闻")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("news", "新闻", "em", "stock", "股票")\
-            .with_example_params({"symbol": '603777'})\
             .build(),
 
         create_interface("stock_news_main_cx")\
@@ -3411,7 +3512,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("财新网-财新数据通")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "news", "main", "cx")\
+            .with_keywords("cx", "stock", "main", "news")\
             .build(),
 
         create_interface("stock_report_disclosure")\
@@ -3421,7 +3522,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("market", "period")\
             .with_pattern(ParameterPattern.from_params(["market", "period"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "report", "disclosure")\
+            .with_keywords("stock", "disclosure", "report")\
             .with_example_params({"market": '沪深京', "period": 'daily'})\
             .build(),
 
@@ -3432,8 +3533,41 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "research", "em", "report")\
+            .with_keywords("research", "stock", "em", "report")\
             .with_example_params({"symbol": '000001'})\
+            .build(),
+
+        create_interface("stock_sector_detail")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.INDUSTRY_DATA)\
+            .with_description("新浪行业-板块行情-成份详情")\
+            .with_optional_params("sector")\
+            .with_pattern(ParameterPattern.from_params(["sector"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("detail", "行业", "stock", "sector")\
+            .with_example_params({"sector": 'gn_gfgn'})\
+            .build(),
+
+        create_interface("stock_sector_fund_flow_rank")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.INDUSTRY_DATA)\
+            .with_description("东方财富网-数据中心-资金流向-板块资金流-排名")\
+            .with_optional_params("indicator", "sector_type")\
+            .with_pattern(ParameterPattern.from_params(["indicator", "sector_type"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("sector", "flow", "fund", "stock", "行业")\
+            .with_example_params({"indicator": '今日', "sector_type": '行业资金流'})\
+            .build(),
+
+        create_interface("stock_sector_spot")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.INDUSTRY_DATA)\
+            .with_description("新浪行业-板块行情")\
+            .with_optional_params("indicator")\
+            .with_pattern(ParameterPattern.from_params(["indicator"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("spot", "行业", "stock", "sector")\
+            .with_example_params({"indicator": '新浪行业'})\
             .build(),
 
         create_interface("stock_zh_a_disclosure_report_cninfo")\
@@ -3443,7 +3577,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "market", "keyword", "category", "start_date", "end_date")\
             .with_pattern(ParameterPattern.from_params(["symbol", "market", "keyword", "category", "start_date", "end_date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("a", "zh", "disclosure", "基金", "stock")\
+            .with_keywords("股票", "report", "stock", "基金", "a")\
             .with_example_params({"symbol": '000001', "market": '沪深京', "keyword": '', "category": '', "start_date": '20230618', "end_date": '20231219'})\
             .build(),
 
@@ -3454,7 +3588,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("from_page", "to_page")\
             .with_pattern(ParameterPattern.from_params(["from_page", "to_page"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("em", "zh", "stock", "kcb", "report")\
+            .with_keywords("kcb", "em", "report", "stock", "zh")\
             .with_example_params({"from_page": 1, "to_page": 100})\
             .build(),
         ]
@@ -3469,7 +3603,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("em", "scrd", "stock", "股票", "desire")\
+            .with_keywords("desire", "股票", "em", "detail", "comment")\
             .with_example_params({"symbol": '600000'})\
             .build(),
 
@@ -3480,25 +3614,32 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("em", "scrd", "stock", "股票", "detail")\
+            .with_keywords("股票", "em", "指数", "detail", "comment")\
             .with_example_params({"symbol": '600000'})\
+            .build(),
+
+        create_interface("stock_market_activity_legu")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.MARKET_OVERVIEW)\
+            .with_description("乐咕乐股网-赚钱效应分析")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("market", "stock", "activity", "legu")\
+            .build(),
+
+        create_interface("stock_market_fund_flow")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.MARKET_OVERVIEW)\
+            .with_description("东方财富网-数据中心-资金流向-大盘")\
+            .with_pattern(ParameterPattern.from_params([]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("fund", "market", "stock", "flow")\
             .build(),
         ]
 
     def _register_stock_technical_interfaces(self) -> List[InterfaceMetadata]:
         """注册STOCK_TECHNICAL接口"""
         return [
-        create_interface("stock_financial_analysis_indicator")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.STOCK_TECHNICAL)\
-            .with_description("新浪财经-财务分析-财务指标")\
-            .with_optional_params("symbol", "start_year")\
-            .with_pattern(ParameterPattern.from_params(["symbol", "start_year"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("indicator", "stock", "股票", "financial", "财务")\
-            .with_example_params({"symbol": '600004', "start_year": '1900'})\
-            .build(),
-
         create_interface("stock_financial_analysis_indicator_em")\
             .with_source(DataSource.AKSHARE)\
             .with_category(FunctionCategory.STOCK_TECHNICAL)\
@@ -3506,7 +3647,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "indicator")\
             .with_pattern(ParameterPattern.from_params(["symbol", "indicator"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("indicator", "A股", "em", "stock", "股票")\
+            .with_keywords("股票", "em", "indicator", "财务", "stock")\
             .with_example_params({"symbol": '301389.SZ', "indicator": '按报告期'})\
             .build(),
 
@@ -3517,7 +3658,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "indicator")\
             .with_pattern(ParameterPattern.from_params(["symbol", "indicator"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("indicator", "hk", "em", "stock", "股票")\
+            .with_keywords("股票", "em", "hk", "indicator", "财务")\
             .with_example_params({"symbol": '00853', "indicator": '年度'})\
             .build(),
 
@@ -3528,7 +3669,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "indicator")\
             .with_pattern(ParameterPattern.from_params(["symbol", "indicator"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("indicator", "em", "us", "stock", "股票")\
+            .with_keywords("us", "股票", "em", "indicator", "财务")\
             .with_example_params({"symbol": 'TSLA', "indicator": '年报'})\
             .build(),
 
@@ -3539,7 +3680,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "indicator")\
             .with_pattern(ParameterPattern.from_params(["symbol", "indicator"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "hk", "indicator", "eniu")\
+            .with_keywords("indicator", "stock", "hk", "eniu")\
             .with_example_params({"symbol": 'hk01093', "indicator": '市盈率'})\
             .build(),
         ]
@@ -3553,7 +3694,18 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("同花顺-数据中心-资金流向-大单追踪")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("flow", "fund", "stock", "big", "deal")\
+            .with_keywords("deal", "flow", "fund", "stock", "big")\
+            .build(),
+
+        create_interface("stock_fund_flow_concept")\
+            .with_source(DataSource.AKSHARE)\
+            .with_category(FunctionCategory.FUND_DATA)\
+            .with_description("同花顺-数据中心-资金流向-概念资金流")\
+            .with_optional_params("symbol")\
+            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_return_type("DataFrame")\
+            .with_keywords("fund", "concept", "stock", "flow")\
+            .with_example_params({"symbol": '即时'})\
             .build(),
 
         create_interface("stock_fund_flow_individual")\
@@ -3563,7 +3715,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("stock", "individual", "flow", "fund")\
+            .with_keywords("fund", "stock", "individual", "flow")\
             .with_example_params({"symbol": '即时'})\
             .build(),
 
@@ -3574,7 +3726,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("行业", "flow", "fund", "stock", "industry")\
+            .with_keywords("industry", "flow", "fund", "stock", "行业")\
             .with_example_params({"symbol": '即时'})\
             .build(),
 
@@ -3585,17 +3737,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("holder", "fund", "基金", "stock", "股票")\
+            .with_keywords("holder", "股票", "fund", "stock", "基金")\
             .with_example_params({"symbol": '600004'})\
-            .build(),
-
-        create_interface("stock_hsgt_fund_flow_summary_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.FUND_DATA)\
-            .with_description("东方财富网-数据中心-资金流向-沪深港通资金流向")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("flow", "fund", "summary", "em", "stock")\
             .build(),
 
         create_interface("stock_hsgt_fund_min_em")\
@@ -3605,30 +3748,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("fund", "em", "stock", "min", "hsgt")\
+            .with_keywords("em", "min", "hsgt", "fund", "stock")\
             .with_example_params({"symbol": '北向资金'})\
-            .build(),
-
-        create_interface("stock_individual_fund_flow")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.FUND_DATA)\
-            .with_description("东方财富网-数据中心-资金流向-个股")\
-            .with_optional_params("stock", "market")\
-            .with_pattern(ParameterPattern.from_params(["stock", "market"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("flow", "fund", "individual", "stock", "股票")\
-            .with_example_params({"stock": '600094', "market": 'sh'})\
-            .build(),
-
-        create_interface("stock_individual_fund_flow_rank")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.FUND_DATA)\
-            .with_description("东方财富网-数据中心-资金流向-排名")\
-            .with_optional_params("indicator")\
-            .with_pattern(ParameterPattern.from_params(["indicator"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("flow", "fund", "individual", "stock", "rank")\
-            .with_example_params({"indicator": '5日'})\
             .build(),
 
         create_interface("stock_individual_fund_flow_rank_async")\
@@ -3638,7 +3759,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("indicator")\
             .with_pattern(ParameterPattern.from_params(["indicator"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("flow", "fund", "individual", "stock", "async")\
+            .with_keywords("individual", "flow", "fund", "stock", "async")\
             .with_example_params({"indicator": '5日'})\
             .build(),
 
@@ -3649,17 +3770,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("A股", "flow", "fund", "B股", "stock")\
+            .with_keywords("B股", "股票", "main", "flow", "fund")\
             .with_example_params({"symbol": '全部股票'})\
-            .build(),
-
-        create_interface("stock_market_fund_flow")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.FUND_DATA)\
-            .with_description("东方财富网-数据中心-资金流向-大盘")\
-            .with_pattern(ParameterPattern.from_params([]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("stock", "market", "flow", "fund")\
             .build(),
 
         create_interface("stock_report_fund_hold")\
@@ -3669,7 +3781,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "date")\
             .with_pattern(ParameterPattern.from_params(["symbol", "date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("hold", "fund", "基金", "stock", "report")\
+            .with_keywords("report", "fund", "stock", "基金", "hold")\
             .with_example_params({"symbol": '基金持仓', "date": '20210331'})\
             .build(),
 
@@ -3680,19 +3792,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "date")\
             .with_pattern(ParameterPattern.from_params(["symbol", "date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("hold", "fund", "基金", "stock", "detail")\
+            .with_keywords("detail", "report", "fund", "stock", "基金")\
             .with_example_params({"symbol": '008286', "date": '20220331'})\
-            .build(),
-
-        create_interface("stock_sector_fund_flow_rank")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.FUND_DATA)\
-            .with_description("东方财富网-数据中心-资金流向-板块资金流-排名")\
-            .with_optional_params("indicator", "sector_type")\
-            .with_pattern(ParameterPattern.from_params(["indicator", "sector_type"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("行业", "sector", "flow", "fund", "stock")\
-            .with_example_params({"indicator": '今日', "sector_type": '行业资金流'})\
             .build(),
 
         create_interface("stock_sector_fund_flow_summary")\
@@ -3702,7 +3803,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol", "indicator")\
             .with_pattern(ParameterPattern.from_params(["symbol", "indicator"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("行业", "sector", "flow", "fund", "summary")\
+            .with_keywords("summary", "sector", "flow", "fund", "stock")\
             .with_example_params({"symbol": '电源设备', "indicator": '今日'})\
             .build(),
         ]
@@ -3710,39 +3811,6 @@ class AkshareProvider(BaseAPIProvider):
     def _register_forex_data_interfaces(self) -> List[InterfaceMetadata]:
         """注册FOREX_DATA接口"""
         return [
-        create_interface("stock_gdfx_free_holding_analyse_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.FOREX_DATA)\
-            .with_description("东方财富网-数据中心-股东分析-股东持股分析-十大流通股东")\
-            .with_optional_params("date")\
-            .with_pattern(ParameterPattern.from_params(["date"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("gdfx", "analyse", "em", "stock", "holding")\
-            .with_example_params({"date": '20230930'})\
-            .build(),
-
-        create_interface("stock_gdfx_free_holding_change_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.FOREX_DATA)\
-            .with_description("东方财富网-数据中心-股东分析-股东持股变动统计-十大流通股东")\
-            .with_optional_params("date")\
-            .with_pattern(ParameterPattern.from_params(["date"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("gdfx", "change", "em", "stock", "holding")\
-            .with_example_params({"date": '20210930'})\
-            .build(),
-
-        create_interface("stock_gdfx_free_holding_detail_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.FOREX_DATA)\
-            .with_description("东方财富网-数据中心-股东分析-股东持股明细-十大流通股东")\
-            .with_optional_params("date")\
-            .with_pattern(ParameterPattern.from_params(["date"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("gdfx", "em", "stock", "holding", "free")\
-            .with_example_params({"date": '20210930'})\
-            .build(),
-
         create_interface("stock_gdfx_free_holding_statistics_em")\
             .with_source(DataSource.AKSHARE)\
             .with_category(FunctionCategory.FOREX_DATA)\
@@ -3750,7 +3818,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("date")\
             .with_pattern(ParameterPattern.from_params(["date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("gdfx", "statistics", "em", "stock", "holding")\
+            .with_keywords("em", "gdfx", "statistics", "stock", "holding")\
             .with_example_params({"date": '20210630'})\
             .build(),
 
@@ -3761,52 +3829,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("gdfx", "em", "teamwork", "基金", "stock")\
+            .with_keywords("em", "teamwork", "gdfx", "stock", "基金")\
             .with_example_params({"symbol": '社保'})\
-            .build(),
-
-        create_interface("stock_gdfx_free_top_10_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.FOREX_DATA)\
-            .with_description("东方财富网-个股-十大流通股东")\
-            .with_optional_params("symbol", "date")\
-            .with_pattern(ParameterPattern.from_params(["symbol", "date"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("gdfx", "10", "top", "em", "stock")\
-            .with_example_params({"symbol": 'sh688686', "date": '20240930'})\
-            .build(),
-
-        create_interface("stock_gdfx_holding_analyse_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.FOREX_DATA)\
-            .with_description("东方财富网-数据中心-股东分析-股东持股分析-十大股东")\
-            .with_optional_params("date")\
-            .with_pattern(ParameterPattern.from_params(["date"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("gdfx", "analyse", "em", "stock", "holding")\
-            .with_example_params({"date": '20230331'})\
-            .build(),
-
-        create_interface("stock_gdfx_holding_change_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.FOREX_DATA)\
-            .with_description("东方财富网-数据中心-股东分析-股东持股变动统计-十大股东")\
-            .with_optional_params("date")\
-            .with_pattern(ParameterPattern.from_params(["date"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("gdfx", "change", "em", "stock", "holding")\
-            .with_example_params({"date": '20210930'})\
-            .build(),
-
-        create_interface("stock_gdfx_holding_detail_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.FOREX_DATA)\
-            .with_description("东方财富网-数据中心-股东分析-股东持股明细-十大股东")\
-            .with_optional_params("date", "indicator", "symbol")\
-            .with_pattern(ParameterPattern.from_params(["date", "indicator", "symbol"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("gdfx", "em", "基金", "stock", "holding")\
-            .with_example_params({"date": '20230331', "indicator": '个人', "symbol": '新进'})\
             .build(),
 
         create_interface("stock_gdfx_holding_statistics_em")\
@@ -3816,7 +3840,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("date")\
             .with_pattern(ParameterPattern.from_params(["date"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("gdfx", "em", "statistics", "stock", "holding")\
+            .with_keywords("em", "gdfx", "statistics", "stock", "holding")\
             .with_example_params({"date": '20210930'})\
             .build(),
 
@@ -3827,19 +3851,8 @@ class AkshareProvider(BaseAPIProvider):
             .with_optional_params("symbol")\
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
-            .with_keywords("gdfx", "em", "teamwork", "基金", "stock")\
+            .with_keywords("em", "teamwork", "gdfx", "stock", "基金")\
             .with_example_params({"symbol": '社保'})\
-            .build(),
-
-        create_interface("stock_gdfx_top_10_em")\
-            .with_source(DataSource.AKSHARE)\
-            .with_category(FunctionCategory.FOREX_DATA)\
-            .with_description("东方财富网-个股-十大股东")\
-            .with_optional_params("symbol", "date")\
-            .with_pattern(ParameterPattern.from_params(["symbol", "date"]))\
-            .with_return_type("DataFrame")\
-            .with_keywords("gdfx", "10", "top", "em", "stock")\
-            .with_example_params({"symbol": 'sh688686', "date": '20210630'})\
             .build(),
 
         create_interface("stock_sgt_reference_exchange_rate_sse")\
@@ -3848,7 +3861,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("沪港通-港股通信息披露-参考汇率")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("reference", "sse", "stock", "sgt", "rate")\
+            .with_keywords("sse", "reference", "rate", "stock", "sgt")\
             .build(),
 
         create_interface("stock_sgt_reference_exchange_rate_szse")\
@@ -3857,7 +3870,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("深港通-港股通业务信息-参考汇率")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("reference", "szse", "stock", "sgt", "rate")\
+            .with_keywords("szse", "reference", "rate", "stock", "sgt")\
             .build(),
 
         create_interface("stock_sgt_settlement_exchange_rate_sse")\
@@ -3866,7 +3879,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("沪港通-港股通信息披露-结算汇兑")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("sse", "stock", "settlement", "sgt", "rate")\
+            .with_keywords("settlement", "sse", "rate", "stock", "sgt")\
             .build(),
 
         create_interface("stock_sgt_settlement_exchange_rate_szse")\
@@ -3875,7 +3888,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_description("深港通-港股通业务信息-结算汇率")\
             .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("DataFrame")\
-            .with_keywords("szse", "stock", "settlement", "sgt", "rate")\
+            .with_keywords("settlement", "szse", "rate", "stock", "sgt")\
             .build(),
         ]
 

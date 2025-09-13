@@ -57,6 +57,9 @@ class AKShareInterfaceParser:
         
         # 敏感参数（不生成示例值）
         self.sensitive_params = {'token', 'api_key', 'apikey', 'access_token', 'password'}
+        
+        # 加载接口分类映射表
+        self.category_mapping = self._load_category_mapping()
     
     def discover_akshare_functions(self) -> List[str]:
         """发现所有AKShare函数"""
@@ -429,8 +432,29 @@ class AKShareInterfaceParser:
         else:
             return '未明确说明'
     
+    def _load_category_mapping(self) -> Dict[str, str]:
+        """加载接口分类映射表"""
+        import os
+        
+        # 获取映射文件路径
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        mapping_file = os.path.join(current_dir, 'interface_category_mapping.json')
+        
+        try:
+            with open(mapping_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                return data.get('interface_category_mapping', {})
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            print(f"警告: 无法加载分类映射文件 {mapping_file}: {e}")
+            return {}
+    
     def _determine_category(self, func_name: str, doc: str) -> str:
         """确定接口分类"""
+        # 优先从映射表中查找
+        if func_name in self.category_mapping:
+            return self.category_mapping[func_name]
+        
+        # 如果映射表中没有找到，使用原有的关键词匹配逻辑
         name = func_name.lower()
         description = doc.lower()
         
