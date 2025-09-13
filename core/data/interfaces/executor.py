@@ -503,7 +503,8 @@ class InterfaceExecutor:
         task = CallTask(
             interface_name=interface_name,
             params=params,
-            timeout=self.config.default_timeout
+            timeout=self.config.default_timeout,
+            retry_count=self.config.retry_config.max_retries
         )
         
         context = context or ExecutionContext()
