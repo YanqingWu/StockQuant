@@ -6,22 +6,18 @@
 
 import asyncio
 import logging
-import signal
 import time
 import uuid
 import random
 from abc import ABC, abstractmethod
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from contextlib import contextmanager
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Union
-from queue import Queue, PriorityQueue
+from typing import Any, Callable, Dict, List, Optional
+from queue import PriorityQueue
 from threading import Lock
-
 import akshare as ak
-
 from .base import APIProviderManager, InterfaceMetadata
+
 
 logger = logging.getLogger(__name__)
 
@@ -74,30 +70,8 @@ class ErrorClassifier:
         return error_type in retryable_errors
 
 
-class TimeoutManager:
-    """超时管理器"""
-    
-    @staticmethod
-    @contextmanager
-    def timeout_context(seconds: float):
-        """超时上下文管理器"""
-        if seconds <= 0:
-            yield
-            return
-            
-        def timeout_handler(signum, frame):
-            raise TimeoutError(f"Operation timed out after {seconds} seconds")
-        
-        # 设置信号处理器
-        old_handler = signal.signal(signal.SIGALRM, timeout_handler)
-        signal.alarm(int(seconds))
-        
-        try:
-            yield
-        finally:
-            # 恢复原来的信号处理器
-            signal.alarm(0)
-            signal.signal(signal.SIGALRM, old_handler)
+# TimeoutManager已移除，避免信号处理冲突
+# 超时控制现在通过简单的时间检查实现
 
 
 @dataclass
@@ -247,13 +221,11 @@ class ExecutorConfig:
 class ExecutionContext:
     """执行上下文"""
     session_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    max_workers: int = 10
     rate_limit: Optional[RateLimit] = None
     cache_enabled: bool = True
     
     # 超时控制（覆盖默认配置）
     timeout_override: Optional[float] = None  # 覆盖默认超时
-    interface_timeouts: Dict[str, float] = field(default_factory=dict)  # 接口特定超时
     
     # 回调函数 - 供其他模块注入逻辑
     pre_execute_hook: Optional[Callable[[CallTask], None]] = None
@@ -354,9 +326,6 @@ class InterfaceExecutor:
             return context.timeout_override
         
         # 2. 使用接口特定的超时配置
-        if task.interface_name in context.interface_timeouts:
-            return context.interface_timeouts[task.interface_name]
-        
         if task.interface_name in self.config.interface_timeouts:
             return self.config.interface_timeouts[task.interface_name]
         
@@ -418,20 +387,17 @@ class InterfaceExecutor:
                     
                     return result
                 
-                # 执行接口调用（带超时控制）
+                # 执行接口调用（简化超时控制）
                 start_time = time.time()
                 
-                try:
-                    if timeout_seconds > 0:
-                        with TimeoutManager.timeout_context(timeout_seconds):
-                            data = self._call_akshare_interface(task)
-                    else:
-                        data = self._call_akshare_interface(task)
-                        
-                except TimeoutError as e:
-                    raise TimeoutError(f"Interface {task.interface_name} timed out after {timeout_seconds}s")
+                # 简单的超时检查，避免信号处理冲突
+                data = self._call_akshare_interface(task)
                 
                 execution_time = time.time() - start_time
+                
+                # 检查是否超时（事后检查）
+                if timeout_seconds > 0 and execution_time > timeout_seconds:
+                    raise TimeoutError(f"Interface {task.interface_name} timed out after {execution_time:.2f}s (limit: {timeout_seconds}s)")
                 
                 # 缓存结果
                 self.cache.set(cache_key, data)
@@ -509,31 +475,13 @@ class InterfaceExecutor:
         
         context = context or ExecutionContext()
         
-        # 执行前回调
-        if context.pre_execute_hook:
-            context.pre_execute_hook(task)
-        
-        # 执行插件的before_execute
-        for plugin in self.config.plugins:
-            plugin.before_execute(task, context)
-        
-        # 执行调用
-        result = self._execute_with_retry(task, context)
-        
-        # 执行后回调
-        if context.post_execute_hook:
-            context.post_execute_hook(result)
-        
-        # 执行插件的after_execute
-        for plugin in self.config.plugins:
-            plugin.after_execute(result, context)
-        
-        return result
+        # 使用统一的执行方法，插件逻辑在_execute_with_retry中处理
+        return self._execute_single_with_context(task, context)
     
     def execute_batch(self, 
                      tasks: List[CallTask],
                      context: Optional[ExecutionContext] = None) -> BatchResult:
-        """执行批量接口调用"""
+        """执行批量接口调用 - 主线程串行执行避免信号冲突"""
         context = context or ExecutionContext()
         session_id = context.session_id
         start_time = time.time()
@@ -544,35 +492,27 @@ class InterfaceExecutor:
         
         logger.info(f"Starting batch execution with {len(tasks)} tasks (session: {session_id})")
         
-        with ThreadPoolExecutor(max_workers=context.max_workers) as executor:
-            # 提交所有任务
-            future_to_task = {}
-            for task in tasks:
-                future = executor.submit(self._execute_single_with_context, task, context)
-                future_to_task[future] = task
-            
-            # 收集结果
-            for future in as_completed(future_to_task):
-                try:
-                    result = future.result()
-                    results.append(result)
-                    
-                    if result.success:
-                        successful_tasks += 1
-                    else:
-                        failed_tasks += 1
-                        
-                except Exception as e:
-                    task = future_to_task[future]
-                    logger.error(f"Unexpected error in task {task.task_id}: {e}")
-                    result = CallResult(
-                        task_id=task.task_id,
-                        interface_name=task.interface_name,
-                        success=False,
-                        error=e
-                    )
-                    results.append(result)
+        # 主线程串行执行，避免信号处理冲突
+        for task in tasks:
+            try:
+                result = self._execute_single_with_context(task, context)
+                results.append(result)
+                
+                if result.success:
+                    successful_tasks += 1
+                else:
                     failed_tasks += 1
+                    
+            except Exception as e:
+                logger.error(f"Unexpected error in task {task.task_id}: {e}")
+                result = CallResult(
+                    task_id=task.task_id,
+                    interface_name=task.interface_name,
+                    success=False,
+                    error=e
+                )
+                results.append(result)
+                failed_tasks += 1
         
         end_time = time.time()
         
@@ -605,11 +545,7 @@ class InterfaceExecutor:
         if context.pre_execute_hook:
             context.pre_execute_hook(task)
         
-        # 执行插件的before_execute
-        for plugin in self.config.plugins:
-            plugin.before_execute(task, context)
-        
-        # 执行调用
+        # 执行调用（插件逻辑在_execute_with_retry中统一处理）
         result = self._execute_with_retry(task, context)
         
         # 错误处理
@@ -622,18 +558,16 @@ class InterfaceExecutor:
         if context.post_execute_hook:
             context.post_execute_hook(result)
         
-        # 执行插件的after_execute
-        for plugin in self.config.plugins:
-            plugin.after_execute(result, context)
-        
         return result
     
     async def execute_async(self, 
                            tasks: List[CallTask],
                            callback: Optional[Callable[[CallResult], None]] = None,
                            context: Optional[ExecutionContext] = None) -> BatchResult:
-        """异步执行接口调用"""
-        session_id = str(uuid.uuid4())
+        """异步执行接口调用 - 协程调度+主线程执行避免信号冲突"""
+        # 创建默认上下文
+        context = context or ExecutionContext()
+        session_id = context.session_id
         start_time = time.time()
         
         results = []
@@ -642,20 +576,31 @@ class InterfaceExecutor:
         
         logger.info(f"Starting async execution with {len(tasks)} tasks (session: {session_id})")
         
-        # 创建默认上下文
-        context = context or ExecutionContext()
-        
-        # 创建异步任务
+        # 创建异步任务 - 主线程执行+协程调度
         async def execute_task_async(task: CallTask) -> CallResult:
-            loop = asyncio.get_event_loop()
-            result = await loop.run_in_executor(None, self._execute_single_with_context, task, context)
+            # 让出控制权，允许其他协程执行
+            await asyncio.sleep(0.001)
+            
+            # 在主线程中同步执行，避免信号冲突
+            result = self._execute_single_with_context(task, context)
+            
             if callback:
                 callback(result)
             return result
         
-        # 并发执行所有任务
-        async_tasks = [execute_task_async(task) for task in tasks]
-        completed_results = await asyncio.gather(*async_tasks, return_exceptions=True)
+        # 分批执行，避免创建过多协程
+        batch_size = 50
+        all_results = []
+        
+        for i in range(0, len(tasks), batch_size):
+            batch_tasks = tasks[i:i + batch_size]
+            batch_results = await asyncio.gather(
+                *[execute_task_async(task) for task in batch_tasks],
+                return_exceptions=True
+            )
+            all_results.extend(batch_results)
+        
+        completed_results = all_results
         
         # 处理结果
         for i, result in enumerate(completed_results):
@@ -736,27 +681,7 @@ class TaskQueue:
         return self.queue.empty()
 
 
-class ResultCollector:
-    """结果收集器"""
-    
-    def __init__(self):
-        self.results = []
-        self.lock = Lock()
-    
-    def add_result(self, result: CallResult) -> None:
-        """添加结果"""
-        with self.lock:
-            self.results.append(result)
-    
-    def get_results(self) -> List[CallResult]:
-        """获取所有结果"""
-        with self.lock:
-            return self.results.copy()
-    
-    def clear(self) -> None:
-        """清空结果"""
-        with self.lock:
-            self.results.clear()
+# ResultCollector类已删除，因为在串行执行中不再需要线程安全的结果收集
 
 
 class BatchCallManager:
@@ -765,7 +690,7 @@ class BatchCallManager:
     def __init__(self, executor: InterfaceExecutor):
         self.executor = executor
         self.task_queue = TaskQueue()
-        self.result_collector = ResultCollector()
+        self.results = []  # 简单的结果列表，替代ResultCollector
     
     def add_task(self, task: CallTask) -> str:
         """添加任务到队列"""
