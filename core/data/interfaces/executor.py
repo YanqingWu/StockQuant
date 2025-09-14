@@ -707,7 +707,7 @@ class InterfaceExecutor:
 
     def _execute_single_with_context(self, task: CallTask, context: ExecutionContext) -> CallResult:
         """在上下文中执行单个任务（同步）"""
-        # 执行前回调（与插件解耦）
+        # 执行前回调（与插件解藕）
         if context.pre_execute_hook:
             try:
                 context.pre_execute_hook(task)
@@ -935,15 +935,15 @@ class InterfaceExecutor:
         except Exception:
             semaphore = None
         
-        # 计算批量大小
-        batch_size = int(context.async_batch_size_override or getattr(self.config, 'async_batch_size', 50) or 50)
+        # 计算批量大小统一放到下方（去重逻辑），此处移除先验计算
+        # 之前：batch_size = int(context.async_batch_size_override or getattr(self.config, 'async_batch_size', 50) or 50)
         
         # 创建异步任务 - 主线程执行+协程调度
         async def execute_task_async(task: CallTask) -> CallResult:
             # 让出控制权，允许其他协程执行
             await asyncio.sleep(0.001)
             
-            async def _run() -> CallResult:
+            async def _run_only() -> CallResult:
                 # 获取超时时间
                 timeout_seconds = self._get_timeout_for_task(task, context)
                 
@@ -955,25 +955,26 @@ class InterfaceExecutor:
                         coro, 
                         timeout_seconds
                     )
-                    # 记录执行时间
-                    if result.execution_time > 0:
-                        await self.async_timeout_manager.record_execution_time(task.interface_name, result.execution_time)
+                    # 移除：此处不再重复记录执行时间，统一在底层/单点记录
                 else:
                     # 在协程中避免阻塞事件循环，将同步执行卸载到线程
                     result = await asyncio.to_thread(self._execute_single_with_context, task, context)
                 
-                if callback:
-                    try:
-                        callback(result)
-                    except Exception as cb_e:
-                        logger.warning(f"Async result callback failed for task {result.task_id} ({result.interface_name}): {cb_e}")
                 return result
             
             if semaphore is None:
-                return await _run()
+                result = await _run_only()
             else:
                 async with semaphore:
-                    return await _run()
+                    result = await _run_only()
+            
+            # 在释放并发令牌后再执行回调，避免占用并发配额；必要时丢到线程
+            if callback:
+                try:
+                    await asyncio.to_thread(callback, result)
+                except Exception as cb_e:
+                    logger.warning(f"Async result callback failed for task {getattr(result, 'task_id', 'unknown')} ({getattr(result, 'interface_name', 'unknown')}): {cb_e}")
+            return result
         
         # 分批执行，避免创建过多协程
         # 支持通过 ExecutionContext.async_batch_size_override 覆盖配置
@@ -985,6 +986,7 @@ class InterfaceExecutor:
             batch_size = getattr(self.config, 'async_batch_size', 50)
         if not isinstance(batch_size, int) or batch_size <= 0:
             batch_size = 50
+        logger.info(f"Async batch_size resolved to {batch_size}")
         all_results = []
         
         for i in range(0, len(tasks), batch_size):
@@ -995,24 +997,27 @@ class InterfaceExecutor:
             )
             all_results.extend(batch_results)
         
-        completed_results = all_results
-        
-        # 处理结果
-        for i, result in enumerate(completed_results):
-            if isinstance(result, Exception):
+        # 归一化结果并统计
+        normalized_results = []
+        for i, r in enumerate(all_results):
+            if isinstance(r, Exception):
                 task = tasks[i]
-                result = CallResult(
-                    task_id=task.task_id,
-                    interface_name=task.interface_name,
-                    success=False,
-                    error=result
+                normalized_results.append(
+                    CallResult(
+                        task_id=task.task_id,
+                        interface_name=task.interface_name,
+                        success=False,
+                        error=r
+                    )
                 )
-                failed_tasks += 1
             else:
-                if result.success:
-                    successful_tasks += 1
-                else:
-                    failed_tasks += 1
+                normalized_results.append(r)
+        
+        for res in normalized_results:
+            if res.success:
+                successful_tasks += 1
+            else:
+                failed_tasks += 1
         
         end_time = time.time()
         batch_result = BatchResult(
@@ -1020,7 +1025,7 @@ class InterfaceExecutor:
             total_tasks=len(tasks),
             successful_tasks=successful_tasks,
             failed_tasks=failed_tasks,
-            results=[r if isinstance(r, CallResult) else CallResult(task_id=tasks[i].task_id, interface_name=tasks[i].interface_name, success=False, error=r) for i, r in enumerate(completed_results)],
+            results=normalized_results,
             execution_summary={
                 "async": True,
                 "batch_size": batch_size
