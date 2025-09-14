@@ -16,6 +16,7 @@ from typing import Any, Callable, Dict, List, Optional
 from queue import PriorityQueue, Queue, Empty
 from threading import Lock
 import akshare as ak
+
 from .base import APIProviderManager, InterfaceMetadata
 
 
@@ -208,7 +209,6 @@ class ExecutorConfig:
     cache_config: Optional[CacheConfig] = None
     retry_config: RetryConfig = field(default_factory=RetryConfig)
     default_timeout: float = 0.0  # 0表示无超时，>0表示有超时
-    max_workers: int = 10
     # 接口特定超时配置
     interface_timeouts: Dict[str, float] = field(default_factory=dict)
     
@@ -216,7 +216,6 @@ class ExecutorConfig:
     enable_thread_timeout: bool = True  # 是否启用线程池超时（同步执行）
     enable_async_timeout: bool = True   # 是否启用协程超时（异步执行）
     thread_pool_max_workers: int = 10   # 线程池最大工作线程数
-    async_timeout_check_interval: float = 0.1  # 异步超时检查间隔（秒）
     
     # 新增：异步批量执行的全局并发上限（<=0 表示不限制）
     async_max_concurrency: int = 20
@@ -230,7 +229,6 @@ class ExecutorConfig:
 class ExecutionContext:
     """执行上下文"""
     session_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    rate_limit: Optional[RateLimit] = None
     cache_enabled: bool = True
     
     # 超时控制（覆盖默认配置）
@@ -242,7 +240,7 @@ class ExecutionContext:
     error_handler: Optional[Callable[[CallTask, Exception], bool]] = None
     
     # 异步执行批量参数覆盖
-    async_batch_size_override: Optional[int] = None
+    async_batch_size_override: Optional[int] = None  # 仅本次 execute_async 生效，优先级高于配置
     
     # 扩展属性
     user_data: Dict[str, Any] = field(default_factory=dict)
@@ -254,7 +252,8 @@ class SimpleCache:
     def __init__(self, config: CacheConfig):
         self.config = config
         self.cache = {}
-        self.access_times = {}
+        self.write_times = {}
+        self.expires = {}
         self.lock = Lock()
     
     def get(self, key: str) -> Optional[Any]:
@@ -264,36 +263,59 @@ class SimpleCache:
             
         with self.lock:
             if key in self.cache:
-                # 检查是否过期
-                if time.time() - self.access_times[key] < self.config.ttl:
-                    return self.cache[key]
-                else:
+                now = time.time()
+                # 优先使用每键过期时间
+                if key in self.expires:
+                    if now < self.expires[key]:
+                        return self.cache[key]
                     # 过期，删除
                     del self.cache[key]
-                    del self.access_times[key]
+                    del self.expires[key]
+                    if key in self.write_times:
+                        del self.write_times[key]
+                    return None
+                # 回退到全局 TTL 检查
+                if key in self.write_times and (now - self.write_times[key] < self.config.ttl):
+                    return self.cache[key]
+                # 过期，删除
+                del self.cache[key]
+                if key in self.write_times:
+                    del self.write_times[key]
         return None
     
-    def set(self, key: str, value: Any) -> None:
-        """设置缓存"""
+    def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+        """设置缓存，支持每键 TTL"""
         if not self.config.enabled:
+            return
+        
+        ttl_to_use = self.config.ttl if ttl is None else int(ttl)
+        # ttl<=0 视为不缓存
+        if ttl_to_use <= 0:
             return
             
         with self.lock:
             # 检查缓存大小限制
-            if len(self.cache) >= self.config.max_size:
-                # 删除最旧的条目
-                oldest_key = min(self.access_times.keys(), key=self.access_times.get)
-                del self.cache[oldest_key]
-                del self.access_times[oldest_key]
+            if len(self.cache) >= self.config.max_size and self.write_times:
+                # 删除最旧的条目（按写入时间）
+                oldest_key = min(self.write_times.keys(), key=self.write_times.get)
+                if oldest_key in self.cache:
+                    del self.cache[oldest_key]
+                if oldest_key in self.write_times:
+                    del self.write_times[oldest_key]
+                if oldest_key in self.expires:
+                    del self.expires[oldest_key]
             
+            now = time.time()
             self.cache[key] = value
-            self.access_times[key] = time.time()
+            self.write_times[key] = now
+            self.expires[key] = now + float(ttl_to_use)
     
     def clear(self) -> None:
         """清空缓存"""
         with self.lock:
             self.cache.clear()
-            self.access_times.clear()
+            self.write_times.clear()
+            self.expires.clear()
 
 
 class ThreadPoolTimeoutManager:
@@ -375,6 +397,7 @@ class InterfaceExecutor:
                  config: Optional[ExecutorConfig] = None):
         self.provider_manager = provider_manager
         self.config = config or ExecutorConfig()
+        
         self.cache = SimpleCache(self.config.cache_config or CacheConfig())
         self.rate_limiters = {}
         
@@ -429,8 +452,19 @@ class InterfaceExecutor:
     
     def _apply_rate_limit(self, interface_name: str) -> None:
         """应用频率限制"""
-        if interface_name in self.rate_limiters:
-            limiter = self.rate_limiters[interface_name]
+        limiter = self.rate_limiters.get(interface_name)
+        # 懒加载：若未在配置中提供，尝试从接口元数据读取 frequency_limit（每分钟）
+        if limiter is None:
+            try:
+                metadata = self.provider_manager.get_interface_metadata(interface_name)
+                freq = getattr(metadata, "frequency_limit", None) if metadata else None
+                if isinstance(freq, int) and freq > 0:
+                    limiter = RateLimiter(RateLimit(max_calls=freq, time_window=60.0))
+                    self.rate_limiters[interface_name] = limiter
+                    logger.debug(f"Initialized rate limiter from metadata for {interface_name}: {freq}/min")
+            except Exception as e:
+                logger.debug(f"Rate limit metadata lookup failed for {interface_name}: {e}")
+        if limiter:
             while not limiter.acquire():
                 wait_time = limiter.wait_time()
                 if wait_time > 0:
@@ -440,8 +474,19 @@ class InterfaceExecutor:
     # 新增：异步版本的频率限制，避免在协程中阻塞事件循环
     async def _apply_rate_limit_async(self, interface_name: str) -> None:
         """应用频率限制（异步非阻塞）"""
-        if interface_name in self.rate_limiters:
-            limiter = self.rate_limiters[interface_name]
+        limiter = self.rate_limiters.get(interface_name)
+        # 懒加载：若未在配置中提供，尝试从接口元数据读取 frequency_limit（每分钟）
+        if limiter is None:
+            try:
+                metadata = self.provider_manager.get_interface_metadata(interface_name)
+                freq = getattr(metadata, "frequency_limit", None) if metadata else None
+                if isinstance(freq, int) and freq > 0:
+                    limiter = RateLimiter(RateLimit(max_calls=freq, time_window=60.0))
+                    self.rate_limiters[interface_name] = limiter
+                    logger.debug(f"Initialized rate limiter from metadata for {interface_name}: {freq}/min (async)")
+            except Exception as e:
+                logger.debug(f"Rate limit metadata lookup failed for {interface_name}: {e}")
+        if limiter:
             while not limiter.acquire():
                 wait_time = limiter.wait_time()
                 if wait_time > 0:
@@ -467,6 +512,17 @@ class InterfaceExecutor:
         
         # 4. 使用默认配置
         return self.config.default_timeout
+    
+    def _get_cache_ttl_for_interface(self, interface_name: str) -> int:
+        """根据接口元数据或全局配置获取缓存 TTL（秒）"""
+        try:
+            metadata = self.provider_manager.get_interface_metadata(interface_name)
+            if metadata and getattr(metadata, "cache_duration", None) is not None:
+                return int(metadata.cache_duration)
+        except Exception as e:
+            logger.debug(f"Metadata cache_duration lookup failed for {interface_name}: {e}")
+        # 回退到全局 TTL（默认配置的 ttl）
+        return int(getattr(self.cache.config, "ttl", 300))
     
     def _call_akshare_interface(self, task: CallTask) -> Any:
         """调用akshare接口"""
@@ -548,23 +604,24 @@ class InterfaceExecutor:
                 # 应用频率限制
                 self._apply_rate_limit(task.interface_name)
                 
-                # 检查缓存
+                # 检查缓存（按会话可关闭）
                 cache_key = self._get_cache_key(task.interface_name, task.params)
-                cached_result = self.cache.get(cache_key)
-                if cached_result is not None:
-                    logger.debug(f"Cache hit for {task.interface_name}")
-                    result = CallResult(
-                        task_id=task.task_id,
-                        interface_name=task.interface_name,
-                        success=True,
-                        data=cached_result,
-                        metadata={"from_cache": True}
-                    )
-                    
-                    # 执行插件的after_execute
-                    self._plugins_after(result, context)
-                    
-                    return result
+                if context.cache_enabled:
+                    cached_result = self.cache.get(cache_key)
+                    if cached_result is not None:
+                        logger.debug(f"Cache hit for {task.interface_name}")
+                        result = CallResult(
+                            task_id=task.task_id,
+                            interface_name=task.interface_name,
+                            success=True,
+                            data=cached_result,
+                            metadata={"from_cache": True}
+                        )
+                        
+                        # 执行插件的after_execute
+                        self._plugins_after(result, context)
+                        
+                        return result
                 
                 # 执行接口调用（使用混合超时机制）
                 start_time = time.time()
@@ -585,8 +642,10 @@ class InterfaceExecutor:
                     if timeout_seconds > 0 and execution_time > timeout_seconds:
                         raise TimeoutError(f"Interface {task.interface_name} timed out after {execution_time:.2f}s (limit: {timeout_seconds}s)")
                 
-                # 缓存结果
-                self.cache.set(cache_key, data)
+                # 缓存结果（按会话可关闭 + 每接口 TTL）
+                if context.cache_enabled:
+                    ttl = self._get_cache_ttl_for_interface(task.interface_name)
+                    self.cache.set(cache_key, data, ttl=ttl)
                 
                 result = CallResult(
                     task_id=task.task_id,
@@ -645,70 +704,88 @@ class InterfaceExecutor:
         
         return result
     
+
+    def _execute_single_with_context(self, task: CallTask, context: ExecutionContext) -> CallResult:
+        """在上下文中执行单个任务（同步）"""
+        # 执行前回调（与插件解耦）
+        if context.pre_execute_hook:
+            try:
+                context.pre_execute_hook(task)
+            except Exception as e:
+                logger.warning(f"pre_execute_hook failed: {e}")
+        
+        # 调用统一的带重试执行
+        result = self._execute_with_retry(task, context)
+        
+        # 错误处理（可中断后续流程）
+        if not result.success and context.error_handler:
+            try:
+                should_continue = context.error_handler(task, result.error)
+                if not should_continue:
+                    logger.info(f"Task {task.task_id} stopped by error handler")
+            except Exception as e:
+                logger.warning(f"error_handler failed: {e}")
+        
+        # 执行后回调
+        if context.post_execute_hook:
+            try:
+                context.post_execute_hook(result)
+            except Exception as e:
+                logger.warning(f"post_execute_hook failed: {e}")
+        
+        return result
+    
     def execute_single(self, 
-                      interface_name: str, 
-                      params: Dict[str, Any],
-                      context: Optional[ExecutionContext] = None) -> CallResult:
-        """执行单个接口调用"""
+                       interface_name: str, 
+                       params: Dict[str, Any],
+                       context: Optional[ExecutionContext] = None) -> CallResult:
+        """执行单个接口调用（同步）"""
         task = CallTask(
             interface_name=interface_name,
             params=params,
             timeout=self.config.default_timeout,
             retry_count=self.config.retry_config.max_retries
         )
-        
         context = context or ExecutionContext()
-        
-        # 使用统一的执行方法，插件逻辑在_execute_with_retry中处理
         return self._execute_single_with_context(task, context)
     
     def execute_batch(self, 
-                     tasks: List[CallTask],
-                     context: Optional[ExecutionContext] = None) -> BatchResult:
-        """执行批量接口调用 - 主线程串行执行避免信号冲突"""
+                      tasks: List[CallTask],
+                      context: Optional[ExecutionContext] = None) -> BatchResult:
+        """执行批量接口调用（同步串行，避免信号冲突）"""
         context = context or ExecutionContext()
         session_id = context.session_id
         start_time = time.time()
         
-        results = []
+        results: List[CallResult] = []
         successful_tasks = 0
         failed_tasks = 0
         
         logger.info(f"Starting batch execution with {len(tasks)} tasks (session: {session_id})")
-        
-        # 主线程串行执行，避免信号处理冲突
         for task in tasks:
             try:
-                result = self._execute_single_with_context(task, context)
-                results.append(result)
-                
-                if result.success:
+                res = self._execute_single_with_context(task, context)
+                results.append(res)
+                if res.success:
                     successful_tasks += 1
                 else:
                     failed_tasks += 1
-                    
             except Exception as e:
                 logger.error(f"Unexpected error in task {task.task_id}: {e}")
-                result = CallResult(
+                res = CallResult(
                     task_id=task.task_id,
                     interface_name=task.interface_name,
                     success=False,
                     error=e
                 )
-                results.append(result)
+                results.append(res)
                 failed_tasks += 1
         
         end_time = time.time()
-        
-        # 生成执行摘要
         execution_summary = {
             "total_execution_time": end_time - start_time,
-            "average_execution_time": sum(r.execution_time for r in results if r.execution_time > 0) / len(results) if results else 0,
-            "cache_hits": sum(1 for r in results if r.metadata.get("from_cache", False)),
-            "interfaces_used": list(set(r.interface_name for r in results))
         }
-        
-        batch_result = BatchResult(
+        return BatchResult(
             session_id=session_id,
             total_tasks=len(tasks),
             successful_tasks=successful_tasks,
@@ -718,140 +795,8 @@ class InterfaceExecutor:
             start_time=start_time,
             end_time=end_time
         )
-        
-        logger.info(f"Batch execution completed: {successful_tasks}/{len(tasks)} successful (session: {session_id})")
-        
-        return batch_result
     
-    def _execute_single_with_context(self, task: CallTask, context: ExecutionContext) -> CallResult:
-        """在上下文中执行单个任务"""
-        # 执行前回调
-        if context.pre_execute_hook:
-            context.pre_execute_hook(task)
-        
-        # 执行调用（插件逻辑在_execute_with_retry中统一处理）
-        result = self._execute_with_retry(task, context)
-        
-        # 错误处理
-        if not result.success and context.error_handler:
-            should_continue = context.error_handler(task, result.error)
-            if not should_continue:
-                logger.info(f"Task {task.task_id} stopped by error handler")
-        
-        # 执行后回调
-        if context.post_execute_hook:
-            context.post_execute_hook(result)
-        
-        return result
     
-    async def _execute_with_retry_async(self, task: CallTask, context: ExecutionContext) -> CallResult:
-        """异步版本的带重试执行"""
-        last_error = None
-        total_attempts = 0
-        
-        # 确定超时时间
-        timeout_seconds = self._get_timeout_for_task(task, context)
-        
-        # 执行插件的before_execute
-        self._plugins_before(task, context)
-        
-        for attempt in range(task.retry_count):
-            total_attempts += 1
-            try:
-                # 应用频率限制
-                await self._apply_rate_limit_async(task.interface_name)
-                
-                # 检查缓存
-                cache_key = self._get_cache_key(task.interface_name, task.params)
-                cached_result = self.cache.get(cache_key)
-                if cached_result is not None:
-                    logger.debug(f"Cache hit for {task.interface_name}")
-                    result = CallResult(
-                        task_id=task.task_id,
-                        interface_name=task.interface_name,
-                        success=True,
-                        data=cached_result,
-                        metadata={"from_cache": True}
-                    )
-                    
-                    # 执行插件的after_execute
-                    self._plugins_after(result, context)
-                    
-                    return result
-                
-                # 异步执行接口调用
-                start_time = time.time()
-                
-                # 在协程中执行同步调用
-                loop = asyncio.get_running_loop()
-                data = await loop.run_in_executor(None, self._call_akshare_interface, task)
-                
-                execution_time = time.time() - start_time
-                
-                # 记录执行时间到异步超时管理器（如果启用）
-                if self.config.enable_async_timeout and self.async_timeout_manager and execution_time > 0:
-                    await self.async_timeout_manager.record_execution_time(task.interface_name, execution_time)
-                
-                # 缓存结果
-                self.cache.set(cache_key, data)
-                
-                result = CallResult(
-                    task_id=task.task_id,
-                    interface_name=task.interface_name,
-                    success=True,
-                    data=data,
-                    execution_time=execution_time,
-                    metadata={"attempt": attempt + 1}
-                )
-                
-                # 执行插件的after_execute
-                self._plugins_after(result, context)
-                
-                return result
-                
-            except Exception as e:
-                last_error = e
-                error_type = ErrorClassifier.classify_error(e)
-                logger.warning(f"Attempt {attempt + 1} failed for {task.interface_name}: {e} (ErrorType: {error_type.value})")
-                
-                # 插件on_error（放到线程），任何返回False则终止重试
-                plugin_continue = await self._plugins_on_error_async(task, e, context)
-                if not plugin_continue:
-                    logger.info(f"Retry aborted by plugin for {task.interface_name}")
-                    break
-                
-                # 检查是否应该重试
-                if not ErrorClassifier.should_retry(error_type, attempt, task.retry_count):
-                    logger.info(f"Not retrying {task.interface_name} due to error type: {error_type.value}")
-                    break
-                
-                if attempt < task.retry_count - 1:
-                    # 计算退避延迟（增加jitter避免雷群效应）
-                    base_delay = self.config.retry_config.base_delay * (self.config.retry_config.exponential_base ** attempt)
-                    jitter = random.uniform(0.1, 0.3) * base_delay  # 添加10-30%的随机抖动
-                    delay = min(base_delay + jitter, self.config.retry_config.max_delay)
-                    
-                    logger.debug(f"Retrying {task.interface_name} in {delay:.2f}s")
-                    await asyncio.sleep(delay)
-        
-        # 所有重试都失败了
-        error_type = ErrorClassifier.classify_error(last_error) if last_error else ErrorType.UNKNOWN_ERROR
-        result = CallResult(
-            task_id=task.task_id,
-            interface_name=task.interface_name,
-            success=False,
-            error=last_error,
-            metadata={
-                "total_attempts": total_attempts,
-                "error_type": error_type.value
-            }
-        )
-        
-        # 执行插件的after_execute
-        self._plugins_after(result, context)
-        
-        return result
-
     async def _execute_single_with_context_async(self, task: CallTask, context: ExecutionContext) -> CallResult:
         """在上下文中异步执行单个任务（用于协程超时管理器）"""
         # 执行前回调
@@ -872,7 +817,100 @@ class InterfaceExecutor:
             context.post_execute_hook(result)
         
         return result
-    
+
+    async def _execute_with_retry_async(self, task: CallTask, context: ExecutionContext) -> CallResult:
+        """异步版本的带重试执行（卸载阻塞到线程，支持异步频率限制与每接口TTL缓存）"""
+        last_error: Optional[Exception] = None
+        total_attempts = 0
+
+        # 执行插件的before_execute
+        self._plugins_before(task, context)
+
+        for attempt in range(task.retry_count):
+            total_attempts += 1
+            try:
+                # 应用频率限制（异步）
+                await self._apply_rate_limit_async(task.interface_name)
+
+                # 检查缓存（按会话可关闭）
+                cache_key = self._get_cache_key(task.interface_name, task.params)
+                if context.cache_enabled:
+                    cached_result = self.cache.get(cache_key)
+                    if cached_result is not None:
+                        logger.debug(f"Cache hit for {task.interface_name}")
+                        result = CallResult(
+                            task_id=task.task_id,
+                            interface_name=task.interface_name,
+                            success=True,
+                            data=cached_result,
+                            metadata={"from_cache": True}
+                        )
+                        # 执行插件的after_execute
+                        self._plugins_after(result, context)
+                        return result
+
+                # 异步调用：避免阻塞事件循环
+                start_time = time.time()
+                data = await asyncio.to_thread(self._call_akshare_interface, task)
+                execution_time = time.time() - start_time
+
+                # 记录执行时间到异步超时管理器（如果启用）
+                if self.config.enable_async_timeout and self.async_timeout_manager and execution_time > 0:
+                    await self.async_timeout_manager.record_execution_time(task.interface_name, execution_time)
+
+                # 设置缓存（每接口TTL + 会话开关）
+                if context.cache_enabled:
+                    ttl = self._get_cache_ttl_for_interface(task.interface_name)
+                    self.cache.set(cache_key, data, ttl=ttl)
+
+                result = CallResult(
+                    task_id=task.task_id,
+                    interface_name=task.interface_name,
+                    success=True,
+                    data=data,
+                    execution_time=execution_time,
+                    metadata={"attempt": attempt + 1}
+                )
+                # 执行插件的after_execute
+                self._plugins_after(result, context)
+                return result
+            except Exception as e:
+                last_error = e
+                error_type = ErrorClassifier.classify_error(e)
+                logger.warning(f"Attempt {attempt + 1} failed for {task.interface_name}: {e} (ErrorType: {error_type.value})")
+
+                # 插件 on_error（异步），任一返回 False 则终止
+                plugin_continue = await self._plugins_on_error_async(task, e, context)
+                if not plugin_continue:
+                    logger.info(f"Retry aborted by plugin for {task.interface_name}")
+                    break
+
+                if not ErrorClassifier.should_retry(error_type, attempt, task.retry_count):
+                    logger.info(f"Not retrying {task.interface_name} due to error type: {error_type.value}")
+                    break
+
+                if attempt < task.retry_count - 1:
+                    base_delay = self.config.retry_config.base_delay * (self.config.retry_config.exponential_base ** attempt)
+                    jitter = random.uniform(0.1, 0.3) * base_delay
+                    delay = min(base_delay + jitter, self.config.retry_config.max_delay)
+                    await asyncio.sleep(delay)
+
+        # 全部失败
+        error_type = ErrorClassifier.classify_error(last_error) if last_error else ErrorType.UNKNOWN_ERROR
+        result = CallResult(
+            task_id=task.task_id,
+            interface_name=task.interface_name,
+            success=False,
+            error=last_error,
+            metadata={
+                "total_attempts": total_attempts,
+                "error_type": error_type.value
+            }
+        )
+        # 执行插件的after_execute
+        self._plugins_after(result, context)
+        return result
+
     async def execute_async(self, 
                            tasks: List[CallTask],
                            callback: Optional[Callable[[CallResult], None]] = None,
@@ -883,7 +921,6 @@ class InterfaceExecutor:
         session_id = context.session_id
         start_time = time.time()
         
-        results = []
         successful_tasks = 0
         failed_tasks = 0
         
@@ -893,10 +930,13 @@ class InterfaceExecutor:
         semaphore = None
         try:
             limit = int(getattr(self.config, 'async_max_concurrency', 0))
-            if limit and limit > 0:
+            if limit > 0:
                 semaphore = asyncio.Semaphore(limit)
         except Exception:
             semaphore = None
+        
+        # 计算批量大小
+        batch_size = int(context.async_batch_size_override or getattr(self.config, 'async_batch_size', 50) or 50)
         
         # 创建异步任务 - 主线程执行+协程调度
         async def execute_task_async(task: CallTask) -> CallResult:
@@ -926,7 +966,7 @@ class InterfaceExecutor:
                     try:
                         callback(result)
                     except Exception as cb_e:
-                        logger.warning(f"Async result callback failed: {cb_e}")
+                        logger.warning(f"Async result callback failed for task {result.task_id} ({result.interface_name}): {cb_e}")
                 return result
             
             if semaphore is None:
@@ -938,7 +978,8 @@ class InterfaceExecutor:
         # 分批执行，避免创建过多协程
         # 支持通过 ExecutionContext.async_batch_size_override 覆盖配置
         batch_size = None
-        if hasattr(context, 'async_batch_size_override') and context.async_batch_size_override:
+        # 简化：context 已保证为 ExecutionContext，直接读取覆盖值
+        if isinstance(context.async_batch_size_override, int) and context.async_batch_size_override > 0:
             batch_size = context.async_batch_size_override
         if not isinstance(batch_size, int) or batch_size <= 0:
             batch_size = getattr(self.config, 'async_batch_size', 50)

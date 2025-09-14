@@ -765,6 +765,72 @@ class TestInterfaceExecutor(unittest.TestCase):
                 print("Executor线程池已关闭")
 
 
+class TestExecutorCachingTTL(unittest.TestCase):
+    def setUp(self):
+        self.provider_manager = APIProviderManager()
+        self.provider_manager.register_provider(AkshareProvider())
+        self.config = ExecutorConfig(
+            default_timeout=5.0,
+            retry_config=RetryConfig(max_retries=1),
+            cache_config=CacheConfig(enabled=True, ttl=60)
+        )
+        self.executor = InterfaceExecutor(self.provider_manager, self.config)
+
+    def test_cache_disabled_by_zero_ttl(self):
+        # 当每接口TTL=0时，应视为禁止缓存
+        counter = {"n": 0}
+        def fake_call(task: CallTask):
+            counter["n"] += 1
+            return counter["n"]
+        interface_name = "stock_sse_summary"
+        with patch.object(self.executor, "_get_cache_ttl_for_interface", return_value=0), \
+             patch.object(self.executor, "_call_akshare_interface", side_effect=fake_call):
+            r1 = self.executor.execute_single(interface_name, {})
+            r2 = self.executor.execute_single(interface_name, {})
+        self.assertTrue(r1.success and r2.success)
+        self.assertEqual(counter["n"], 2)
+        self.assertFalse(r2.metadata.get("from_cache", False))
+
+    def test_cache_ttl_hit_and_expire(self):
+        # 当TTL为正时，首次写入后在TTL窗口内应命中缓存，过期后应重新调用
+        counter = {"n": 0}
+        def fake_call(task: CallTask):
+            counter["n"] += 1
+            return counter["n"]
+        interface_name = "stock_sse_summary"
+        with patch.object(self.executor, "_get_cache_ttl_for_interface", return_value=1), \
+             patch.object(self.executor, "_call_akshare_interface", side_effect=fake_call):
+            r1 = self.executor.execute_single(interface_name, {})
+            r2 = self.executor.execute_single(interface_name, {})
+            # 第二次应命中缓存
+            self.assertTrue(r2.metadata.get("from_cache", False))
+            # 等待TTL过期
+            time.sleep(1.2)
+            r3 = self.executor.execute_single(interface_name, {})
+        self.assertTrue(r1.success and r2.success and r3.success)
+        # 第三次为过期后重新调用
+        self.assertEqual(counter["n"], 2)
+        self.assertFalse(r3.metadata.get("from_cache", False))
+
+    def test_context_cache_disabled(self):
+        # 即便TTL>0，但当会话禁用缓存时不应读写缓存
+        counter = {"n": 0}
+        def fake_call(task: CallTask):
+            counter["n"] += 1
+            return counter["n"]
+        ctx = ExecutionContext(cache_enabled=False)
+        interface_name = "stock_sse_summary"
+        with patch.object(self.executor, "_get_cache_ttl_for_interface", return_value=30), \
+             patch.object(self.executor, "_call_akshare_interface", side_effect=fake_call):
+            r1 = self.executor.execute_single(interface_name, {}, context=ctx)
+            r2 = self.executor.execute_single(interface_name, {}, context=ctx)
+        self.assertTrue(r1.success and r2.success)
+        self.assertEqual(counter["n"], 2)
+        self.assertFalse(r2.metadata.get("from_cache", False))
+
+
+
+
 class TestTimeoutManager(unittest.TestCase):
     """测试超时管理器"""
     
@@ -1496,6 +1562,96 @@ class TestPluginProtocolConsistency(unittest.TestCase):
             self.assertEqual(called["count"], 3)
         finally:
             InterfaceExecutor._call_akshare_interface = original_call  # type: ignore
+
+
+class TestAsyncRateLimitAndRetry(unittest.TestCase):
+    def setUp(self):
+        # 创建提供者管理器并注册 AkshareProvider（不会真正访问网络，底层会打桩）
+        self.provider_manager = APIProviderManager()
+        self.provider_manager.register_provider(AkshareProvider())
+        # 开启异步路径，配置较小的重试延迟，便于测试
+        self.config = ExecutorConfig(
+            default_timeout=1.0,
+            retry_config=RetryConfig(max_retries=3, base_delay=0.1, max_delay=5.0, exponential_base=2.0),
+            cache_config=CacheConfig(enabled=False),
+            enable_async_timeout=True,
+            async_max_concurrency=10
+        )
+        self.executor = InterfaceExecutor(self.provider_manager, self.config)
+
+    def test_async_retry_with_jitter_and_success(self):
+        # 前两次失败（超时错误），第3次成功；校验重试次数与抖动等待下界
+        original = InterfaceExecutor._call_akshare_interface
+        attempts = {"n": 0}
+        def flaky_call(self_exec: InterfaceExecutor, task: CallTask):
+            attempts["n"] += 1
+            if attempts["n"] <= 2:
+                raise TimeoutError("timeout during call")
+            return {"ok": True}
+        InterfaceExecutor._call_akshare_interface = flaky_call  # type: ignore
+        try:
+            tasks = [CallTask("iface_async_retry", {}, retry_count=3)]
+            # Patch 抖动为 20%，基于实现：delay = base_delay + 0.2 * base_delay
+            with patch("core.data.interfaces.executor.random.uniform", return_value=0.2):
+                async def run():
+                    return await self.executor.execute_async(tasks)
+                t0 = time.time()
+                batch_result = asyncio.run(run())
+                elapsed = time.time() - t0
+            self.assertEqual(batch_result.total_tasks, 1)
+            self.assertTrue(batch_result.results[0].success)
+            # 预期等待：第1次 0.1*(1+0.2)=0.12，第2次 0.2*(1+0.2)=0.24，总 ~0.36s，留一定余量
+            self.assertGreaterEqual(elapsed, 0.33)
+            self.assertEqual(attempts["n"], 3)
+        finally:
+            InterfaceExecutor._call_akshare_interface = original  # type: ignore
+
+    def test_async_retry_max_attempts_stop_on_fail(self):
+        # 始终失败，验证达到最大尝试次数后停止，并记录 total_attempts
+        original = InterfaceExecutor._call_akshare_interface
+        attempts = {"n": 0}
+        def always_fail(self_exec: InterfaceExecutor, task: CallTask):
+            attempts["n"] += 1
+            raise TimeoutError("timeout during call")
+        InterfaceExecutor._call_akshare_interface = always_fail  # type: ignore
+        try:
+            # 设为最大重试2（总尝试=2）
+            self.executor.config.retry_config = RetryConfig(max_retries=2, base_delay=0.05, max_delay=1.0, exponential_base=2.0)
+            tasks = [CallTask("iface_fail", {}, retry_count=2)]
+            async def run():
+                return await self.executor.execute_async(tasks)
+            batch_result = asyncio.run(run())
+            self.assertEqual(batch_result.total_tasks, 1)
+            self.assertFalse(batch_result.results[0].success)
+            self.assertEqual(batch_result.results[0].metadata.get("total_attempts"), 2)
+            self.assertEqual(attempts["n"], 2)
+        finally:
+            InterfaceExecutor._call_akshare_interface = original  # type: ignore
+
+    def test_async_rate_limit_enforced(self):
+        # 配置限流：0.5 秒窗口最多 2 次；4 个任务应跨两个窗口执行
+        self.executor.config.rate_limits = {"iface_rl": RateLimit(max_calls=2, time_window=0.5)}
+        # 重建限流器（执行器在初始化时构建过一次）
+        self.executor.rate_limiters = {"iface_rl": RateLimiter(self.executor.config.rate_limits["iface_rl"])}
+
+        original = InterfaceExecutor._call_akshare_interface
+        def fast_call(self_exec: InterfaceExecutor, task: CallTask):
+            time.sleep(0.01)
+            return {"ok": True, "i": task.params.get("i")}
+        InterfaceExecutor._call_akshare_interface = fast_call  # type: ignore
+        try:
+            tasks = [CallTask("iface_rl", {"i": i}) for i in range(4)]
+            async def run():
+                return await self.executor.execute_async(tasks)
+            t0 = time.time()
+            batch_result = asyncio.run(run())
+            elapsed = time.time() - t0
+            self.assertEqual(batch_result.total_tasks, 4)
+            self.assertTrue(all(r.success for r in batch_result.results))
+            # 至少跨越两个 0.5s 窗口
+            self.assertGreaterEqual(elapsed, 0.45)
+        finally:
+            InterfaceExecutor._call_akshare_interface = original  # type: ignore
 
 
 def run_all_tests():
