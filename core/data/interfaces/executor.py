@@ -1,7 +1,4 @@
 """接口执行器模块
-
-专注于接口调用逻辑，提供单接口调用、批量调用、异步调用等功能。
-通过依赖注入和回调机制与其他模块协作，为后续功能扩展预留接口。
 """
 
 import asyncio
@@ -9,11 +6,14 @@ import logging
 import time
 import uuid
 import random
+import threading
 from abc import ABC, abstractmethod
+from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
-from queue import PriorityQueue
+from queue import PriorityQueue, Queue
 from threading import Lock
 import akshare as ak
 from .base import APIProviderManager, InterfaceMetadata
@@ -68,10 +68,6 @@ class ErrorClassifier:
         }
         
         return error_type in retryable_errors
-
-
-# TimeoutManager已移除，避免信号处理冲突
-# 超时控制现在通过简单的时间检查实现
 
 
 @dataclass
@@ -215,6 +211,12 @@ class ExecutorConfig:
     max_workers: int = 10
     # 接口特定超时配置
     interface_timeouts: Dict[str, float] = field(default_factory=dict)
+    
+    # 混合超时机制配置
+    enable_thread_timeout: bool = True  # 是否启用线程池超时（同步执行）
+    enable_async_timeout: bool = True   # 是否启用协程超时（异步执行）
+    thread_pool_max_workers: int = 10   # 线程池最大工作线程数
+    async_timeout_check_interval: float = 0.1  # 异步超时检查间隔（秒）
 
 
 @dataclass
@@ -284,6 +286,77 @@ class SimpleCache:
             self.access_times.clear()
 
 
+class ThreadPoolTimeoutManager:
+    """线程池超时管理器 - 用于同步执行"""
+    
+    def __init__(self, max_workers: int = 10):
+        self.executor = ThreadPoolExecutor(max_workers=max_workers)
+        self.execution_history = defaultdict(list)
+        self.stats_lock = threading.Lock()
+    
+    def get_timeout(self, interface_name: str, default_timeout: float) -> float:
+        """获取接口超时时间"""
+        with self.stats_lock:
+            history = self.execution_history[interface_name]
+            if len(history) >= 5:
+                avg_time = sum(history[-10:]) / len(history[-10:])
+                return max(avg_time * 2.5, default_timeout)
+            return default_timeout
+    
+    def execute_with_timeout(self, func, args, timeout: float):
+        """带超时的执行"""
+        future = self.executor.submit(func, *args)
+        try:
+            result = future.result(timeout=timeout)
+            return result
+        except FutureTimeoutError:
+            future.cancel()
+            raise TimeoutError(f"Execution timed out after {timeout}s")
+    
+    def record_execution_time(self, interface_name: str, execution_time: float):
+        """记录执行时间"""
+        with self.stats_lock:
+            self.execution_history[interface_name].append(execution_time)
+            if len(self.execution_history[interface_name]) > 50:
+                self.execution_history[interface_name] = self.execution_history[interface_name][-30:]
+    
+    def shutdown(self):
+        """关闭线程池"""
+        self.executor.shutdown(wait=True)
+
+
+class AsyncTimeoutManager:
+    """协程超时管理器 - 用于异步执行"""
+    
+    def __init__(self):
+        self.execution_history = defaultdict(list)
+        self.stats_lock = asyncio.Lock()
+    
+    async def get_timeout(self, interface_name: str, default_timeout: float) -> float:
+        """获取接口超时时间"""
+        async with self.stats_lock:
+            history = self.execution_history[interface_name]
+            if len(history) >= 5:
+                avg_time = sum(history[-10:]) / len(history[-10:])
+                return max(avg_time * 2.5, default_timeout)
+            return default_timeout
+    
+    async def execute_with_timeout(self, coro, timeout: float):
+        """带超时的协程执行"""
+        try:
+            result = await asyncio.wait_for(coro, timeout=timeout)
+            return result
+        except asyncio.TimeoutError:
+            raise TimeoutError(f"Async execution timed out after {timeout}s")
+    
+    async def record_execution_time(self, interface_name: str, execution_time: float):
+        """记录执行时间"""
+        async with self.stats_lock:
+            self.execution_history[interface_name].append(execution_time)
+            if len(self.execution_history[interface_name]) > 50:
+                self.execution_history[interface_name] = self.execution_history[interface_name][-30:]
+
+
 class InterfaceExecutor:
     """接口执行器 - 专注于接口调用逻辑"""
     
@@ -298,6 +371,18 @@ class InterfaceExecutor:
         # 初始化频率限制器
         for interface_name, rate_limit in self.config.rate_limits.items():
             self.rate_limiters[interface_name] = RateLimiter(rate_limit)
+        
+        # 初始化双超时管理器
+        self.thread_timeout_manager = None
+        self.async_timeout_manager = None
+        
+        if self.config.enable_thread_timeout:
+            self.thread_timeout_manager = ThreadPoolTimeoutManager(
+                max_workers=self.config.thread_pool_max_workers
+            )
+        
+        if self.config.enable_async_timeout:
+            self.async_timeout_manager = AsyncTimeoutManager()
     
     def _get_cache_key(self, interface_name: str, params: Dict[str, Any]) -> str:
         """生成缓存键"""
@@ -344,6 +429,19 @@ class InterfaceExecutor:
         else:
             raise AttributeError(f"Interface {task.interface_name} not found in akshare")
     
+    def _call_akshare_interface_with_sync_timeout(self, task: CallTask, timeout: float) -> Any:
+        """使用线程池超时管理器调用akshare接口（同步执行）"""
+        if not self.thread_timeout_manager:
+            # 如果没有启用线程池超时，回退到普通调用
+            return self._call_akshare_interface(task)
+        
+        # 使用线程池超时管理器执行
+        return self.thread_timeout_manager.execute_with_timeout(
+            self._call_akshare_interface, 
+            (task,), 
+            timeout
+        )
+    
     def _execute_with_retry(self, task: CallTask, context: ExecutionContext) -> CallResult:
         """带重试的执行"""
         last_error = None
@@ -387,17 +485,24 @@ class InterfaceExecutor:
                     
                     return result
                 
-                # 执行接口调用（简化超时控制）
+                # 执行接口调用（使用混合超时机制）
                 start_time = time.time()
                 
-                # 简单的超时检查，避免信号处理冲突
-                data = self._call_akshare_interface(task)
-                
-                execution_time = time.time() - start_time
-                
-                # 检查是否超时（事后检查）
-                if timeout_seconds > 0 and execution_time > timeout_seconds:
-                    raise TimeoutError(f"Interface {task.interface_name} timed out after {execution_time:.2f}s (limit: {timeout_seconds}s)")
+                # 根据配置选择超时机制
+                if timeout_seconds > 0 and self.config.enable_thread_timeout and self.thread_timeout_manager:
+                    # 使用线程池超时管理器（真正的超时中断）
+                    data = self._call_akshare_interface_with_sync_timeout(task, timeout_seconds)
+                    # 记录执行时间到超时管理器
+                    execution_time = time.time() - start_time
+                    self.thread_timeout_manager.record_execution_time(task.interface_name, execution_time)
+                else:
+                    # 使用简单的事后检查超时
+                    data = self._call_akshare_interface(task)
+                    execution_time = time.time() - start_time
+                    
+                    # 检查是否超时（事后检查）
+                    if timeout_seconds > 0 and execution_time > timeout_seconds:
+                        raise TimeoutError(f"Interface {task.interface_name} timed out after {execution_time:.2f}s (limit: {timeout_seconds}s)")
                 
                 # 缓存结果
                 self.cache.set(cache_key, data)
@@ -560,6 +665,141 @@ class InterfaceExecutor:
         
         return result
     
+    async def _execute_with_retry_async(self, task: CallTask, context: ExecutionContext) -> CallResult:
+        """异步版本的带重试执行"""
+        last_error = None
+        total_attempts = 0
+        
+        # 确定超时时间
+        timeout_seconds = self._get_timeout_for_task(task, context)
+        
+        # 执行插件的before_execute
+        for plugin in self.config.plugins:
+            try:
+                plugin.before_execute(task, context)
+            except Exception as e:
+                logger.warning(f"Plugin {plugin.__class__.__name__} before_execute failed: {e}")
+        
+        for attempt in range(task.retry_count):
+            total_attempts += 1
+            try:
+                # 应用频率限制
+                self._apply_rate_limit(task.interface_name)
+                
+                # 检查缓存
+                cache_key = self._get_cache_key(task.interface_name, task.params)
+                cached_result = self.cache.get(cache_key)
+                if cached_result is not None:
+                    logger.debug(f"Cache hit for {task.interface_name}")
+                    result = CallResult(
+                        task_id=task.task_id,
+                        interface_name=task.interface_name,
+                        success=True,
+                        data=cached_result,
+                        metadata={"from_cache": True}
+                    )
+                    
+                    # 执行插件的after_execute
+                    for plugin in self.config.plugins:
+                        try:
+                            plugin.after_execute(result, context)
+                        except Exception as e:
+                            logger.warning(f"Plugin {plugin.__class__.__name__} after_execute failed: {e}")
+                    
+                    return result
+                
+                # 异步执行接口调用
+                start_time = time.time()
+                
+                # 在协程中执行同步调用
+                loop = asyncio.get_event_loop()
+                data = await loop.run_in_executor(None, self._call_akshare_interface, task)
+                
+                execution_time = time.time() - start_time
+                
+                # 缓存结果
+                self.cache.set(cache_key, data)
+                
+                result = CallResult(
+                    task_id=task.task_id,
+                    interface_name=task.interface_name,
+                    success=True,
+                    data=data,
+                    execution_time=execution_time,
+                    metadata={"attempt": attempt + 1}
+                )
+                
+                # 执行插件的after_execute
+                for plugin in self.config.plugins:
+                    try:
+                        plugin.after_execute(result, context)
+                    except Exception as e:
+                        logger.warning(f"Plugin {plugin.__class__.__name__} after_execute failed: {e}")
+                
+                return result
+                
+            except Exception as e:
+                last_error = e
+                error_type = ErrorClassifier.classify_error(e)
+                logger.warning(f"Attempt {attempt + 1} failed for {task.interface_name}: {e} (ErrorType: {error_type.value})")
+                
+                # 检查是否应该重试
+                if not ErrorClassifier.should_retry(error_type, attempt, task.retry_count):
+                    logger.info(f"Not retrying {task.interface_name} due to error type: {error_type.value}")
+                    break
+                
+                if attempt < task.retry_count - 1:
+                    # 计算退避延迟（增加jitter避免雷群效应）
+                    base_delay = self.config.retry_config.base_delay * (self.config.retry_config.exponential_base ** attempt)
+                    jitter = random.uniform(0.1, 0.3) * base_delay  # 添加10-30%的随机抖动
+                    delay = min(base_delay + jitter, self.config.retry_config.max_delay)
+                    
+                    logger.debug(f"Retrying {task.interface_name} in {delay:.2f}s")
+                    await asyncio.sleep(delay)
+        
+        # 所有重试都失败了
+        error_type = ErrorClassifier.classify_error(last_error) if last_error else ErrorType.UNKNOWN_ERROR
+        result = CallResult(
+            task_id=task.task_id,
+            interface_name=task.interface_name,
+            success=False,
+            error=last_error,
+            metadata={
+                "total_attempts": total_attempts,
+                "error_type": error_type.value
+            }
+        )
+        
+        # 执行插件的after_execute
+        for plugin in self.config.plugins:
+            try:
+                plugin.after_execute(result, context)
+            except Exception as e:
+                logger.warning(f"Plugin {plugin.__class__.__name__} after_execute failed: {e}")
+        
+        return result
+    
+    async def _execute_single_with_context_async(self, task: CallTask, context: ExecutionContext) -> CallResult:
+        """在上下文中异步执行单个任务（用于协程超时管理器）"""
+        # 执行前回调
+        if context.pre_execute_hook:
+            context.pre_execute_hook(task)
+        
+        # 异步执行调用
+        result = await self._execute_with_retry_async(task, context)
+        
+        # 错误处理
+        if not result.success and context.error_handler:
+            should_continue = context.error_handler(task, result.error)
+            if not should_continue:
+                logger.info(f"Task {task.task_id} stopped by error handler")
+        
+        # 执行后回调
+        if context.post_execute_hook:
+            context.post_execute_hook(result)
+        
+        return result
+    
     async def execute_async(self, 
                            tasks: List[CallTask],
                            callback: Optional[Callable[[CallResult], None]] = None,
@@ -581,8 +821,23 @@ class InterfaceExecutor:
             # 让出控制权，允许其他协程执行
             await asyncio.sleep(0.001)
             
-            # 在主线程中同步执行，避免信号冲突
-            result = self._execute_single_with_context(task, context)
+            # 获取超时时间
+            timeout_seconds = self._get_timeout_for_task(task, context)
+            
+            # 根据配置选择执行方式
+            if timeout_seconds > 0 and self.config.enable_async_timeout and self.async_timeout_manager:
+                # 使用协程超时管理器
+                coro = self._execute_single_with_context_async(task, context)
+                result = await self.async_timeout_manager.execute_with_timeout(
+                    coro, 
+                    timeout_seconds
+                )
+                # 记录执行时间
+                if result.execution_time > 0:
+                    await self.async_timeout_manager.record_execution_time(task.interface_name, result.execution_time)
+            else:
+                # 在主线程中同步执行，避免信号冲突
+                result = self._execute_single_with_context(task, context)
             
             if callback:
                 callback(result)
@@ -679,9 +934,6 @@ class TaskQueue:
     def is_empty(self) -> bool:
         """是否为空"""
         return self.queue.empty()
-
-
-# ResultCollector类已删除，因为在串行执行中不再需要线程安全的结果收集
 
 
 class BatchCallManager:

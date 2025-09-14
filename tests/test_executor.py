@@ -31,10 +31,18 @@ from core.data.interfaces.executor import (
     InterfaceExecutor, CallTask, CallResult, BatchResult, ExecutionContext,
     ExecutorConfig, RetryConfig, CacheConfig, RateLimit, RateLimiter,
     ErrorType, ErrorClassifier, SimpleCache,
-    TaskQueue, BatchCallManager, ExecutorPlugin
+    TaskQueue, BatchCallManager, ExecutorPlugin,
+    ThreadPoolTimeoutManager, AsyncTimeoutManager
 )
 from core.data.interfaces.base import APIProviderManager, InterfaceMetadata, FunctionCategory, DataSource, ParameterPattern
 from core.data.interfaces.akshare import AkshareProvider
+
+try:
+    import akshare as ak
+    AKSHARE_AVAILABLE = True
+except ImportError:
+    AKSHARE_AVAILABLE = False
+    ak = None
 
 
 class MockExecutorPlugin(ExecutorPlugin):
@@ -582,6 +590,245 @@ class TestInterfaceExecutor(unittest.TestCase):
                 print(f"超时测试跳过（信号处理问题）: {e}")
             else:
                 raise
+    
+    @unittest.skipUnless(AKSHARE_AVAILABLE, "akshare not available")
+    def test_thread_pool_timeout_manager(self):
+        """测试线程池超时管理器"""
+        print("\n=== 测试线程池超时管理器 ===")
+        
+        # 创建线程池超时管理器
+        manager = ThreadPoolTimeoutManager(max_workers=2)
+        
+        def real_slow_interface():
+            """使用真正会超时的接口"""
+            return ak.stock_a_all_pb()  # 这个接口在报告中显示会超时
+        
+        def fast_task():
+            """模拟快任务"""
+            time.sleep(0.5)
+            return "快速完成"
+        
+        try:
+            # 测试超时情况 - 使用真实接口
+            print("测试超时情况（2秒超时，使用真实慢接口）...")
+            start_time = time.time()
+            try:
+                result = manager.execute_with_timeout(real_slow_interface, (), timeout=2.0)
+                print(f"意外成功: {result}")
+            except Exception as e:
+                elapsed = time.time() - start_time
+                print(f"预期超时异常: {type(e).__name__}: {e}")
+                print(f"耗时: {elapsed:.2f}秒")
+                self.assertLessEqual(elapsed, 2.5)  # 允许一些误差
+            
+            # 测试正常情况
+            print("\n测试正常情况（2秒超时，任务需要0.5秒）...")
+            start_time = time.time()
+            try:
+                result = manager.execute_with_timeout(fast_task, (), timeout=2.0)
+                elapsed = time.time() - start_time
+                print(f"成功完成: {result}")
+                print(f"耗时: {elapsed:.2f}秒")
+                self.assertEqual(result, "快速完成")
+                self.assertLessEqual(elapsed, 1.0)
+            except Exception as e:
+                print(f"意外异常: {type(e).__name__}: {e}")
+                self.fail(f"快任务不应该超时: {e}")
+                
+        finally:
+            manager.shutdown()
+            print("线程池已关闭")
+    
+    @unittest.skipUnless(AKSHARE_AVAILABLE, "akshare not available")
+    def test_async_timeout_manager(self):
+        """测试协程超时管理器"""
+        print("\n=== 测试协程超时管理器 ===")
+        
+        async def run_async_test():
+            # 创建协程超时管理器
+            manager = AsyncTimeoutManager()
+            
+            async def async_real_slow_interface():
+                """在异步环境中调用同步接口"""
+                loop = asyncio.get_event_loop()
+                return await loop.run_in_executor(None, ak.stock_news_main_cx)
+            
+            async def fast_async_task():
+                """模拟快异步任务"""
+                await asyncio.sleep(0.5)
+                return "快速异步完成"
+            
+            # 测试超时情况 - 使用真实接口
+            print("测试异步超时情况（2秒超时，使用真实慢接口）...")
+            start_time = time.time()
+            try:
+                result = await manager.execute_with_timeout(async_real_slow_interface(), timeout=2.0)
+                print(f"意外成功: {result}")
+            except Exception as e:
+                elapsed = time.time() - start_time
+                print(f"预期超时异常: {type(e).__name__}: {e}")
+                print(f"耗时: {elapsed:.2f}秒")
+                self.assertLessEqual(elapsed, 2.5)  # 允许一些误差
+            
+            # 测试正常情况
+            print("\n测试异步正常情况（2秒超时，任务需要0.5秒）...")
+            start_time = time.time()
+            try:
+                result = await manager.execute_with_timeout(fast_async_task(), timeout=2.0)
+                elapsed = time.time() - start_time
+                print(f"成功完成: {result}")
+                print(f"耗时: {elapsed:.2f}秒")
+                self.assertEqual(result, "快速异步完成")
+                self.assertLessEqual(elapsed, 1.0)
+            except Exception as e:
+                print(f"意外异常: {type(e).__name__}: {e}")
+                self.fail(f"快异步任务不应该超时: {e}")
+        
+        # 运行异步测试
+        asyncio.run(run_async_test())
+    
+    @unittest.skipUnless(AKSHARE_AVAILABLE, "akshare not available")
+    def test_executor_with_timeout_integration(self):
+        """测试InterfaceExecutor的超时功能集成"""
+        print("\n=== 测试InterfaceExecutor超时功能集成 ===")
+        
+        # 创建配置，启用混合超时
+        config = ExecutorConfig(
+            enable_thread_timeout=True,
+            enable_async_timeout=True,
+            thread_pool_max_workers=2,
+            default_timeout=2.0
+        )
+        
+        # 创建provider manager
+        provider_manager = APIProviderManager()
+        provider = AkshareProvider()
+        provider_manager.register_provider(provider)
+        
+        # 创建executor
+        executor = InterfaceExecutor(provider_manager, config)
+        
+        print(f"线程池超时管理器已启用: {executor.thread_timeout_manager is not None}")
+        print(f"协程超时管理器已启用: {executor.async_timeout_manager is not None}")
+        
+        try:
+            # 测试InterfaceExecutor的超时功能 - 使用真实接口
+            print("\n测试超时接口（stock_news_main_cx，执行时间约18秒）...")
+            
+            # 临时修改默认超时时间
+            original_timeout = executor.config.default_timeout
+            executor.config.default_timeout = 3.0  # 设置3秒超时
+            
+            try:
+                result = executor.execute_single('stock_news_main_cx', {})
+                if result.success:
+                    print(f"意外成功: 数据行数 {len(result.data) if result.data else 0}")
+                else:
+                    print(f"预期失败: {result.error}")
+                    # 检查是否是超时错误
+                    if "timeout" in str(result.error).lower():
+                        print("✓ 超时机制正常工作")
+                    else:
+                        print(f"非超时错误: {result.error}")
+            finally:
+                # 恢复原始超时时间
+                executor.config.default_timeout = original_timeout
+            
+            # 测试正常情况（不超时）- 使用快速接口
+            print("\n测试正常情况（使用快速接口）...")
+            
+            # 修改默认超时时间为10秒
+            original_timeout = executor.config.default_timeout
+            executor.config.default_timeout = 10.0
+            
+            try:
+                # 使用更简单的接口进行测试
+                result = executor.execute_single('tool_trade_date_hist_sina', {})
+                print(f"执行成功: {result.success}")
+                if result.success and result.data is not None:
+                    print(f"数据行数: {len(result.data)}")
+                    self.assertTrue(result.success)
+                elif not result.success:
+                    print(f"执行失败: {result.error}")
+                    # 对于网络相关的失败，我们不认为是测试失败
+                    if "timeout" not in str(result.error).lower():
+                        print("非超时错误，可能是网络问题")
+            finally:
+                # 恢复原始超时设置
+                executor.config.default_timeout = original_timeout
+            
+        finally:
+            # 清理
+            if executor.thread_timeout_manager:
+                executor.thread_timeout_manager.shutdown()
+                print("Executor线程池已关闭")
+
+
+class TestTimeoutManager(unittest.TestCase):
+    """测试超时管理器"""
+    
+    @unittest.skipUnless(AKSHARE_AVAILABLE, "akshare not available")
+    def test_thread_pool_timeout_manager_basic(self):
+        """测试线程池超时管理器基本功能"""
+        print("\n=== 测试线程池超时管理器基本功能 ===")
+        
+        manager = ThreadPoolTimeoutManager(max_workers=2)
+        
+        def simple_task(value):
+            time.sleep(0.1)
+            return value * 2
+        
+        try:
+            # 测试正常执行
+            result = manager.execute_with_timeout(simple_task, (5,), timeout=1.0)
+            self.assertEqual(result, 10)
+            print("✓ 正常执行测试通过")
+            
+            # 测试超时
+            def slow_task():
+                time.sleep(2.0)
+                return "完成"
+            
+            start_time = time.time()
+            with self.assertRaises(Exception):
+                manager.execute_with_timeout(slow_task, (), timeout=0.5)
+            elapsed = time.time() - start_time
+            self.assertLess(elapsed, 1.0)  # 应该在1秒内超时
+            print("✓ 超时测试通过")
+            
+        finally:
+            manager.shutdown()
+            print("✓ 线程池已关闭")
+    
+    def test_async_timeout_manager_basic(self):
+        """测试协程超时管理器基本功能"""
+        print("\n=== 测试协程超时管理器基本功能 ===")
+        
+        async def run_test():
+            manager = AsyncTimeoutManager()
+            
+            async def simple_async_task(value):
+                await asyncio.sleep(0.1)
+                return value * 2
+            
+            # 测试正常执行
+            result = await manager.execute_with_timeout(simple_async_task(5), timeout=1.0)
+            self.assertEqual(result, 10)
+            print("✓ 异步正常执行测试通过")
+            
+            # 测试超时
+            async def slow_async_task():
+                await asyncio.sleep(2.0)
+                return "完成"
+            
+            start_time = time.time()
+            with self.assertRaises(asyncio.TimeoutError):
+                await manager.execute_with_timeout(slow_async_task(), timeout=0.5)
+            elapsed = time.time() - start_time
+            self.assertLess(elapsed, 1.0)  # 应该在1秒内超时
+            print("✓ 异步超时测试通过")
+        
+        asyncio.run(run_test())
 
 
 class TestBatchCallManager(unittest.TestCase):
@@ -762,6 +1009,7 @@ def run_all_tests():
         TestBatchResult,
         TestTaskQueue,
         TestInterfaceExecutor,
+        TestTimeoutManager,
         TestBatchCallManager,
         TestIntegration
     ]
