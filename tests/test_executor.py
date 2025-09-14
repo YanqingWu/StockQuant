@@ -321,9 +321,6 @@ class TestTaskQueue(unittest.TestCase):
         self.assertIsNone(self.queue.get_task())
 
 
-# TestResultCollector类已删除，因为ResultCollector类已被移除
-
-
 class TestInterfaceExecutor(unittest.TestCase):
     """测试接口执行器"""
     
@@ -829,8 +826,6 @@ class TestExecutorCachingTTL(unittest.TestCase):
         self.assertFalse(r2.metadata.get("from_cache", False))
 
 
-
-
 class TestTimeoutManager(unittest.TestCase):
     """测试超时管理器"""
     
@@ -898,7 +893,7 @@ class TestTimeoutManager(unittest.TestCase):
         asyncio.run(run_test())
 
 
-class TestBatchCallManagerAsync(unittest.TestCase):
+class TestTaskManagerAsync(unittest.TestCase):
     def setUp(self):
         self.provider_manager = APIProviderManager()
         self.provider = AkshareProvider()
@@ -915,7 +910,7 @@ class TestBatchCallManagerAsync(unittest.TestCase):
         self.manager = TaskManager(self.executor)
 
     def test_execute_all_async_smoke(self):
-        bcm = TaskManager(self.executor)
+        manager = TaskManager(self.executor)
 
         # mock 同步底层调用，以触发 to_thread 分支
         def mocked_call(task: CallTask):
@@ -924,10 +919,10 @@ class TestBatchCallManagerAsync(unittest.TestCase):
         self.executor._call_akshare_interface = mocked_call  # type: ignore
         try:
             tasks = [CallTask("iface", {"i": i}) for i in range(8)]
-            bcm.add_tasks(tasks)
+            manager.add_tasks(tasks)
 
             async def run():
-                return await bcm.execute_all_async()
+                return await manager.execute_all_async()
 
             result = asyncio.run(run())
             self.assertEqual(result.total_tasks, 8)
@@ -980,7 +975,7 @@ class TestBatchCallManagerAsync(unittest.TestCase):
         self.assertGreaterEqual(result.successful_tasks + result.failed_tasks, 0)
         
         # 打印结果
-        print(f"BatchCallManager执行结果: 成功 {result.successful_tasks}/{result.total_tasks}")
+        print(f"TaskManager执行结果: 成功 {result.successful_tasks}/{result.total_tasks}")
         for i, task_result in enumerate(result.results):
             if task_result.success:
                 print(f"  ✓ {task_result.interface_name}: {task_result.execution_time:.3f}s")
@@ -1024,96 +1019,7 @@ class TestBatchCallManagerAsync(unittest.TestCase):
         self.assertEqual(self.manager.get_queue_size(), 0)
 
 
-# TestTimeoutManager类已删除，因为TimeoutManager类已被移除
-
-
-class TestIntegration(unittest.TestCase):
-    """集成测试"""
-    
-    def setUp(self):
-        # 创建真实的提供者管理器
-        self.provider_manager = APIProviderManager()
-        self.provider = AkshareProvider()
-        self.provider_manager.register_provider(self.provider)
-        
-        # 创建执行器
-        self.config = ExecutorConfig(
-            default_timeout=10.0,  # 根据成功接口测试报告调整：平均0.44s，最大18.14s，设置10s超时
-            retry_config=RetryConfig(max_retries=1),
-            cache_config=CacheConfig(enabled=True, ttl=60)
-        )
-        self.executor = InterfaceExecutor(self.provider_manager, self.config)
-    
-    def test_real_interface_execution(self):
-        """测试真实接口执行"""
-        # 获取一个简单的接口进行测试
-        interfaces = self.provider.get_supported_interfaces()
-        simple_interface = None
-        
-        for interface_name in interfaces:
-            metadata = self.provider.get_interface_metadata(interface_name)
-            if metadata and not metadata.required_params and not metadata.optional_params:
-                simple_interface = interface_name
-                break
-        
-        if simple_interface:
-            result = self.executor.execute_single(simple_interface, {})
-            # 不要求一定成功，因为网络等因素可能影响
-            self.assertIsNotNone(result)
-            self.assertIsNotNone(result.task_id)
-            self.assertEqual(result.interface_name, simple_interface)
-    
-    def test_batch_execution_with_real_interfaces(self):
-        """测试真实接口批量执行"""
-        # 获取几个简单的接口
-        interfaces = self.provider.get_supported_interfaces()[:3]
-        tasks = []
-        
-        for interface_name in interfaces:
-            metadata = self.provider.get_interface_metadata(interface_name)
-            if metadata and not metadata.required_params:
-                task = CallTask(interface_name, {})
-                tasks.append(task)
-        
-        if tasks:
-            batch_result = self.executor.execute_batch(tasks)
-            self.assertEqual(batch_result.total_tasks, len(tasks))
-            self.assertGreaterEqual(batch_result.successful_tasks, 0)
-            self.assertGreaterEqual(batch_result.failed_tasks, 0)
-
-
-def run_all_tests():
-    """运行所有测试"""
-    # 创建测试套件
-    test_suite = unittest.TestSuite()
-    
-    # 添加所有测试类
-    test_classes = [
-        TestErrorClassifier,
-        TestRateLimiter,
-        TestSimpleCache,
-        TestCallTask,
-        TestCallResult,
-        TestBatchResult,
-        TestTaskQueue,
-        TestInterfaceExecutor,
-        TestTimeoutManager,
-        TestBatchCallManager,
-        TestIntegration
-    ]
-    
-    for test_class in test_classes:
-        tests = unittest.TestLoader().loadTestsFromTestCase(test_class)
-        test_suite.addTests(tests)
-    
-    # 运行测试
-    runner = unittest.TextTestRunner(verbosity=2)
-    result = runner.run(test_suite)
-    
-    return result.wasSuccessful()
-
-
-class TestBatchCallManagerPriority(unittest.TestCase):
+class TestTaskManagerPriority(unittest.TestCase):
     def setUp(self):
         self.provider_manager = APIProviderManager()
         self.provider = AkshareProvider()
@@ -1238,7 +1144,7 @@ class TestBatchCallManagerPriority(unittest.TestCase):
         self.assertGreaterEqual(result.successful_tasks + result.failed_tasks, 0)
         
         # 打印结果
-        print(f"BatchCallManager执行结果: 成功 {result.successful_tasks}/{result.total_tasks}")
+        print(f"TaskManager执行结果: 成功 {result.successful_tasks}/{result.total_tasks}")
         for i, task_result in enumerate(result.results):
             if task_result.success:
                 print(f"  ✓ {task_result.interface_name}: {task_result.execution_time:.3f}s")
@@ -1280,9 +1186,6 @@ class TestBatchCallManagerPriority(unittest.TestCase):
         # 清空队列
         self.manager.clear_queue()
         self.assertEqual(self.manager.get_queue_size(), 0)
-
-
-# TestTimeoutManager类已删除，因为TimeoutManager类已被移除
 
 
 class TestIntegration(unittest.TestCase):
@@ -1338,90 +1241,6 @@ class TestIntegration(unittest.TestCase):
             self.assertEqual(batch_result.total_tasks, len(tasks))
             self.assertGreaterEqual(batch_result.successful_tasks, 0)
             self.assertGreaterEqual(batch_result.failed_tasks, 0)
-
-
-def run_all_tests():
-    """运行所有测试"""
-    # 创建测试套件
-    test_suite = unittest.TestSuite()
-    
-    # 添加所有测试类
-    test_classes = [
-        TestErrorClassifier,
-        TestRateLimiter,
-        TestSimpleCache,
-        TestCallTask,
-        TestCallResult,
-        TestBatchResult,
-        TestTaskQueue,
-        TestInterfaceExecutor,
-        TestTimeoutManager,
-        TestBatchCallManager,
-        TestIntegration
-    ]
-    
-    for test_class in test_classes:
-        tests = unittest.TestLoader().loadTestsFromTestCase(test_class)
-        test_suite.addTests(tests)
-    
-    # 运行测试
-    runner = unittest.TextTestRunner(verbosity=2)
-    result = runner.run(test_suite)
-    
-    return result.wasSuccessful()
-
-
-class TestAsyncConcurrencyLimit(unittest.TestCase):
-    def setUp(self):
-        # 创建真实的提供者管理器（不会调用到，因为会打桩执行器内部方法）
-        self.provider_manager = APIProviderManager()
-        self.provider = AkshareProvider()
-        self.provider_manager.register_provider(self.provider)
-        self.config = ExecutorConfig(
-            default_timeout=0.0,
-            retry_config=RetryConfig(max_retries=1),
-            cache_config=CacheConfig(enabled=False),
-            async_max_concurrency=3,  # 设定并发上限
-            enable_async_timeout=False  # 走 asyncio.to_thread 路径，便于在桩中测并发
-        )
-        self.executor = InterfaceExecutor(self.provider_manager, self.config)
-
-    def test_async_max_concurrency_respected(self):
-        # 构造多任务以触发并发
-        task_count = 12
-        tasks = [CallTask("iface", {"i": i}) for i in range(task_count)]
-
-        # 通过打桩 _execute_single_with_context 来测量并发度（该函数会在线程池中执行）
-        lock = threading.Lock()
-        state = {"current": 0, "max": 0}
-
-        original_impl = InterfaceExecutor._execute_single_with_context
-
-        def stubbed_execute_single_with_context(self_exec: InterfaceExecutor, task: CallTask, context: ExecutionContext) -> CallResult:
-            with lock:
-                state["current"] += 1
-                if state["current"] > state["max"]:
-                    state["max"] = state["current"]
-            # 停顿一段时间以制造重叠，从而观察并发上限
-            time.sleep(0.2)
-            with lock:
-                state["current"] -= 1
-            return CallResult(task.task_id, task.interface_name, True, data=task.params.get("i"))
-
-        InterfaceExecutor._execute_single_with_context = stubbed_execute_single_with_context  # type: ignore
-        try:
-            async def run():
-                return await self.executor.execute_async(tasks)
-            batch_result = asyncio.run(run())
-
-            # 基本正确性断言
-            self.assertEqual(batch_result.total_tasks, task_count)
-            self.assertEqual(len(batch_result.results), task_count)
-
-            # 关键断言：最大并发不超过配置
-            self.assertLessEqual(state["max"], self.config.async_max_concurrency)
-        finally:
-            InterfaceExecutor._execute_single_with_context = original_impl  # type: ignore
 
 
 class TestPluginProtocolConsistency(unittest.TestCase):
@@ -1654,37 +1473,6 @@ class TestAsyncRateLimitAndRetry(unittest.TestCase):
             InterfaceExecutor._call_akshare_interface = original  # type: ignore
 
 
-def run_all_tests():
-    """运行所有测试"""
-    # 创建测试套件
-    test_suite = unittest.TestSuite()
-    
-    # 添加所有测试类
-    test_classes = [
-        TestErrorClassifier,
-        TestRateLimiter,
-        TestSimpleCache,
-        TestCallTask,
-        TestCallResult,
-        TestBatchResult,
-        TestTaskQueue,
-        TestInterfaceExecutor,
-        TestTimeoutManager,
-        TestBatchCallManager,
-        TestIntegration
-    ]
-    
-    for test_class in test_classes:
-        tests = unittest.TestLoader().loadTestsFromTestCase(test_class)
-        test_suite.addTests(tests)
-    
-    # 运行测试
-    runner = unittest.TextTestRunner(verbosity=2)
-    result = runner.run(test_suite)
-    
-    return result.wasSuccessful()
-
-
 class TestAsyncConcurrencyLimit(unittest.TestCase):
     def setUp(self):
         # 创建真实的提供者管理器（不会调用到，因为会打桩执行器内部方法）
@@ -1736,6 +1524,42 @@ class TestAsyncConcurrencyLimit(unittest.TestCase):
             self.assertLessEqual(state["max"], self.config.async_max_concurrency)
         finally:
             InterfaceExecutor._execute_single_with_context = original_impl  # type: ignore
+
+
+def run_all_tests():
+    """运行所有测试"""
+    # 创建测试套件
+    test_suite = unittest.TestSuite()
+    
+    # 添加所有测试类（去重并仅包含实际存在的类）
+    test_classes = [
+        TestErrorClassifier,
+        TestRateLimiter,
+        TestSimpleCache,
+        TestCallTask,
+        TestCallResult,
+        TestBatchResult,
+        TestTaskQueue,
+        TestInterfaceExecutor,
+        TestExecutorCachingTTL,
+        TestTimeoutManager,
+        TestTaskManagerAsync,
+        TestTaskManagerPriority,
+        TestIntegration,
+        TestPluginProtocolConsistency,
+        TestAsyncRateLimitAndRetry,
+        TestAsyncConcurrencyLimit,
+    ]
+    
+    for test_class in test_classes:
+        tests = unittest.TestLoader().loadTestsFromTestCase(test_class)
+        test_suite.addTests(tests)
+    
+    # 运行测试
+    runner = unittest.TextTestRunner(verbosity=2)
+    result = runner.run(test_suite)
+    
+    return result.wasSuccessful()
 
 
 if __name__ == "__main__":
