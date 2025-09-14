@@ -975,7 +975,10 @@ class InterfaceExecutor:
 
 
 class TaskQueue:
-    """任务队列"""
+    """简单任务队列
+    注意：当前实现未做线程/协程级别的并发安全保证，推荐在单线程/单协程上下文中使用；
+    如果需要并发入队/出队，请在上层调用方确保互斥或扩展本类加锁。
+    """
     
     def __init__(self, use_priority: bool = True):
         self.use_priority = use_priority
@@ -1010,12 +1013,17 @@ class TaskQueue:
 
 
 class BatchCallManager:
-    """批量调用管理器 - 管理多接口批量执行"""
+    """批量调用管理器 - 管理多接口批量执行
+    职责边界：
+    - 负责任务的组织、筛选与批次编排；
+    - 具体执行策略（并发、重试、超时、限流、缓存、插件）统一交由 InterfaceExecutor 处理；
+    - 当前实现默认单线程/单协程使用，不保证跨线程并发下的队列安全。
+    """
     
     def __init__(self, executor: InterfaceExecutor):
         self.executor = executor
         self.task_queue = TaskQueue()
-        self.results = []  # 简单的结果列表，替代ResultCollector
+        # results 字段取消，避免与 BatchResult 的收集逻辑重复，降低心智负担
     
     def add_task(self, task: CallTask) -> str:
         """添加任务到队列"""
@@ -1041,7 +1049,7 @@ class BatchCallManager:
         )
     
     def execute_all(self, context: Optional[ExecutionContext] = None) -> BatchResult:
-        """执行所有任务"""
+        """执行所有任务（同步）"""
         tasks = []
         while not self.task_queue.is_empty():
             task = self.task_queue.get_task()
@@ -1063,10 +1071,36 @@ class BatchCallManager:
         
         return self.executor.execute_batch(tasks, context)
     
+    async def execute_all_async(self, context: Optional[ExecutionContext] = None) -> BatchResult:
+        """执行所有任务（异步）——委托给 InterfaceExecutor.execute_async，避免阻塞事件循环"""
+        tasks = []
+        while not self.task_queue.is_empty():
+            task = self.task_queue.get_task()
+            if task:
+                tasks.append(task)
+        
+        if not tasks:
+            logger.warning("No tasks to execute")
+            return BatchResult(
+                session_id=str(uuid.uuid4()),
+                total_tasks=0,
+                successful_tasks=0,
+                failed_tasks=0,
+                results=[],
+                execution_summary={},
+                start_time=time.time(),
+                end_time=time.time()
+            )
+        
+        return await self.executor.execute_async(tasks, context)
+    
     def execute_by_filter(self, 
                          filter_func: Callable[[CallTask], bool],
                          context: Optional[ExecutionContext] = None) -> BatchResult:
-        """按条件执行任务"""
+        """按条件执行任务（同步）
+        说明：当前实现通过出队全部任务后进行筛选，并将未命中特征的任务回填队列；
+        若需在并发环境稳定运行，建议在外层加互斥保护，或扩展 TaskQueue 实现非破坏性筛选。
+        """
         # 获取所有任务
         all_tasks = []
         while not self.task_queue.is_empty():

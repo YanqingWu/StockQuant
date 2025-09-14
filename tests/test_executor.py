@@ -831,23 +831,44 @@ class TestTimeoutManager(unittest.TestCase):
         asyncio.run(run_test())
 
 
-class TestBatchCallManager(unittest.TestCase):
-    """测试批量调用管理器"""
-    
+class TestBatchCallManagerAsync(unittest.TestCase):
     def setUp(self):
-        # 创建真实的提供者管理器
         self.provider_manager = APIProviderManager()
         self.provider = AkshareProvider()
         self.provider_manager.register_provider(self.provider)
-        
-        # 创建执行器
         self.config = ExecutorConfig(
-            default_timeout=10.0,  # 根据成功接口测试报告调整：平均0.44s，最大18.14s，设置10s超时
+            default_timeout=0.0,
             retry_config=RetryConfig(max_retries=1),
-            cache_config=CacheConfig(enabled=True, ttl=60)
+            cache_config=CacheConfig(enabled=False),
+            async_max_concurrency=5,
+            enable_async_timeout=False
         )
         self.executor = InterfaceExecutor(self.provider_manager, self.config)
+        # 补充：维护与原有用例一致的管理器实例
         self.manager = BatchCallManager(self.executor)
+
+    def test_execute_all_async_smoke(self):
+        bcm = BatchCallManager(self.executor)
+
+        # mock 同步底层调用，以触发 to_thread 分支
+        def mocked_call(task: CallTask):
+            return {"ok": True, "name": task.interface_name}
+        original_call = self.executor._call_akshare_interface  # type: ignore
+        self.executor._call_akshare_interface = mocked_call  # type: ignore
+        try:
+            tasks = [CallTask("iface", {"i": i}) for i in range(8)]
+            bcm.add_tasks(tasks)
+
+            async def run():
+                return await bcm.execute_all_async()
+
+            result = asyncio.run(run())
+            self.assertEqual(result.total_tasks, 8)
+            self.assertEqual(len(result.results), 8)
+            self.assertTrue(all(r.success for r in result.results))
+        finally:
+            # 恢复原方法，避免影响后续用例
+            self.executor._call_akshare_interface = original_call  # type: ignore
     
     def test_add_task(self):
         """测试添加任务 - 使用真实接口"""
