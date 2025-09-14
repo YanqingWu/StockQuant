@@ -32,7 +32,7 @@ from core.data.interfaces.executor import (
     InterfaceExecutor, CallTask, CallResult, BatchResult, ExecutionContext,
     ExecutorConfig, RetryConfig, CacheConfig, RateLimit, RateLimiter,
     ErrorType, ErrorClassifier, SimpleCache,
-    TaskQueue, BatchCallManager, ExecutorPlugin,
+    TaskQueue, TaskManager, ExecutorPlugin,
     ThreadPoolTimeoutManager, AsyncTimeoutManager
 )
 from core.data.interfaces.base import APIProviderManager, InterfaceMetadata, FunctionCategory, DataSource, ParameterPattern
@@ -912,10 +912,10 @@ class TestBatchCallManagerAsync(unittest.TestCase):
         )
         self.executor = InterfaceExecutor(self.provider_manager, self.config)
         # 补充：维护与原有用例一致的管理器实例
-        self.manager = BatchCallManager(self.executor)
+        self.manager = TaskManager(self.executor)
 
     def test_execute_all_async_smoke(self):
-        bcm = BatchCallManager(self.executor)
+        bcm = TaskManager(self.executor)
 
         # mock 同步底层调用，以触发 to_thread 分支
         def mocked_call(task: CallTask):
@@ -1126,7 +1126,7 @@ class TestBatchCallManagerPriority(unittest.TestCase):
             enable_async_timeout=False
         )
         self.executor = InterfaceExecutor(self.provider_manager, self.config)
-        self.manager = BatchCallManager(self.executor)
+        self.manager = TaskManager(self.executor)
 
     def test_sync_priority_ordering(self):
         # 添加不同优先级任务（数值越大优先级越高）

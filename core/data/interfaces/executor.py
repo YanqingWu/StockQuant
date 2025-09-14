@@ -1077,8 +1077,8 @@ class TaskQueue:
         return self.queue.empty()
 
 
-class BatchCallManager:
-    """批量调用管理器 - 管理多接口批量执行
+class TaskManager:
+    """任务管理器 - 管理多接口批量执行  
     职责边界：
     - 负责任务的组织、筛选与批次编排；
     - 具体执行策略（并发、重试、超时、限流、缓存、插件）统一交由 InterfaceExecutor 处理；
