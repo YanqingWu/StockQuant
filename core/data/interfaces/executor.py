@@ -217,6 +217,11 @@ class ExecutorConfig:
     enable_async_timeout: bool = True   # 是否启用协程超时（异步执行）
     thread_pool_max_workers: int = 10   # 线程池最大工作线程数
     async_timeout_check_interval: float = 0.1  # 异步超时检查间隔（秒）
+    
+    # 新增：异步批量执行的全局并发上限（<=0 表示不限制）
+    async_max_concurrency: int = 20
+    # 新增：自定义缓存键函数；签名 (interface_name: str, params: Dict[str, Any]) -> str
+    cache_key_func: Optional[Callable[[str, Dict[str, Any]], str]] = None
 
 
 @dataclass
@@ -389,6 +394,13 @@ class InterfaceExecutor:
         import hashlib
         import json
         
+        # 优先使用用户自定义的缓存键函数
+        if getattr(self.config, 'cache_key_func', None):
+            try:
+                return self.config.cache_key_func(interface_name, params)
+            except Exception as e:
+                logger.warning(f"Custom cache_key_func failed, fallback to default: {e}")
+        
         # 将参数排序后序列化，确保相同参数生成相同的键
         sorted_params = json.dumps(params, sort_keys=True, ensure_ascii=False)
         key_str = f"{interface_name}:{sorted_params}"
@@ -403,6 +415,20 @@ class InterfaceExecutor:
                 if wait_time > 0:
                     logger.debug(f"Rate limit reached for {interface_name}, waiting {wait_time:.2f}s")
                     time.sleep(wait_time)
+    
+    # 新增：异步版本的频率限制，避免在协程中阻塞事件循环
+    async def _apply_rate_limit_async(self, interface_name: str) -> None:
+        """应用频率限制（异步非阻塞）"""
+        if interface_name in self.rate_limiters:
+            limiter = self.rate_limiters[interface_name]
+            while not limiter.acquire():
+                wait_time = limiter.wait_time()
+                if wait_time > 0:
+                    logger.debug(f"Rate limit reached for {interface_name}, waiting {wait_time:.2f}s (async)")
+                    await asyncio.sleep(wait_time)
+                else:
+                    # 让出控制权，避免忙等
+                    await asyncio.sleep(0)
     
     def _get_timeout_for_task(self, task: CallTask, context: ExecutionContext) -> float:
         """获取任务的超时时间"""
@@ -529,6 +555,19 @@ class InterfaceExecutor:
                 last_error = e
                 error_type = ErrorClassifier.classify_error(e)
                 logger.warning(f"Attempt {attempt + 1} failed for {task.interface_name}: {e} (ErrorType: {error_type.value})")
+                
+                # 先询问插件是否继续（任何插件返回False则终止重试）
+                plugin_continue = True
+                for plugin in self.config.plugins:
+                    try:
+                        if hasattr(plugin, 'on_error'):
+                            if plugin.on_error(task, e, context) is False:
+                                plugin_continue = False
+                    except Exception as pe:
+                        logger.warning(f"Plugin {plugin.__class__.__name__} on_error failed: {pe}")
+                if not plugin_continue:
+                    logger.info(f"Retry aborted by plugin for {task.interface_name}")
+                    break
                 
                 # 检查是否应该重试
                 if not ErrorClassifier.should_retry(error_type, attempt, task.retry_count):
@@ -684,7 +723,7 @@ class InterfaceExecutor:
             total_attempts += 1
             try:
                 # 应用频率限制
-                self._apply_rate_limit(task.interface_name)
+                await self._apply_rate_limit_async(task.interface_name)
                 
                 # 检查缓存
                 cache_key = self._get_cache_key(task.interface_name, task.params)
@@ -717,6 +756,10 @@ class InterfaceExecutor:
                 
                 execution_time = time.time() - start_time
                 
+                # 记录执行时间到异步超时管理器（如果启用）
+                if self.config.enable_async_timeout and self.async_timeout_manager and execution_time > 0:
+                    await self.async_timeout_manager.record_execution_time(task.interface_name, execution_time)
+                
                 # 缓存结果
                 self.cache.set(cache_key, data)
                 
@@ -742,6 +785,20 @@ class InterfaceExecutor:
                 last_error = e
                 error_type = ErrorClassifier.classify_error(e)
                 logger.warning(f"Attempt {attempt + 1} failed for {task.interface_name}: {e} (ErrorType: {error_type.value})")
+                
+                # 插件on_error（放到线程），任何返回False则终止重试
+                plugin_continue = True
+                for plugin in self.config.plugins:
+                    try:
+                        if hasattr(plugin, 'on_error'):
+                            cont = await asyncio.to_thread(plugin.on_error, task, e, context)
+                            if cont is False:
+                                plugin_continue = False
+                    except Exception as pe:
+                        logger.warning(f"Plugin {plugin.__class__.__name__} on_error failed: {pe}")
+                if not plugin_continue:
+                    logger.info(f"Retry aborted by plugin for {task.interface_name}")
+                    break
                 
                 # 检查是否应该重试
                 if not ErrorClassifier.should_retry(error_type, attempt, task.retry_count):
@@ -816,32 +873,48 @@ class InterfaceExecutor:
         
         logger.info(f"Starting async execution with {len(tasks)} tasks (session: {session_id})")
         
+        # 新增：全局并发控制
+        semaphore = None
+        try:
+            limit = int(getattr(self.config, 'async_max_concurrency', 0))
+            if limit and limit > 0:
+                semaphore = asyncio.Semaphore(limit)
+        except Exception:
+            semaphore = None
+        
         # 创建异步任务 - 主线程执行+协程调度
         async def execute_task_async(task: CallTask) -> CallResult:
             # 让出控制权，允许其他协程执行
             await asyncio.sleep(0.001)
             
-            # 获取超时时间
-            timeout_seconds = self._get_timeout_for_task(task, context)
+            async def _run() -> CallResult:
+                # 获取超时时间
+                timeout_seconds = self._get_timeout_for_task(task, context)
+                
+                # 根据配置选择执行方式
+                if timeout_seconds > 0 and self.config.enable_async_timeout and self.async_timeout_manager:
+                    # 使用协程超时管理器
+                    coro = self._execute_single_with_context_async(task, context)
+                    result = await self.async_timeout_manager.execute_with_timeout(
+                        coro, 
+                        timeout_seconds
+                    )
+                    # 记录执行时间
+                    if result.execution_time > 0:
+                        await self.async_timeout_manager.record_execution_time(task.interface_name, result.execution_time)
+                else:
+                    # 在协程中避免阻塞事件循环，将同步执行卸载到线程
+                    result = await asyncio.to_thread(self._execute_single_with_context, task, context)
+                
+                if callback:
+                    callback(result)
+                return result
             
-            # 根据配置选择执行方式
-            if timeout_seconds > 0 and self.config.enable_async_timeout and self.async_timeout_manager:
-                # 使用协程超时管理器
-                coro = self._execute_single_with_context_async(task, context)
-                result = await self.async_timeout_manager.execute_with_timeout(
-                    coro, 
-                    timeout_seconds
-                )
-                # 记录执行时间
-                if result.execution_time > 0:
-                    await self.async_timeout_manager.record_execution_time(task.interface_name, result.execution_time)
+            if semaphore is None:
+                return await _run()
             else:
-                # 在主线程中同步执行，避免信号冲突
-                result = self._execute_single_with_context(task, context)
-            
-            if callback:
-                callback(result)
-            return result
+                async with semaphore:
+                    return await _run()
         
         # 分批执行，避免创建过多协程
         batch_size = 50

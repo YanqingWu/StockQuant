@@ -1025,6 +1025,177 @@ def run_all_tests():
     return result.wasSuccessful()
 
 
+class TestExecutorP1AdditionalTests(unittest.TestCase):
+    """P1新增能力补充测试：
+    1) 异步全局并发限制（Semaphore）
+    2) 插件 on_error 返回 False 终止重试（同步与异步）
+    """
+
+    def setUp(self):
+        # 依赖于真实 ProviderManager 的基本构造（不会实际调用 akshare，因为会mock内部执行函数）
+        self.provider_manager = APIProviderManager()
+        self.provider = AkshareProvider()
+        self.provider_manager.register_provider(self.provider)
+
+    def test_async_global_concurrency_limit(self):
+        """验证 execute_async 的全局并发上限不被突破"""
+        # 设置较小的并发上限，禁用缓存和协程超时，使其走 to_thread 分支
+        config = ExecutorConfig(
+            default_timeout=0.0,
+            retry_config=RetryConfig(max_retries=1),
+            cache_config=CacheConfig(enabled=False),
+            async_max_concurrency=3,
+            enable_async_timeout=False
+        )
+        executor = InterfaceExecutor(self.provider_manager, config)
+
+        import time as _time
+        import threading as _threading
+        current = 0
+        max_seen = 0
+        lock = _threading.Lock()
+
+        def mocked_call(task: CallTask):
+            nonlocal current, max_seen
+            with lock:
+                current += 1
+                if current > max_seen:
+                    max_seen = current
+            try:
+                _time.sleep(0.05)  # 模拟IO等待
+                return {"ok": True}
+            finally:
+                with lock:
+                    current -= 1
+
+        # 替换底层实际调用为mock
+        executor._call_akshare_interface = mocked_call  # type: ignore
+
+        tasks = [CallTask("fake_interface", {}) for _ in range(12)]
+
+        async def run():
+            return await executor.execute_async(tasks)
+
+        batch_result = asyncio.run(run())
+
+        # 断言：最大并发不超过限制；并确保确实发生了并发（>1）
+        self.assertLessEqual(max_seen, 3, f"并发上限被突破: {max_seen} > 3")
+        self.assertGreaterEqual(max_seen, 2, f"未观察到有效并发: {max_seen}")
+        self.assertEqual(batch_result.total_tasks, 12)
+        self.assertEqual(len(batch_result.results), 12)
+        # 所有任务都应成功
+        self.assertTrue(all(r.success for r in batch_result.results))
+
+    def test_plugin_on_error_abort_retry_sync(self):
+        """验证同步执行路径中，插件 on_error 返回 False 可终止重试"""
+        # 配置多次重试，但通过插件中止
+        config = ExecutorConfig(
+            default_timeout=0.0,
+            retry_config=RetryConfig(max_retries=3, base_delay=0.001, max_delay=0.002),
+            cache_config=CacheConfig(enabled=False)
+        )
+        executor = InterfaceExecutor(self.provider_manager, config)
+
+        def always_fail(task: CallTask):
+            raise ValueError("boom")
+
+        executor._call_akshare_interface = always_fail  # type: ignore
+
+        class AbortOnErrorPlugin(ExecutorPlugin):
+            def __init__(self):
+                self.called = 0
+            def before_execute(self, task: CallTask, context: ExecutionContext) -> None:
+                pass
+            def after_execute(self, result: CallResult, context: ExecutionContext) -> None:
+                pass
+            def on_error(self, task: CallTask, error: Exception, context: ExecutionContext) -> bool:
+                self.called += 1
+                return False  # 明确中止后续重试
+
+        plugin = AbortOnErrorPlugin()
+        executor.config.plugins = [plugin]
+
+        result = executor.execute_single("fake_interface", {})
+        self.assertFalse(result.success)
+        self.assertIn("total_attempts", result.metadata)
+        self.assertEqual(result.metadata.get("total_attempts"), 1, f"应在首次失败后中止，实际尝试: {result.metadata}")
+        self.assertEqual(plugin.called, 1)
+
+    def test_plugin_on_error_abort_retry_async(self):
+        """验证异步执行路径中，插件 on_error 返回 False 可终止重试（并走异步on_error调用）"""
+        # 设置默认超时>0并启用异步超时以走 _execute_with_retry_async 路径
+        config = ExecutorConfig(
+            default_timeout=0.5,
+            retry_config=RetryConfig(max_retries=3, base_delay=0.001, max_delay=0.002),
+            cache_config=CacheConfig(enabled=False),
+            enable_async_timeout=True
+        )
+        executor = InterfaceExecutor(self.provider_manager, config)
+
+        def always_fail(task: CallTask):
+            raise RuntimeError("async-boom")
+
+        executor._call_akshare_interface = always_fail  # type: ignore
+
+        class AbortOnErrorPlugin(ExecutorPlugin):
+            def __init__(self):
+                self.called = 0
+            def before_execute(self, task: CallTask, context: ExecutionContext) -> None:
+                pass
+            def after_execute(self, result: CallResult, context: ExecutionContext) -> None:
+                pass
+            def on_error(self, task: CallTask, error: Exception, context: ExecutionContext) -> bool:
+                self.called += 1
+                return False
+
+        plugin = AbortOnErrorPlugin()
+        executor.config.plugins = [plugin]
+
+        task = CallTask("fake_interface", {})
+
+        async def run():
+            return await executor.execute_async([task])
+
+        batch_result = asyncio.run(run())
+        self.assertEqual(batch_result.total_tasks, 1)
+        self.assertEqual(len(batch_result.results), 1)
+        res = batch_result.results[0]
+        self.assertFalse(res.success)
+        self.assertEqual(res.metadata.get("total_attempts"), 1, f"应在首次失败后中止，实际: {res.metadata}")
+        self.assertEqual(plugin.called, 1)
+
+
+def run_all_tests():
+    """运行所有测试"""
+    # 创建测试套件
+    test_suite = unittest.TestSuite()
+    
+    # 添加所有测试类
+    test_classes = [
+        TestErrorClassifier,
+        TestRateLimiter,
+        TestSimpleCache,
+        TestCallTask,
+        TestCallResult,
+        TestBatchResult,
+        TestTaskQueue,
+        TestInterfaceExecutor,
+        TestTimeoutManager,
+        TestBatchCallManager,
+        TestIntegration
+    ]
+    
+    for test_class in test_classes:
+        tests = unittest.TestLoader().loadTestsFromTestCase(test_class)
+        test_suite.addTests(tests)
+    
+    # 运行测试
+    runner = unittest.TextTestRunner(verbosity=2)
+    result = runner.run(test_suite)
+    
+    return result.wasSuccessful()
+
+
 if __name__ == "__main__":
     print("开始执行Executor模块全面测试...")
     print("=" * 80)
