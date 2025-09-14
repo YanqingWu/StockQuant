@@ -57,33 +57,26 @@ class InterfaceTestResult:
         }
 
 
-
-
-
-class EnhancedParameterGenerator:
+class ParameterGenerator:
     """增强的参数生成器 - 适配新的接口元数据"""
     
     def __init__(self, logger=None):
         self.logger = logger or logging.getLogger(__name__)
-        
-
     
     def generate_params_for_interface(self, interface: InterfaceMetadata) -> Dict[str, Any]:
         """为特定接口获取参数"""
         # 直接使用接口的示例参数，如果没有则返回空字典
         return interface.example_params or {}
-    
 
 
-
-class ComprehensiveInterfaceTester:
+class InterfaceTester:
     """全面的接口测试器"""
     
     def __init__(self):
         self.logger = self._setup_logger()
         self.provider_manager = self._setup_provider_manager()
         self.executor = self._setup_executor()
-        self.parameter_generator = EnhancedParameterGenerator(self.logger)
+        self.parameter_generator = ParameterGenerator(self.logger)
         self.test_results = []
         
         # 获取所有接口
@@ -406,7 +399,7 @@ class ComprehensiveInterfaceTester:
 def run_interface_tests():
     """运行接口测试"""
     try:
-        tester = ComprehensiveInterfaceTester()
+        tester = InterfaceTester()
         report = tester.run_comprehensive_test()
         
         # 打印测试报告
