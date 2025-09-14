@@ -1305,6 +1305,223 @@ def run_all_tests():
     return result.wasSuccessful()
 
 
+class TestAsyncConcurrencyLimit(unittest.TestCase):
+    def setUp(self):
+        # 创建真实的提供者管理器（不会调用到，因为会打桩执行器内部方法）
+        self.provider_manager = APIProviderManager()
+        self.provider = AkshareProvider()
+        self.provider_manager.register_provider(self.provider)
+        self.config = ExecutorConfig(
+            default_timeout=0.0,
+            retry_config=RetryConfig(max_retries=1),
+            cache_config=CacheConfig(enabled=False),
+            async_max_concurrency=3,  # 设定并发上限
+            enable_async_timeout=False  # 走 asyncio.to_thread 路径，便于在桩中测并发
+        )
+        self.executor = InterfaceExecutor(self.provider_manager, self.config)
+
+    def test_async_max_concurrency_respected(self):
+        # 构造多任务以触发并发
+        task_count = 12
+        tasks = [CallTask("iface", {"i": i}) for i in range(task_count)]
+
+        # 通过打桩 _execute_single_with_context 来测量并发度（该函数会在线程池中执行）
+        lock = threading.Lock()
+        state = {"current": 0, "max": 0}
+
+        original_impl = InterfaceExecutor._execute_single_with_context
+
+        def stubbed_execute_single_with_context(self_exec: InterfaceExecutor, task: CallTask, context: ExecutionContext) -> CallResult:
+            with lock:
+                state["current"] += 1
+                if state["current"] > state["max"]:
+                    state["max"] = state["current"]
+            # 停顿一段时间以制造重叠，从而观察并发上限
+            time.sleep(0.2)
+            with lock:
+                state["current"] -= 1
+            return CallResult(task.task_id, task.interface_name, True, data=task.params.get("i"))
+
+        InterfaceExecutor._execute_single_with_context = stubbed_execute_single_with_context  # type: ignore
+        try:
+            async def run():
+                return await self.executor.execute_async(tasks)
+            batch_result = asyncio.run(run())
+
+            # 基本正确性断言
+            self.assertEqual(batch_result.total_tasks, task_count)
+            self.assertEqual(len(batch_result.results), task_count)
+
+            # 关键断言：最大并发不超过配置
+            self.assertLessEqual(state["max"], self.config.async_max_concurrency)
+        finally:
+            InterfaceExecutor._execute_single_with_context = original_impl  # type: ignore
+
+
+class TestPluginProtocolConsistency(unittest.TestCase):
+    def setUp(self):
+        self.provider_manager = APIProviderManager()
+        self.provider = AkshareProvider()
+        self.provider_manager.register_provider(self.provider)
+        self.config = ExecutorConfig(
+            default_timeout=0.0,
+            retry_config=RetryConfig(max_retries=3, base_delay=0.01, max_delay=0.02),
+            cache_config=CacheConfig(enabled=False),
+            enable_async_timeout=False
+        )
+        self.executor = InterfaceExecutor(self.provider_manager, self.config)
+
+    def test_on_error_can_abort_retry_sync(self):
+        # 构造始终抛错的接口调用（通过打桩 _call_akshare_interface）
+        original_call = InterfaceExecutor._call_akshare_interface
+        def always_fail(self_exec: InterfaceExecutor, task: CallTask):
+            raise ValueError("boom")
+        InterfaceExecutor._call_akshare_interface = always_fail  # type: ignore
+
+        # 构造插件：记录调用并在首次错误时返回 False 阻止重试
+        class AbortOnErrorPlugin(ExecutorPlugin):
+            def __init__(self):
+                self.before = 0
+                self.after = 0
+                self.errors = 0
+            def before_execute(self, task: CallTask, context: ExecutionContext) -> None:
+                self.before += 1
+            def after_execute(self, result: CallResult, context: ExecutionContext) -> None:
+                self.after += 1
+            def on_error(self, task: CallTask, error: Exception, context: ExecutionContext) -> bool:
+                self.errors += 1
+                return False  # 中断后续重试
+        plugin = AbortOnErrorPlugin()
+        self.executor.config.plugins = [plugin]
+
+        try:
+            task = CallTask("iface", {})
+            result = self.executor._execute_with_retry(task, ExecutionContext())
+            self.assertFalse(result.success)
+            # 验证：before 只一次，on_error 一次（中断），after 一次（失败结果触发）
+            self.assertEqual(plugin.before, 1)
+            self.assertEqual(plugin.errors, 1)
+            self.assertEqual(plugin.after, 1)
+        finally:
+            InterfaceExecutor._call_akshare_interface = original_call  # type: ignore
+
+    def test_plugin_hooks_called_in_async(self):
+        # 打桩底层 _call_akshare_interface，使其返回成功，同时记录插件调用
+        class CounterPlugin(ExecutorPlugin):
+            def __init__(self):
+                self.before = 0
+                self.after = 0
+            def before_execute(self, task: CallTask, context: ExecutionContext) -> None:
+                self.before += 1
+            def after_execute(self, result: CallResult, context: ExecutionContext) -> None:
+                self.after += 1
+            def on_error(self, task: CallTask, error: Exception, context: ExecutionContext) -> bool:
+                # 透传错误，不中断重试/执行
+                return True
+        plugin = CounterPlugin()
+        self.executor.config.plugins = [plugin]
+
+        original_call = InterfaceExecutor._call_akshare_interface
+        def stubbed_call(self_exec: InterfaceExecutor, task: CallTask):
+            return {"ok": True, **task.params}
+        InterfaceExecutor._call_akshare_interface = stubbed_call  # type: ignore
+        try:
+            tasks = [CallTask("iface", {"i": i}) for i in range(5)]
+            async def run():
+                return await self.executor.execute_async(tasks)
+            batch_result = asyncio.run(run())
+            self.assertEqual(batch_result.total_tasks, 5)
+            # 每个任务都应触发一次 before/after
+            self.assertEqual(plugin.before, 5)
+            self.assertEqual(plugin.after, 5)
+        finally:
+            InterfaceExecutor._call_akshare_interface = original_call  # type: ignore
+
+
+def run_all_tests():
+    """运行所有测试"""
+    # 创建测试套件
+    test_suite = unittest.TestSuite()
+    
+    # 添加所有测试类
+    test_classes = [
+        TestErrorClassifier,
+        TestRateLimiter,
+        TestSimpleCache,
+        TestCallTask,
+        TestCallResult,
+        TestBatchResult,
+        TestTaskQueue,
+        TestInterfaceExecutor,
+        TestTimeoutManager,
+        TestBatchCallManager,
+        TestIntegration
+    ]
+    
+    for test_class in test_classes:
+        tests = unittest.TestLoader().loadTestsFromTestCase(test_class)
+        test_suite.addTests(tests)
+    
+    # 运行测试
+    runner = unittest.TextTestRunner(verbosity=2)
+    result = runner.run(test_suite)
+    
+    return result.wasSuccessful()
+
+
+class TestAsyncConcurrencyLimit(unittest.TestCase):
+    def setUp(self):
+        # 创建真实的提供者管理器（不会调用到，因为会打桩执行器内部方法）
+        self.provider_manager = APIProviderManager()
+        self.provider = AkshareProvider()
+        self.provider_manager.register_provider(self.provider)
+        self.config = ExecutorConfig(
+            default_timeout=0.0,
+            retry_config=RetryConfig(max_retries=1),
+            cache_config=CacheConfig(enabled=False),
+            async_max_concurrency=3,  # 设定并发上限
+            enable_async_timeout=False  # 走 asyncio.to_thread 路径，便于在桩中测并发
+        )
+        self.executor = InterfaceExecutor(self.provider_manager, self.config)
+
+    def test_async_max_concurrency_respected(self):
+        # 构造多任务以触发并发
+        task_count = 12
+        tasks = [CallTask("iface", {"i": i}) for i in range(task_count)]
+
+        # 通过打桩 _execute_single_with_context 来测量并发度（该函数会在线程池中执行）
+        lock = threading.Lock()
+        state = {"current": 0, "max": 0}
+
+        original_impl = InterfaceExecutor._execute_single_with_context
+
+        def stubbed_execute_single_with_context(self_exec: InterfaceExecutor, task: CallTask, context: ExecutionContext) -> CallResult:
+            with lock:
+                state["current"] += 1
+                if state["current"] > state["max"]:
+                    state["max"] = state["current"]
+            # 停顿一段时间以制造重叠，从而观察并发上限
+            time.sleep(0.2)
+            with lock:
+                state["current"] -= 1
+            return CallResult(task.task_id, task.interface_name, True, data=task.params.get("i"))
+
+        InterfaceExecutor._execute_single_with_context = stubbed_execute_single_with_context  # type: ignore
+        try:
+            async def run():
+                return await self.executor.execute_async(tasks)
+            batch_result = asyncio.run(run())
+
+            # 基本正确性断言
+            self.assertEqual(batch_result.total_tasks, task_count)
+            self.assertEqual(len(batch_result.results), task_count)
+
+            # 关键断言：最大并发不超过配置
+            self.assertLessEqual(state["max"], self.config.async_max_concurrency)
+        finally:
+            InterfaceExecutor._execute_single_with_context = original_impl  # type: ignore
+
+
 if __name__ == "__main__":
     print("开始执行Executor模块全面测试...")
     print("=" * 80)
