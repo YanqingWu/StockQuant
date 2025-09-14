@@ -13,7 +13,7 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
-from queue import PriorityQueue, Queue
+from queue import PriorityQueue, Queue, Empty
 from threading import Lock
 import akshare as ak
 from .base import APIProviderManager, InterfaceMetadata
@@ -986,22 +986,33 @@ class TaskQueue:
             self.queue = PriorityQueue()
         else:
             self.queue = Queue()
-        self.tasks = {}  # task_id -> task
+        self.tasks = {}  # task_id -> task（登记用途）
+        self._lock = Lock()  # 保护 tasks 映射，队列本身是线程安全的
     
     def add_task(self, task: CallTask) -> str:
         """添加任务"""
-        self.tasks[task.task_id] = task
-        if self.use_priority:
-            self.queue.put(task)
-        else:
-            self.queue.put(task)
+        # 先登记再入队，登记需要加锁；队列 put 自带线程安全
+        with self._lock:
+            self.tasks[task.task_id] = task
+        self.queue.put(task)
         return task.task_id
     
     def get_task(self) -> Optional[CallTask]:
         """获取任务"""
         if self.queue.empty():
             return None
-        return self.queue.get()
+        """获取任务（非阻塞）。
+        使用 get_nowait 消除 empty()+get() 的竞态；
+        出队后从登记表移除以避免内存占用增长。
+        """
+        try:
+            task = self.queue.get_nowait()
+        except Empty:
+            return None
+        else:
+            with self._lock:
+                self.tasks.pop(task.task_id, None)
+            return task
     
     def size(self) -> int:
         """队列大小"""

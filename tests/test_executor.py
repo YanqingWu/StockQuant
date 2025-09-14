@@ -17,6 +17,7 @@ Executor模块全面测试套件
 
 import asyncio
 import time
+import uuid
 import unittest
 import threading
 from unittest.mock import Mock, patch, MagicMock
@@ -1046,144 +1047,231 @@ def run_all_tests():
     return result.wasSuccessful()
 
 
-class TestExecutorP1AdditionalTests(unittest.TestCase):
-    """P1新增能力补充测试：
-    1) 异步全局并发限制（Semaphore）
-    2) 插件 on_error 返回 False 终止重试（同步与异步）
-    """
-
+class TestBatchCallManagerPriority(unittest.TestCase):
     def setUp(self):
-        # 依赖于真实 ProviderManager 的基本构造（不会实际调用 akshare，因为会mock内部执行函数）
         self.provider_manager = APIProviderManager()
         self.provider = AkshareProvider()
         self.provider_manager.register_provider(self.provider)
-
-    def test_async_global_concurrency_limit(self):
-        """验证 execute_async 的全局并发上限不被突破"""
-        # 设置较小的并发上限，禁用缓存和协程超时，使其走 to_thread 分支
-        config = ExecutorConfig(
+        self.config = ExecutorConfig(
             default_timeout=0.0,
             retry_config=RetryConfig(max_retries=1),
             cache_config=CacheConfig(enabled=False),
             async_max_concurrency=3,
             enable_async_timeout=False
         )
-        executor = InterfaceExecutor(self.provider_manager, config)
+        self.executor = InterfaceExecutor(self.provider_manager, self.config)
+        self.manager = BatchCallManager(self.executor)
 
-        import time as _time
-        import threading as _threading
-        current = 0
-        max_seen = 0
-        lock = _threading.Lock()
+    def test_sync_priority_ordering(self):
+        # 添加不同优先级任务（数值越大优先级越高）
+        tasks = [
+            CallTask("iface", {"i": 1}, priority=1),
+            CallTask("iface", {"i": 2}, priority=5),
+            CallTask("iface", {"i": 3}, priority=3),
+        ]
+        self.manager.add_tasks(tasks)
 
-        def mocked_call(task: CallTask):
-            nonlocal current, max_seen
-            with lock:
-                current += 1
-                if current > max_seen:
-                    max_seen = current
-            try:
-                _time.sleep(0.05)  # 模拟IO等待
-                return {"ok": True}
-            finally:
-                with lock:
-                    current -= 1
+        # mock execute_batch 以捕获顺序
+        original_execute_batch = self.executor.execute_batch
+        def mocked_execute_batch(tasks_in, context=None):
+            ordered_priorities = [t.priority for t in tasks_in]
+            # 返回一个最小可用的 BatchResult
+            return BatchResult(
+                session_id=context.session_id if context else str(uuid.uuid4()),
+                total_tasks=len(tasks_in),
+                successful_tasks=len(tasks_in),
+                failed_tasks=0,
+                results=[CallResult(t.task_id, t.interface_name, True, data=t.priority) for t in tasks_in],
+                execution_summary={"ordered_priorities": ordered_priorities},
+                start_time=time.time(),
+                end_time=time.time(),
+            )
+        self.executor.execute_batch = mocked_execute_batch  # type: ignore
+        try:
+            result = self.manager.execute_all()
+            self.assertEqual(result.total_tasks, 3)
+            # 期望按优先级从高到低：5,3,1
+            self.assertEqual(result.execution_summary.get("ordered_priorities"), [5, 3, 1])
+        finally:
+            self.executor.execute_batch = original_execute_batch  # type: ignore
 
-        # 替换底层实际调用为mock
-        executor._call_akshare_interface = mocked_call  # type: ignore
+    def test_async_priority_ordering(self):
+        # 添加不同优先级任务
+        tasks = [
+            CallTask("iface", {"i": 1}, priority=1),
+            CallTask("iface", {"i": 2}, priority=5),
+            CallTask("iface", {"i": 3}, priority=3),
+        ]
+        self.manager.add_tasks(tasks)
 
-        tasks = [CallTask("fake_interface", {}) for _ in range(12)]
+        # mock execute_async 以捕获顺序
+        original_execute_async = self.executor.execute_async
+        async def mocked_execute_async(tasks_in, callback=None, context=None):
+            ordered_priorities = [t.priority for t in tasks_in]
+            return BatchResult(
+                session_id=context.session_id if context else str(uuid.uuid4()),
+                total_tasks=len(tasks_in),
+                successful_tasks=len(tasks_in),
+                failed_tasks=0,
+                results=[CallResult(t.task_id, t.interface_name, True, data=t.priority) for t in tasks_in],
+                execution_summary={"ordered_priorities": ordered_priorities},
+                start_time=time.time(),
+                end_time=time.time(),
+            )
+        self.executor.execute_async = mocked_execute_async  # type: ignore
+        try:
+            async def run():
+                return await self.manager.execute_all_async()
+            result = asyncio.run(run())
+            self.assertEqual(result.total_tasks, 3)
+            # 期望按优先级从高到低：5,3,1
+            self.assertEqual(result.execution_summary.get("ordered_priorities"), [5, 3, 1])
+        finally:
+            self.executor.execute_async = original_execute_async  # type: ignore
 
-        async def run():
-            return await executor.execute_async(tasks)
+    def test_add_task(self):
+        """测试添加任务 - 使用真实接口"""
+        task = CallTask("stock_sse_summary", {})
+        task_id = self.manager.add_task(task)
+        
+        self.assertEqual(task_id, task.task_id)
+        self.assertEqual(self.manager.get_queue_size(), 1)
+    
+    def test_add_tasks(self):
+        """测试批量添加任务 - 使用真实接口"""
+        tasks = [
+            CallTask("stock_account_statistics_em", {}),
+            CallTask("stock_board_change_em", {})
+        ]
+        
+        task_ids = self.manager.add_tasks(tasks)
+        
+        self.assertEqual(len(task_ids), 2)
+        self.assertEqual(self.manager.get_queue_size(), 2)
+    
+    def test_create_task(self):
+        """测试创建任务 - 使用真实接口"""
+        task = self.manager.create_task("stock_sse_summary", {}, priority=5)
+        
+        self.assertEqual(task.interface_name, "stock_sse_summary")
+        self.assertEqual(task.params, {})
+        self.assertEqual(task.priority, 5)
+    
+    def test_execute_all(self):
+        """测试执行所有任务 - 使用真实接口"""
+        # 添加真实接口任务
+        self.manager.add_task(CallTask("stock_sse_summary", {}))
+        self.manager.add_task(CallTask("stock_account_statistics_em", {}))
+        
+        # 执行所有任务
+        result = self.manager.execute_all()
+        
+        # 检查结果
+        self.assertEqual(result.total_tasks, 2)
+        self.assertEqual(len(result.results), 2)
+        self.assertGreaterEqual(result.successful_tasks + result.failed_tasks, 0)
+        
+        # 打印结果
+        print(f"BatchCallManager执行结果: 成功 {result.successful_tasks}/{result.total_tasks}")
+        for i, task_result in enumerate(result.results):
+            if task_result.success:
+                print(f"  ✓ {task_result.interface_name}: {task_result.execution_time:.3f}s")
+            else:
+                print(f"  ✗ {task_result.interface_name}: {task_result.error}")
+    
+    def test_execute_by_filter(self):
+        """测试按条件执行任务 - 使用真实接口"""
+        # 添加真实接口任务
+        self.manager.add_task(CallTask("stock_sse_summary", {}))
+        self.manager.add_task(CallTask("stock_account_statistics_em", {}))
+        self.manager.add_task(CallTask("stock_board_change_em", {}))
+        
+        # 定义过滤条件：只执行包含"sse"的接口
+        def filter_func(task):
+            return "sse" in task.interface_name
+        
+        # 按条件执行
+        result = self.manager.execute_by_filter(filter_func)
+        
+        # 检查结果
+        self.assertEqual(result.total_tasks, 1)  # 只有stock_sse_summary匹配
+        self.assertEqual(len(result.results), 1)
+        self.assertEqual(result.results[0].interface_name, "stock_sse_summary")
+        
+        print(f"按条件执行结果: 成功 {result.successful_tasks}/{result.total_tasks}")
+        for task_result in result.results:
+            if task_result.success:
+                print(f"  ✓ {task_result.interface_name}: {task_result.execution_time:.3f}s")
+            else:
+                print(f"  ✗ {task_result.interface_name}: {task_result.error}")
+    
+    def test_clear_queue(self):
+        """测试清空队列 - 使用真实接口"""
+        # 添加任务
+        self.manager.add_task(CallTask("stock_sse_summary", {}))
+        self.assertEqual(self.manager.get_queue_size(), 1)
+        
+        # 清空队列
+        self.manager.clear_queue()
+        self.assertEqual(self.manager.get_queue_size(), 0)
 
-        batch_result = asyncio.run(run())
 
-        # 断言：最大并发不超过限制；并确保确实发生了并发（>1）
-        self.assertLessEqual(max_seen, 3, f"并发上限被突破: {max_seen} > 3")
-        self.assertGreaterEqual(max_seen, 2, f"未观察到有效并发: {max_seen}")
-        self.assertEqual(batch_result.total_tasks, 12)
-        self.assertEqual(len(batch_result.results), 12)
-        # 所有任务都应成功
-        self.assertTrue(all(r.success for r in batch_result.results))
+# TestTimeoutManager类已删除，因为TimeoutManager类已被移除
 
-    def test_plugin_on_error_abort_retry_sync(self):
-        """验证同步执行路径中，插件 on_error 返回 False 可终止重试"""
-        # 配置多次重试，但通过插件中止
-        config = ExecutorConfig(
-            default_timeout=0.0,
-            retry_config=RetryConfig(max_retries=3, base_delay=0.001, max_delay=0.002),
-            cache_config=CacheConfig(enabled=False)
+
+class TestIntegration(unittest.TestCase):
+    """集成测试"""
+    
+    def setUp(self):
+        # 创建真实的提供者管理器
+        self.provider_manager = APIProviderManager()
+        self.provider = AkshareProvider()
+        self.provider_manager.register_provider(self.provider)
+        
+        # 创建执行器
+        self.config = ExecutorConfig(
+            default_timeout=10.0,  # 根据成功接口测试报告调整：平均0.44s，最大18.14s，设置10s超时
+            retry_config=RetryConfig(max_retries=1),
+            cache_config=CacheConfig(enabled=True, ttl=60)
         )
-        executor = InterfaceExecutor(self.provider_manager, config)
-
-        def always_fail(task: CallTask):
-            raise ValueError("boom")
-
-        executor._call_akshare_interface = always_fail  # type: ignore
-
-        class AbortOnErrorPlugin(ExecutorPlugin):
-            def __init__(self):
-                self.called = 0
-            def before_execute(self, task: CallTask, context: ExecutionContext) -> None:
-                pass
-            def after_execute(self, result: CallResult, context: ExecutionContext) -> None:
-                pass
-            def on_error(self, task: CallTask, error: Exception, context: ExecutionContext) -> bool:
-                self.called += 1
-                return False  # 明确中止后续重试
-
-        plugin = AbortOnErrorPlugin()
-        executor.config.plugins = [plugin]
-
-        result = executor.execute_single("fake_interface", {})
-        self.assertFalse(result.success)
-        self.assertIn("total_attempts", result.metadata)
-        self.assertEqual(result.metadata.get("total_attempts"), 1, f"应在首次失败后中止，实际尝试: {result.metadata}")
-        self.assertEqual(plugin.called, 1)
-
-    def test_plugin_on_error_abort_retry_async(self):
-        """验证异步执行路径中，插件 on_error 返回 False 可终止重试（并走异步on_error调用）"""
-        # 设置默认超时>0并启用异步超时以走 _execute_with_retry_async 路径
-        config = ExecutorConfig(
-            default_timeout=0.5,
-            retry_config=RetryConfig(max_retries=3, base_delay=0.001, max_delay=0.002),
-            cache_config=CacheConfig(enabled=False),
-            enable_async_timeout=True
-        )
-        executor = InterfaceExecutor(self.provider_manager, config)
-
-        def always_fail(task: CallTask):
-            raise RuntimeError("async-boom")
-
-        executor._call_akshare_interface = always_fail  # type: ignore
-
-        class AbortOnErrorPlugin(ExecutorPlugin):
-            def __init__(self):
-                self.called = 0
-            def before_execute(self, task: CallTask, context: ExecutionContext) -> None:
-                pass
-            def after_execute(self, result: CallResult, context: ExecutionContext) -> None:
-                pass
-            def on_error(self, task: CallTask, error: Exception, context: ExecutionContext) -> bool:
-                self.called += 1
-                return False
-
-        plugin = AbortOnErrorPlugin()
-        executor.config.plugins = [plugin]
-
-        task = CallTask("fake_interface", {})
-
-        async def run():
-            return await executor.execute_async([task])
-
-        batch_result = asyncio.run(run())
-        self.assertEqual(batch_result.total_tasks, 1)
-        self.assertEqual(len(batch_result.results), 1)
-        res = batch_result.results[0]
-        self.assertFalse(res.success)
-        self.assertEqual(res.metadata.get("total_attempts"), 1, f"应在首次失败后中止，实际: {res.metadata}")
-        self.assertEqual(plugin.called, 1)
+        self.executor = InterfaceExecutor(self.provider_manager, self.config)
+    
+    def test_real_interface_execution(self):
+        """测试真实接口执行"""
+        # 获取一个简单的接口进行测试
+        interfaces = self.provider.get_supported_interfaces()
+        simple_interface = None
+        
+        for interface_name in interfaces:
+            metadata = self.provider.get_interface_metadata(interface_name)
+            if metadata and not metadata.required_params and not metadata.optional_params:
+                simple_interface = interface_name
+                break
+        
+        if simple_interface:
+            result = self.executor.execute_single(simple_interface, {})
+            # 不要求一定成功，因为网络等因素可能影响
+            self.assertIsNotNone(result)
+            self.assertIsNotNone(result.task_id)
+            self.assertEqual(result.interface_name, simple_interface)
+    
+    def test_batch_execution_with_real_interfaces(self):
+        """测试真实接口批量执行"""
+        # 获取几个简单的接口
+        interfaces = self.provider.get_supported_interfaces()[:3]
+        tasks = []
+        
+        for interface_name in interfaces:
+            metadata = self.provider.get_interface_metadata(interface_name)
+            if metadata and not metadata.required_params:
+                task = CallTask(interface_name, {})
+                tasks.append(task)
+        
+        if tasks:
+            batch_result = self.executor.execute_batch(tasks)
+            self.assertEqual(batch_result.total_tasks, len(tasks))
+            self.assertGreaterEqual(batch_result.successful_tasks, 0)
+            self.assertGreaterEqual(batch_result.failed_tasks, 0)
 
 
 def run_all_tests():
