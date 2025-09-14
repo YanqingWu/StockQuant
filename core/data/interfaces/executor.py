@@ -115,12 +115,12 @@ class BatchResult:
     execution_summary: Dict[str, Any]
     start_time: float
     end_time: float
-    
+
     @property
     def success_rate(self) -> float:
         """成功率"""
         return self.successful_tasks / self.total_tasks if self.total_tasks > 0 else 0.0
-    
+
     @property
     def total_execution_time(self) -> float:
         """总执行时间"""
@@ -132,7 +132,7 @@ class RateLimit:
     """频率限制配置"""
     max_calls: int  # 最大调用次数
     time_window: float  # 时间窗口（秒）
-    
+
 
 class RateLimiter:
     """频率限制器"""
@@ -220,6 +220,8 @@ class ExecutorConfig:
     
     # 新增：异步批量执行的全局并发上限（<=0 表示不限制）
     async_max_concurrency: int = 20
+    # 新增：异步每批并发创建任务数量（<=0 时退回默认50）
+    async_batch_size: int = 50
     # 新增：自定义缓存键函数；签名 (interface_name: str, params: Dict[str, Any]) -> str
     cache_key_func: Optional[Callable[[str, Dict[str, Any]], str]] = None
 
@@ -238,6 +240,9 @@ class ExecutionContext:
     pre_execute_hook: Optional[Callable[[CallTask], None]] = None
     post_execute_hook: Optional[Callable[[CallResult], None]] = None
     error_handler: Optional[Callable[[CallTask, Exception], bool]] = None
+    
+    # 异步执行批量参数覆盖
+    async_batch_size_override: Optional[int] = None
     
     # 扩展属性
     user_data: Dict[str, Any] = field(default_factory=dict)
@@ -389,6 +394,22 @@ class InterfaceExecutor:
         if self.config.enable_async_timeout:
             self.async_timeout_manager = AsyncTimeoutManager()
     
+    # 新增：资源关闭与上下文管理
+    def shutdown(self) -> None:
+        try:
+            if self.thread_timeout_manager:
+                self.thread_timeout_manager.shutdown()
+        finally:
+            # AsyncTimeoutManager 当前不持有系统资源，无需特殊关闭
+            pass
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.shutdown()
+        return False
+    
     def _get_cache_key(self, interface_name: str, params: Dict[str, Any]) -> str:
         """生成缓存键"""
         import hashlib
@@ -468,6 +489,48 @@ class InterfaceExecutor:
             timeout
         )
     
+    def _plugins_before(self, task: CallTask, context: 'ExecutionContext') -> None:
+        """统一执行插件 before_execute，内部做异常隔离"""
+        for plugin in self.config.plugins:
+            try:
+                plugin.before_execute(task, context)
+            except Exception as e:
+                logger.warning(f"Plugin {plugin.__class__.__name__} before_execute failed: {e}")
+    
+    def _plugins_after(self, result: CallResult, context: 'ExecutionContext') -> None:
+        """统一执行插件 after_execute，内部做异常隔离"""
+        for plugin in self.config.plugins:
+            try:
+                plugin.after_execute(result, context)
+            except Exception as e:
+                logger.warning(f"Plugin {plugin.__class__.__name__} after_execute failed: {e}")
+    
+    def _plugins_on_error_sync(self, task: CallTask, error: Exception, context: 'ExecutionContext') -> bool:
+        """统一执行插件 on_error（同步），任一返回 False 则中断重试"""
+        plugin_continue = True
+        for plugin in self.config.plugins:
+            try:
+                if hasattr(plugin, 'on_error'):
+                    cont = plugin.on_error(task, error, context)
+                    if cont is False:
+                        plugin_continue = False
+            except Exception as pe:
+                logger.warning(f"Plugin {plugin.__class__.__name__} on_error failed: {pe}")
+        return plugin_continue
+    
+    async def _plugins_on_error_async(self, task: CallTask, error: Exception, context: 'ExecutionContext') -> bool:
+        """统一执行插件 on_error（异步），任一返回 False 则中断重试；放到线程避免阻塞事件循环"""
+        plugin_continue = True
+        for plugin in self.config.plugins:
+            try:
+                if hasattr(plugin, 'on_error'):
+                    cont = await asyncio.to_thread(plugin.on_error, task, error, context)
+                    if cont is False:
+                        plugin_continue = False
+            except Exception as pe:
+                logger.warning(f"Plugin {plugin.__class__.__name__} on_error failed: {pe}")
+        return plugin_continue
+    
     def _execute_with_retry(self, task: CallTask, context: ExecutionContext) -> CallResult:
         """带重试的执行"""
         last_error = None
@@ -477,11 +540,7 @@ class InterfaceExecutor:
         timeout_seconds = self._get_timeout_for_task(task, context)
         
         # 执行插件的before_execute
-        for plugin in self.config.plugins:
-            try:
-                plugin.before_execute(task, context)
-            except Exception as e:
-                logger.warning(f"Plugin {plugin.__class__.__name__} before_execute failed: {e}")
+        self._plugins_before(task, context)
         
         for attempt in range(task.retry_count):
             total_attempts += 1
@@ -503,11 +562,7 @@ class InterfaceExecutor:
                     )
                     
                     # 执行插件的after_execute
-                    for plugin in self.config.plugins:
-                        try:
-                            plugin.after_execute(result, context)
-                        except Exception as e:
-                            logger.warning(f"Plugin {plugin.__class__.__name__} after_execute failed: {e}")
+                    self._plugins_after(result, context)
                     
                     return result
                 
@@ -543,11 +598,7 @@ class InterfaceExecutor:
                 )
                 
                 # 执行插件的after_execute
-                for plugin in self.config.plugins:
-                    try:
-                        plugin.after_execute(result, context)
-                    except Exception as e:
-                        logger.warning(f"Plugin {plugin.__class__.__name__} after_execute failed: {e}")
+                self._plugins_after(result, context)
                 
                 return result
                 
@@ -557,14 +608,7 @@ class InterfaceExecutor:
                 logger.warning(f"Attempt {attempt + 1} failed for {task.interface_name}: {e} (ErrorType: {error_type.value})")
                 
                 # 先询问插件是否继续（任何插件返回False则终止重试）
-                plugin_continue = True
-                for plugin in self.config.plugins:
-                    try:
-                        if hasattr(plugin, 'on_error'):
-                            if plugin.on_error(task, e, context) is False:
-                                plugin_continue = False
-                    except Exception as pe:
-                        logger.warning(f"Plugin {plugin.__class__.__name__} on_error failed: {pe}")
+                plugin_continue = self._plugins_on_error_sync(task, e, context)
                 if not plugin_continue:
                     logger.info(f"Retry aborted by plugin for {task.interface_name}")
                     break
@@ -597,11 +641,7 @@ class InterfaceExecutor:
         )
         
         # 执行插件的after_execute
-        for plugin in self.config.plugins:
-            try:
-                plugin.after_execute(result, context)
-            except Exception as e:
-                logger.warning(f"Plugin {plugin.__class__.__name__} after_execute failed: {e}")
+        self._plugins_after(result, context)
         
         return result
     
@@ -713,11 +753,7 @@ class InterfaceExecutor:
         timeout_seconds = self._get_timeout_for_task(task, context)
         
         # 执行插件的before_execute
-        for plugin in self.config.plugins:
-            try:
-                plugin.before_execute(task, context)
-            except Exception as e:
-                logger.warning(f"Plugin {plugin.__class__.__name__} before_execute failed: {e}")
+        self._plugins_before(task, context)
         
         for attempt in range(task.retry_count):
             total_attempts += 1
@@ -739,11 +775,7 @@ class InterfaceExecutor:
                     )
                     
                     # 执行插件的after_execute
-                    for plugin in self.config.plugins:
-                        try:
-                            plugin.after_execute(result, context)
-                        except Exception as e:
-                            logger.warning(f"Plugin {plugin.__class__.__name__} after_execute failed: {e}")
+                    self._plugins_after(result, context)
                     
                     return result
                 
@@ -751,7 +783,7 @@ class InterfaceExecutor:
                 start_time = time.time()
                 
                 # 在协程中执行同步调用
-                loop = asyncio.get_event_loop()
+                loop = asyncio.get_running_loop()
                 data = await loop.run_in_executor(None, self._call_akshare_interface, task)
                 
                 execution_time = time.time() - start_time
@@ -773,11 +805,7 @@ class InterfaceExecutor:
                 )
                 
                 # 执行插件的after_execute
-                for plugin in self.config.plugins:
-                    try:
-                        plugin.after_execute(result, context)
-                    except Exception as e:
-                        logger.warning(f"Plugin {plugin.__class__.__name__} after_execute failed: {e}")
+                self._plugins_after(result, context)
                 
                 return result
                 
@@ -787,15 +815,7 @@ class InterfaceExecutor:
                 logger.warning(f"Attempt {attempt + 1} failed for {task.interface_name}: {e} (ErrorType: {error_type.value})")
                 
                 # 插件on_error（放到线程），任何返回False则终止重试
-                plugin_continue = True
-                for plugin in self.config.plugins:
-                    try:
-                        if hasattr(plugin, 'on_error'):
-                            cont = await asyncio.to_thread(plugin.on_error, task, e, context)
-                            if cont is False:
-                                plugin_continue = False
-                    except Exception as pe:
-                        logger.warning(f"Plugin {plugin.__class__.__name__} on_error failed: {pe}")
+                plugin_continue = await self._plugins_on_error_async(task, e, context)
                 if not plugin_continue:
                     logger.info(f"Retry aborted by plugin for {task.interface_name}")
                     break
@@ -828,14 +848,10 @@ class InterfaceExecutor:
         )
         
         # 执行插件的after_execute
-        for plugin in self.config.plugins:
-            try:
-                plugin.after_execute(result, context)
-            except Exception as e:
-                logger.warning(f"Plugin {plugin.__class__.__name__} after_execute failed: {e}")
+        self._plugins_after(result, context)
         
         return result
-    
+
     async def _execute_single_with_context_async(self, task: CallTask, context: ExecutionContext) -> CallResult:
         """在上下文中异步执行单个任务（用于协程超时管理器）"""
         # 执行前回调
@@ -907,7 +923,10 @@ class InterfaceExecutor:
                     result = await asyncio.to_thread(self._execute_single_with_context, task, context)
                 
                 if callback:
-                    callback(result)
+                    try:
+                        callback(result)
+                    except Exception as cb_e:
+                        logger.warning(f"Async result callback failed: {cb_e}")
                 return result
             
             if semaphore is None:
@@ -917,7 +936,14 @@ class InterfaceExecutor:
                     return await _run()
         
         # 分批执行，避免创建过多协程
-        batch_size = 50
+        # 支持通过 ExecutionContext.async_batch_size_override 覆盖配置
+        batch_size = None
+        if hasattr(context, 'async_batch_size_override') and context.async_batch_size_override:
+            batch_size = context.async_batch_size_override
+        if not isinstance(batch_size, int) or batch_size <= 0:
+            batch_size = getattr(self.config, 'async_batch_size', 50)
+        if not isinstance(batch_size, int) or batch_size <= 0:
+            batch_size = 50
         all_results = []
         
         for i in range(0, len(tasks), batch_size):
@@ -946,31 +972,21 @@ class InterfaceExecutor:
                     successful_tasks += 1
                 else:
                     failed_tasks += 1
-            
-            results.append(result)
         
         end_time = time.time()
-        
-        execution_summary = {
-            "total_execution_time": end_time - start_time,
-            "average_execution_time": sum(r.execution_time for r in results if r.execution_time > 0) / len(results) if results else 0,
-            "cache_hits": sum(1 for r in results if r.metadata.get("from_cache", False)),
-            "interfaces_used": list(set(r.interface_name for r in results))
-        }
-        
         batch_result = BatchResult(
             session_id=session_id,
             total_tasks=len(tasks),
             successful_tasks=successful_tasks,
             failed_tasks=failed_tasks,
-            results=results,
-            execution_summary=execution_summary,
+            results=[r if isinstance(r, CallResult) else CallResult(task_id=tasks[i].task_id, interface_name=tasks[i].interface_name, success=False, error=r) for i, r in enumerate(completed_results)],
+            execution_summary={
+                "async": True,
+                "batch_size": batch_size
+            },
             start_time=start_time,
             end_time=end_time
         )
-        
-        logger.info(f"Async execution completed: {successful_tasks}/{len(tasks)} successful (session: {session_id})")
-        
         return batch_result
 
 
@@ -998,9 +1014,6 @@ class TaskQueue:
         return task.task_id
     
     def get_task(self) -> Optional[CallTask]:
-        """获取任务"""
-        if self.queue.empty():
-            return None
         """获取任务（非阻塞）。
         使用 get_nowait 消除 empty()+get() 的竞态；
         出队后从登记表移除以避免内存占用增长。
@@ -1034,7 +1047,6 @@ class BatchCallManager:
     def __init__(self, executor: InterfaceExecutor):
         self.executor = executor
         self.task_queue = TaskQueue()
-        # results 字段取消，避免与 BatchResult 的收集逻辑重复，降低心智负担
     
     def add_task(self, task: CallTask) -> str:
         """添加任务到队列"""

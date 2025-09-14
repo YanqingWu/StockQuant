@@ -1437,6 +1437,66 @@ class TestPluginProtocolConsistency(unittest.TestCase):
         finally:
             InterfaceExecutor._call_akshare_interface = original_call  # type: ignore
 
+    def test_on_error_can_abort_retry_async(self):
+        # 让底层调用始终抛错
+        original_call = InterfaceExecutor._call_akshare_interface
+        def always_fail(self_exec: InterfaceExecutor, task: CallTask):
+            raise ValueError("boom")
+        InterfaceExecutor._call_akshare_interface = always_fail  # type: ignore
+
+        class AbortOnErrorPlugin(ExecutorPlugin):
+            def __init__(self):
+                self.before = 0
+                self.after = 0
+                self.errors = 0
+            def before_execute(self, task: CallTask, context: ExecutionContext) -> None:
+                self.before += 1
+            def after_execute(self, result: CallResult, context: ExecutionContext) -> None:
+                self.after += 1
+            def on_error(self, task: CallTask, error: Exception, context: ExecutionContext) -> bool:
+                self.errors += 1
+                return False
+        plugin = AbortOnErrorPlugin()
+        self.executor.config.plugins = [plugin]
+
+        try:
+            tasks = [CallTask("iface", {})]
+            async def run():
+                return await self.executor.execute_async(tasks)
+            batch_result = asyncio.run(run())
+            self.assertEqual(batch_result.total_tasks, 1)
+            self.assertEqual(batch_result.failed_tasks, 1)
+            # 应只尝试一次（on_error 返回 False 终止重试），before一次，errors一次，after一次（失败结果）
+            self.assertEqual(plugin.before, 1)
+            self.assertEqual(plugin.errors, 1)
+            self.assertEqual(plugin.after, 1)
+        finally:
+            InterfaceExecutor._call_akshare_interface = original_call  # type: ignore
+
+    def test_async_callback_exception_isolated(self):
+        # stub 底层调用成功
+        original_call = InterfaceExecutor._call_akshare_interface
+        def stubbed(self_exec: InterfaceExecutor, task: CallTask):
+            return {"ok": True}
+        InterfaceExecutor._call_akshare_interface = stubbed  # type: ignore
+        try:
+            # 构造会抛错的回调
+            called = {"count": 0}
+            def bad_callback(result: CallResult):
+                called["count"] += 1
+                raise RuntimeError("callback boom")
+            tasks = [CallTask("iface", {}) for _ in range(3)]
+            async def run():
+                return await self.executor.execute_async(tasks, callback=bad_callback)
+            batch_result = asyncio.run(run())
+            # 执行应完成且不因回调异常失败
+            self.assertEqual(batch_result.total_tasks, 3)
+            self.assertEqual(batch_result.successful_tasks, 3)
+            # 回调应被调用3次
+            self.assertEqual(called["count"], 3)
+        finally:
+            InterfaceExecutor._call_akshare_interface = original_call  # type: ignore
+
 
 def run_all_tests():
     """运行所有测试"""
