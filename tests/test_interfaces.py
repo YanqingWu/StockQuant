@@ -29,6 +29,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.data.interfaces.executor import InterfaceExecutor, CallResult, ExecutorConfig, RetryConfig
 from core.data.interfaces.base import APIProviderManager, InterfaceMetadata, FunctionCategory
 from core.data.interfaces.akshare import akshare_provider
+# 新增：导入标准参数与适配入口
+from core.data.extractor.adapter import (
+    StandardParams,
+    to_standard_params,
+    adapt_params_for_interface,
+)
 
 
 @dataclass
@@ -63,10 +69,17 @@ class ParameterGenerator:
     def __init__(self, logger=None):
         self.logger = logger or logging.getLogger(__name__)
     
-    def generate_params_for_interface(self, interface: InterfaceMetadata) -> Dict[str, Any]:
-        """为特定接口获取参数"""
-        # 直接使用接口的示例参数，如果没有则返回空字典
-        return interface.example_params or {}
+    def generate_params_for_interface(self, interface: InterfaceMetadata) -> StandardParams:
+        """为特定接口获取参数（严格标准格式）。
+        - 统一通过 to_standard_params 将接口示例参数收敛为严格的 StandardParams
+        - 保证 symbol 为 StockSymbol/列表、date 为 YYYY-MM-DD、time 为 HH:MM:SS 等
+        """
+        base = interface.example_params or {}
+        try:
+            return to_standard_params(base)
+        except Exception as e:
+            self.logger.debug(f"to_standard_params 失败，返回空标准参数: {e}")
+            return StandardParams()
 
 
 class InterfaceTester:
@@ -118,15 +131,17 @@ class InterfaceTester:
         return all_interfaces
     
     def test_single_interface(self, interface: InterfaceMetadata) -> InterfaceTestResult:
-        """测试单个接口"""
+        """测试单个接口（统一标准参数 -> 接口适配参数 -> 执行）"""
         start_time = time.time()
         
         try:
-            # 生成参数
-            params = self.parameter_generator.generate_params_for_interface(interface)
+            # 生成标准参数
+            std_params = self.parameter_generator.generate_params_for_interface(interface)
+            # 为目标接口做参数适配（可接受 StandardParams）
+            adapted_params = adapt_params_for_interface(interface.name, std_params)
             
             # 执行调用
-            result = self.executor.execute_single(interface.name, params)
+            result = self.executor.execute_single(interface.name, adapted_params)
             
             # 计算数据大小
             data_size = self._calculate_data_size(result.data)
@@ -138,7 +153,7 @@ class InterfaceTester:
                 execution_time=time.time() - start_time,
                 data_size=data_size,
                 error_message=str(result.error) if result.error else None,
-                generated_params=params,
+                generated_params=std_params.to_dict(),  # 保存可序列化的标准参数
                 metadata={
                     'description': interface.description,
                     'category': interface.function_category.value,
@@ -157,7 +172,7 @@ class InterfaceTester:
                 success=False,
                 execution_time=time.time() - start_time,
                 error_message=str(e),
-                generated_params=params if 'params' in locals() else {},
+                generated_params=std_params.to_dict() if 'std_params' in locals() else {},
                 metadata={'description': interface.description}
             )
     
