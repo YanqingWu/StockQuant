@@ -566,10 +566,9 @@ class ExtractorManager:
         """
         result = {}
         for category_name, category_config in self.config.data_categories.items():
-            if category_config.enabled:
-                enabled_types = list(category_config.get_enabled_data_types().keys())
-                if enabled_types:
-                    result[category_name] = enabled_types
+            enabled_types = list(category_config.get_enabled_data_types().keys())
+            if enabled_types:
+                result[category_name] = enabled_types
         return result
     
     def get_standard_fields(self, category: str, data_type: str) -> List[str]:

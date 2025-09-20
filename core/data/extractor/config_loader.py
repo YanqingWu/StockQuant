@@ -24,13 +24,10 @@ class InterfaceConfig:
 class DataTypeConfig:
     """数据类型配置"""
     description: str = ""
-    enabled: bool = True
     interfaces: List[InterfaceConfig] = field(default_factory=list)
     
     def get_enabled_interfaces(self) -> List[InterfaceConfig]:
         """获取启用的接口，按优先级排序"""
-        if not self.enabled:
-            return []
         enabled = [iface for iface in self.interfaces if iface.enabled]
         return sorted(enabled, key=lambda x: x.priority, reverse=False)
     
@@ -48,15 +45,11 @@ class DataCategoryConfig:
     description: str = ""
     cache_duration: int = 300
     retry_strategy: str = "standard"
-    priority: int = 1
-    enabled: bool = True
     data_types: Dict[str, DataTypeConfig] = field(default_factory=dict)
     
     def get_enabled_data_types(self) -> Dict[str, DataTypeConfig]:
         """获取启用的数据类型"""
-        if not self.enabled:
-            return {}
-        return {name: config for name, config in self.data_types.items() if config.enabled}
+        return self.data_types
 
 
 @dataclass
@@ -217,7 +210,6 @@ class ConfigLoader:
                 
                 data_type_config = DataTypeConfig(
                     description=type_data.get('description', ''),
-                    enabled=type_data.get('enabled', True),
                     interfaces=interfaces
                 )
                 data_types[data_type_name] = data_type_config
@@ -226,8 +218,6 @@ class ConfigLoader:
                 description=category_data.get('description', ''),
                 cache_duration=category_data.get('cache_duration', 300),
                 retry_strategy=category_data.get('retry_strategy', 'standard'),
-                priority=category_data.get('priority', 1),
-                enabled=category_data.get('enabled', True),
                 data_types=data_types
             )
             data_categories[category_name] = category_config
@@ -304,8 +294,6 @@ class ConfigLoader:
                     })
                 data_types[data_type_name] = {
                     'description': type_config.description,
-                    'enabled': type_config.enabled,
-                    'priority': type_config.priority,
                     'interfaces': interfaces
                 }
             
@@ -313,8 +301,6 @@ class ConfigLoader:
                 'description': category_config.description,
                 'cache_duration': category_config.cache_duration,
                 'retry_strategy': category_config.retry_strategy,
-                'priority': category_config.priority,
-                'enabled': category_config.enabled,
                 'data_types': data_types
             }
         
