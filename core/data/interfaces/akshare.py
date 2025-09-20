@@ -1433,7 +1433,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_pattern(ParameterPattern.from_params(["symbol"]))\
             .with_return_type("DataFrame")\
             .with_keywords("stock", "hold", "change", "share", "股票")\
-            .with_example_params({"symbol": '全部'})\
+            .with_example_params({"symbol": '000001'})\
             .build(),
 
         create_interface("stock_shareholder_change_ths")\
