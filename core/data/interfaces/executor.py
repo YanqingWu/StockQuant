@@ -915,125 +915,103 @@ class InterfaceExecutor:
                            tasks: List[CallTask],
                            callback: Optional[Callable[[CallResult], None]] = None,
                            context: Optional[ExecutionContext] = None) -> BatchResult:
-        """异步执行接口调用 - 协程调度+主线程执行避免信号冲突"""
+        """异步执行接口调用 - 流式执行，任务完成立即处理"""
         # 创建默认上下文
         context = context or ExecutionContext()
         session_id = context.session_id
         start_time = time.time()
         
+        logger.info(f"Starting streaming async execution with {len(tasks)} tasks (session: {session_id})")
+        
+        # 获取并发控制参数
+        max_concurrent = getattr(self.config, 'async_max_concurrency', 10)
+        if max_concurrent <= 0:
+            max_concurrent = 10
+        
+        # 创建任务队列
+        task_queue = asyncio.Queue()
+        for task in tasks:
+            await task_queue.put(task)
+        
+        # 结果收集
+        results = []
         successful_tasks = 0
         failed_tasks = 0
         
-        logger.info(f"Starting async execution with {len(tasks)} tasks (session: {session_id})")
-        
-        # 新增：全局并发控制
-        semaphore = None
-        try:
-            limit = int(getattr(self.config, 'async_max_concurrency', 0))
-            if limit > 0:
-                semaphore = asyncio.Semaphore(limit)
-        except Exception:
-            semaphore = None
-        
-        # 计算批量大小统一放到下方（去重逻辑），此处移除先验计算
-        # 之前：batch_size = int(context.async_batch_size_override or getattr(self.config, 'async_batch_size', 50) or 50)
-        
-        # 创建异步任务 - 主线程执行+协程调度
-        async def execute_task_async(task: CallTask) -> CallResult:
-            # 让出控制权，允许其他协程执行
-            await asyncio.sleep(0.001)
-            
-            async def _run_only() -> CallResult:
-                # 获取超时时间
-                timeout_seconds = self._get_timeout_for_task(task, context)
-                
-                # 根据配置选择执行方式
-                if timeout_seconds > 0 and self.config.enable_async_timeout and self.async_timeout_manager:
-                    # 使用协程超时管理器
-                    coro = self._execute_single_with_context_async(task, context)
-                    result = await self.async_timeout_manager.execute_with_timeout(
-                        coro, 
-                        timeout_seconds
-                    )
-                    # 移除：此处不再重复记录执行时间，统一在底层/单点记录
-                else:
-                    # 在协程中避免阻塞事件循环，将同步执行卸载到线程
-                    result = await asyncio.to_thread(self._execute_single_with_context, task, context)
-                
-                return result
-            
-            if semaphore is None:
-                result = await _run_only()
-            else:
-                async with semaphore:
-                    result = await _run_only()
-            
-            # 在释放并发令牌后再执行回调，避免占用并发配额；必要时丢到线程
-            if callback:
+        # 工作协程
+        async def worker(worker_id: int):
+            nonlocal successful_tasks, failed_tasks
+            while True:
                 try:
-                    await asyncio.to_thread(callback, result)
-                except Exception as cb_e:
-                    logger.warning(f"Async result callback failed for task {getattr(result, 'task_id', 'unknown')} ({getattr(result, 'interface_name', 'unknown')}): {cb_e}")
-            return result
-        
-        # 分批执行，避免创建过多协程
-        # 支持通过 ExecutionContext.async_batch_size_override 覆盖配置
-        batch_size = None
-        # 简化：context 已保证为 ExecutionContext，直接读取覆盖值
-        if isinstance(context.async_batch_size_override, int) and context.async_batch_size_override > 0:
-            batch_size = context.async_batch_size_override
-        if not isinstance(batch_size, int) or batch_size <= 0:
-            batch_size = getattr(self.config, 'async_batch_size', 50)
-        if not isinstance(batch_size, int) or batch_size <= 0:
-            batch_size = 50
-        logger.info(f"Async batch_size resolved to {batch_size}")
-        all_results = []
-        
-        for i in range(0, len(tasks), batch_size):
-            batch_tasks = tasks[i:i + batch_size]
-            batch_results = await asyncio.gather(
-                *[execute_task_async(task) for task in batch_tasks],
-                return_exceptions=True
-            )
-            all_results.extend(batch_results)
-        
-        # 归一化结果并统计
-        normalized_results = []
-        for i, r in enumerate(all_results):
-            if isinstance(r, Exception):
-                task = tasks[i]
-                normalized_results.append(
-                    CallResult(
-                        task_id=task.task_id,
-                        interface_name=task.interface_name,
+                    # 获取任务，超时1秒
+                    task = await asyncio.wait_for(task_queue.get(), timeout=1.0)
+                    if task is None:  # 结束信号
+                        break
+                    
+                    # 执行任务
+                    result = await self._execute_single_with_context_async(task, context)
+                    
+                    # 立即处理结果
+                    results.append(result)
+                    if result.success:
+                        successful_tasks += 1
+                    else:
+                        failed_tasks += 1
+                    
+                    # 调用回调函数
+                    if callback:
+                        try:
+                            await asyncio.to_thread(callback, result)
+                        except Exception as e:
+                            logger.warning(f"Callback error: {e}")
+                    
+                    # 标记任务完成
+                    task_queue.task_done()
+                    
+                except asyncio.TimeoutError:
+                    # 队列为空，继续等待
+                    continue
+                except Exception as e:
+                    logger.error(f"Worker {worker_id} 执行失败: {e}")
+                    # 创建失败结果
+                    failed_result = CallResult(
+                        task_id=task.task_id if 'task' in locals() else "unknown",
+                        interface_name=task.interface_name if 'task' in locals() else "unknown",
                         success=False,
-                        error=r
+                        error=e
                     )
-                )
-            else:
-                normalized_results.append(r)
+                    results.append(failed_result)
+                    failed_tasks += 1
+                    task_queue.task_done()
         
-        for res in normalized_results:
-            if res.success:
-                successful_tasks += 1
-            else:
-                failed_tasks += 1
+        # 启动工作协程
+        workers = [asyncio.create_task(worker(i)) for i in range(max_concurrent)]
         
+        # 等待所有任务完成
+        await task_queue.join()
+        
+        # 停止工作协程
+        for _ in workers:
+            await task_queue.put(None)
+        
+        # 等待工作协程结束
+        await asyncio.gather(*workers, return_exceptions=True)
+        
+        # 返回结果
         end_time = time.time()
-        batch_result = BatchResult(
+        return BatchResult(
             session_id=session_id,
             total_tasks=len(tasks),
             successful_tasks=successful_tasks,
             failed_tasks=failed_tasks,
-            results=normalized_results,
+            results=results,
             execution_summary={
-                "async": True,
-                "batch_size": batch_size
+                "streaming": True,
+                "max_concurrent": max_concurrent
             },
             start_time=start_time,
             end_time=end_time
         )
-        return batch_result
 
 
 class TaskQueue:
