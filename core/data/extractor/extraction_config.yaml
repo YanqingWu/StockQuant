@@ -230,8 +230,11 @@ data_categories:
         priority: 1
         interfaces:
           - name: "stock_zh_a_spot"
-            enabled: true
+            enabled: false  # 暂时禁用，因为接口有问题
             priority: 10
+          - name: "stock_zh_a_hist"  # 使用历史数据作为替代
+            enabled: true
+            priority: 9
         
       historical_quote:
         description: "历史行情数据"
@@ -410,11 +413,20 @@ data_categories:
         priority: 3
         interfaces:
           - name: "stock_add_stock"
-            enabled: true
+            enabled: false  # 暂时禁用，因为接口有问题
             priority: 10
           - name: "stock_classify_sina"
-            enabled: true
+            enabled: false  # 暂时禁用，因为接口有问题
             priority: 9
+          - name: "stock_board_concept_name_ths"  # 同花顺概念板块
+            enabled: true
+            priority: 8
+          - name: "stock_industry_category_cninfo"  # 巨潮行业分类
+            enabled: true
+            priority: 7
+          - name: "stock_dividend_cninfo"  # 巨潮分红数据
+            enabled: true
+            priority: 6
 
 # 字段映射配置 - 所有接口共用
 field_mappings:
