@@ -11,9 +11,9 @@ from core.data.extractor.adapter import StandardParams, StockSymbol
 
 
 # --------- 公共工具 ---------
-TODAY = "2024-01-02"
-START = "2024-01-01"
-END = "2024-01-05"
+TODAY = "2025-09-20"
+START = "2025-09-14"
+END = "2025-09-20"
 
 
 def _sym(code: str = "000001.SZ") -> StockSymbol:
