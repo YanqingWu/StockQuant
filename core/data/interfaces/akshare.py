@@ -1746,6 +1746,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_example_params({"symbol": '000001'})\
             .build(),
 
+        # about two hours
         create_interface("stock_jgdy_detail_em")\
             .with_source(DataSource.AKSHARE)\
             .with_category(FunctionCategory.OTHER)\
@@ -3222,6 +3223,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_example_params({"symbol": '105.ATER', "start_date": '2024-01-01', "end_date": '2024-01-31'})\
             .build(),
 
+        # about half hour
         create_interface("stock_us_spot")\
             .with_source(DataSource.AKSHARE)\
             .with_category(FunctionCategory.STOCK_QUOTE)\
