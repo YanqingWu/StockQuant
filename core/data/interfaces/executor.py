@@ -1139,7 +1139,8 @@ class TaskManager:
                 end_time=time.time()
             )
         
-        return await self.executor.execute_async(tasks, context)
+        # 关键修复：以关键字参数方式传递 context，避免被误认为 callback
+        return await self.executor.execute_async(tasks, context=context)
     
     def execute_by_filter(self, 
                          filter_func: Callable[[CallTask], bool],
