@@ -169,6 +169,38 @@ class ExtractorManager:
                         error=f"无法将字典数据转换为DataFrame: {_e}",
                         source_interface=interface_name
                     )
+            elif isinstance(raw_data, str):
+                # 处理字符串类型数据，尝试解析为更有意义的结构
+                try:
+                    # 对于字符串，尝试解析为股票代码格式
+                    if raw_data and len(raw_data) >= 6:
+                        # 尝试解析为股票代码格式 (如 "sz000300")
+                        if raw_data.startswith(('sz', 'sh', 'bj')):
+                            market = raw_data[:2].upper()
+                            code = raw_data[2:]
+                            df = pd.DataFrame([{
+                                "symbol": f"{code}.{market}",
+                                "code": code,
+                                "market": market,
+                                "raw_value": raw_data
+                            }])
+                        else:
+                            # 其他字符串，创建基本结构
+                            df = pd.DataFrame([{
+                                "symbol": raw_data,
+                                "raw_value": raw_data
+                            }])
+                    else:
+                        # 空字符串或太短的字符串
+                        df = pd.DataFrame([{"raw_value": raw_data}])
+                except Exception as _e:
+                    return ExtractionResult(
+                        success=False,
+                        data=None,
+                        interface_name=interface_name,
+                        error=f"无法将字符串数据转换为DataFrame: {_e}",
+                        source_interface=interface_name
+                    )
             else:
                 return ExtractionResult(
                     success=False,
@@ -197,15 +229,21 @@ class ExtractorManager:
 
             # 列过滤（标准字段）
             try:
+                # 标准字段过滤：仅当配置存在且有匹配列时才进行裁剪；否则保持原列不动
                 standard_fields = self.config.get_standard_fields(category, data_type)
                 if standard_fields:
                     keep_cols = [c for c in df.columns if c in standard_fields]
-                    df = df[keep_cols]
+                    if keep_cols:
+                        df = df[keep_cols]
+                    else:
+                        logger.debug(
+                            f"标准字段 {category}.{data_type} 配置为 {standard_fields}，但返回列 {list(df.columns)} 无匹配，跳过裁剪保留原列"
+                        )
             except Exception as _e:
                 logger.debug(f"标准字段过滤失败，保留原列: {_e}")
 
-            # 若过滤后无有效列或无数据
-            if df is None or df.empty or len(df.columns) == 0:
+            # 若无数据（空 DataFrame），则判定失败；仅列不匹配不视为失败
+            if df is None or df.empty:
                 return ExtractionResult(
                     success=False,
                     data=None,

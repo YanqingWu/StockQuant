@@ -229,13 +229,10 @@ data_categories:
         enabled: true
         priority: 1
         interfaces:
-          - name: "stock_zh_a_spot_em"
+          - name: "stock_zh_a_spot"
             enabled: true
             priority: 10
-          - name: "stock_realtime_quote_sina"
-            enabled: true
-            priority: 9
-            
+        
       historical_quote:
         description: "历史行情数据"
         enabled: true
@@ -247,7 +244,7 @@ data_categories:
           - name: "stock_zh_a_daily"
             enabled: true
             priority: 9
-          - name: "stock_hfq_hist_sina"
+          - name: "stock_zh_a_hist_tx"
             enabled: true
             priority: 8
             
@@ -358,13 +355,13 @@ data_categories:
         enabled: true
         priority: 1
         interfaces:
-          - name: "index_zh_a_hist"
+          - name: "stock_zh_index_daily"
             enabled: true
             priority: 10
-          - name: "stock_board_concept_index_ths"
+          - name: "stock_zh_index_daily_tx"
             enabled: true
             priority: 9
-            
+        
       market_overview:
         description: "市场概览"
         enabled: true

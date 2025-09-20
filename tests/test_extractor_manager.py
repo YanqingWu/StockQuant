@@ -26,6 +26,7 @@ def _is_enabled(manager: ExtractorManager, category: str, data_type: str) -> boo
 
 
 def _assert_result(manager: ExtractorManager, category: str, data_type: str, result: ExtractionResult, method_name: str) -> None:
+    """收紧断言：真实使用场景中，启用的接口应当返回成功，否则视为失败以暴露问题。"""
     assert isinstance(result, ExtractionResult), f"{method_name} 应返回 ExtractionResult"
     if result.success:
         assert isinstance(result.data, pd.DataFrame), f"{method_name} 成功时 data 应为 DataFrame"
@@ -36,8 +37,58 @@ def _assert_result(manager: ExtractorManager, category: str, data_type: str, res
             if unexpected_cols:
                 print(f"[WARN] {method_name} 返回包含未在标准字段中的列: {unexpected_cols}")
     else:
-        assert result.data is None, f"{method_name} 失败时 data 应为 None"
-        assert result.error is not None, f"{method_name} 失败时应包含 error 信息"
+        # 之前宽松地只要求有 error，这会掩盖大量真实失败，这里直接失败以暴露问题
+        pytest.fail(f"{method_name} 失败: {result.error}")
+
+
+# --------- 适配器真实调用保障测试 ---------
+
+def test_adapter_is_called_and_filters_unknown_keys(monkeypatch):
+    """
+    确认 ExtractorManager 在真实调用链上确实使用了 AkshareStockParamAdapter，且适配器会过滤未知参数键。
+    通过 monkeypatch 将 extractor_manager.AkshareStockParamAdapter 替换为 SpyAdapter，记录调用与产出。
+    """
+    import core.data.extractor.extractor_manager as em
+    import core.data.extractor.adapter as ad
+
+    OriginalAdapter = ad.AkshareStockParamAdapter
+
+    calls = {"count": 0, "last": None}
+
+    class SpyAdapter(OriginalAdapter):
+        def adapt(self, interface_name: str, params):
+            calls["count"] += 1
+            res = super().adapt(interface_name, params)
+            # 记录一次调用（浅拷贝避免外部修改影响断言）
+            try:
+                calls["last"] = (interface_name, dict(params), dict(res))
+            except Exception:
+                calls["last"] = (interface_name, params, res)
+            return res
+
+    # 将 ExtractorManager 内部引用替换为 SpyAdapter
+    monkeypatch.setattr(em, "AkshareStockParamAdapter", SpyAdapter, raising=True)
+
+    manager = ExtractorManager()
+    # 选一个最小参数接口：优先 real-time quote，如未启用则跳过
+    if not _is_enabled(manager, "market_data", "realtime_quote"):
+        pytest.skip("market_data.realtime_quote 未启用，跳过")
+
+    # 注入一个未知参数键，验证会被适配器过滤
+    params = StandardParams(symbol=_sym(), extra={"bad_key": "SHOULD_BE_FILTERED"})
+    res = manager.get_realtime_quote(params)
+
+    # 确认适配器被调用
+    assert calls["count"] > 0, "AkshareStockParamAdapter.adapt 未被调用"
+
+    # 确认未知键被过滤
+    if calls["last"] is not None:
+        _, raw_params, adapted = calls["last"]
+        assert "bad_key" in raw_params, "测试前置错误：raw_params 未包含注入的未知键"
+        assert "bad_key" not in adapted, "适配器未过滤未知键，导致向底层传入未声明参数"
+
+    # 同时复用通用断言，要求该接口成功（若此处失败，将暴露真实链路问题）
+    _assert_result(manager, "market_data", "realtime_quote", res, "get_realtime_quote")
 
 
 # --------- 占位测试 ---------

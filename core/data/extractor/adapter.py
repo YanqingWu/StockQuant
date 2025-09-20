@@ -471,7 +471,7 @@ class AkshareStockParamAdapter(ParamAdapter):
     - 尽量不改动与上述无关的参数；转换失败回退原值
     """
 
-    SYMBOL_KEYS = ["symbol", "stock", "code", "ts_code"]
+    SYMBOL_KEYS = ["symbol", "stock", "code", "ts_code", "index_code"]
     DATE_KEYS = ["date", "trade_date"]
     START_DATE_KEYS = ["start_date", "from_date", "begin_date"]
     END_DATE_KEYS = ["end_date", "to_date"]
@@ -493,6 +493,10 @@ class AkshareStockParamAdapter(ParamAdapter):
         # 原始拷贝，用于从别名读取
         source_params = dict(params)
         new_params: Dict[str, Any] = {}
+
+        # 如果接口不接受任何参数，直接返回空字典
+        if not accepted_keys:
+            return {}
 
         # 1) symbol 家族
         self._adapt_symbol_family(new_params, source_params, example, accepted_keys)
