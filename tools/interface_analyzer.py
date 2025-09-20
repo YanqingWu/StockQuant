@@ -210,7 +210,18 @@ class InterfaceAnalyzer:
         """线程安全地添加分析结果"""
         with self._results_lock:
             self.analysis_results.append(result)
-    
+
+    def _clear_failed_analysis_results(self):
+        """清除之前失败的接口分析结果"""
+        with self._results_lock:
+            initial_count = len(self.analysis_results)
+            self.analysis_results = [
+                result for result in self.analysis_results if result.success
+            ]
+            cleared_count = initial_count - len(self.analysis_results)
+            if cleared_count > 0:
+                self.logger.info(f"已清除 {cleared_count} 个之前失败的接口分析结果。")
+
     def _save_analysis_results_thread_safe(self):
         """线程安全地保存分析结果"""
         with self._save_lock:
@@ -227,7 +238,7 @@ class InterfaceAnalyzer:
             # 写入临时文件，然后原子性重命名
             temp_file = f"{self.results_file}.tmp"
             with open(temp_file, 'w', encoding='utf-8') as f:
-                json.dump(results_data, f, ensure_ascii=False, indent=2)
+                json.dump(results_data, f, ensure_ascii=False, indent=2, default=str)
             
             # 原子性重命名
             os.rename(temp_file, self.results_file)
@@ -426,6 +437,9 @@ class InterfaceAnalyzer:
     
     async def run_comprehensive_analysis(self) -> Dict[str, Any]:
         """运行全面分析（异步批量执行）"""
+        # 在每次运行前清除之前失败的分析结果
+        self._clear_failed_analysis_results()
+
         # 获取已分析的接口
         analyzed_names = self._get_analyzed_interface_names()
         
