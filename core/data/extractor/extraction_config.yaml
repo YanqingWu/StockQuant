@@ -172,48 +172,45 @@ data_categories:
     description: "股票基础信息，相对稳定，变化频率低"
     cache_duration: 86400  # 24小时缓存
     retry_strategy: "conservative"
-    priority: 1
+    priority: 0
     enabled: true
     
     data_types:
       stock_basic_info:
         description: "股票基本信息（代码、名称、上市日期等）"
         enabled: true
-        priority: 1
         interfaces:
           - name: "stock_info_sz_name_code"
             enabled: true
-            priority: 10
+            priority: 2
           - name: "stock_info_sh_name_code" 
             enabled: true
-            priority: 9
+            priority: 1
           - name: "stock_a_code_to_symbol"
             enabled: true
-            priority: 8
+            priority: 0
             
       company_profile:
         description: "公司概况信息"
         enabled: true
-        priority: 2
         interfaces:
           - name: "stock_individual_info_em"
             enabled: true
-            priority: 10
+            priority: 1
           - name: "stock_profile_cninfo"
             enabled: true
-            priority: 9
+            priority: 0
             
       industry_classification:
         description: "行业分类信息"
         enabled: true
-        priority: 3
         interfaces:
           - name: "stock_board_industry_name_em"
             enabled: true
-            priority: 10
+            priority: 1
           - name: "stock_board_concept_name_ths"
             enabled: true
-            priority: 9
+            priority: 0
 
   # 动态行情数据类（每日/实时变化）
   market_data:
@@ -227,41 +224,38 @@ data_categories:
       realtime_quote:
         description: "实时行情数据"
         enabled: true
-        priority: 1
         interfaces:
           - name: "stock_zh_a_spot"
             enabled: false  # 暂时禁用，因为接口有问题
-            priority: 10
+            priority: 1
           - name: "stock_zh_a_hist"  # 使用历史数据作为替代
             enabled: true
-            priority: 9
+            priority: 0
         
       historical_quote:
         description: "历史行情数据"
         enabled: true
-        priority: 2
         interfaces:
           - name: "stock_zh_a_hist"
             enabled: true
-            priority: 10
+            priority: 2
           - name: "stock_zh_a_daily"
             enabled: true
-            priority: 9
+            priority: 1
           - name: "stock_zh_a_hist_tx"
             enabled: true
-            priority: 8
+            priority: 0
             
       intraday_data:
         description: "分时数据"
         enabled: true
-        priority: 3
         interfaces:
           - name: "stock_intraday_em"
             enabled: true
-            priority: 10
+            priority: 1
           - name: "stock_zh_a_minute"
             enabled: true
-            priority: 9
+            priority: 0
 
   # 周期性财务数据类（按报告期更新）
   financial_data:
@@ -275,41 +269,38 @@ data_categories:
       financial_statements:
         description: "财务报表数据"
         enabled: true
-        priority: 1
         interfaces:
           - name: "stock_balance_sheet_by_report_em"
             enabled: true
-            priority: 10
+            priority: 2
           - name: "stock_profit_sheet_by_report_em"
             enabled: true
-            priority: 9
+            priority: 1
           - name: "stock_cash_flow_sheet_by_report_em"
             enabled: true
-            priority: 8
+            priority: 0
             
       financial_indicators:
         description: "财务指标"
         enabled: true
-        priority: 2
         interfaces:
           - name: "stock_financial_abstract_ths"
             enabled: true
-            priority: 10
+            priority: 1
           - name: "stock_financial_hk_report_em"
             enabled: true
-            priority: 9
+            priority: 0
             
       dividend_info:
         description: "分红配股信息"
         enabled: true
-        priority: 3
         interfaces:
           - name: "stock_dividend_cninfo"
             enabled: true
-            priority: 10
+            priority: 1
           - name: "stock_fhps_detail_em"
             enabled: true
-            priority: 9
+            priority: 0
 
   # 技术分析数据类（基于历史数据计算）
   technical_data:
@@ -323,26 +314,24 @@ data_categories:
       technical_indicators:
         description: "技术指标"
         enabled: true
-        priority: 1
         interfaces:
           - name: "stock_a_gxl_lg"
             enabled: true
-            priority: 10
+            priority: 1
           - name: "stock_buffett_index_lg"
             enabled: true
-            priority: 9
+            priority: 0
             
       market_sentiment:
         description: "市场情绪指标"
         enabled: true
-        priority: 2
         interfaces:
           - name: "stock_comment_em"
             enabled: true
-            priority: 10
+            priority: 1
           - name: "stock_comment_detail_scrd_desire_em"
             enabled: true
-            priority: 9
+            priority: 0
 
   # 市场宏观数据类（市场整体信息）
   market_macro:
@@ -356,26 +345,24 @@ data_categories:
       market_indices:
         description: "市场指数"
         enabled: true
-        priority: 1
         interfaces:
           - name: "stock_zh_index_daily"
             enabled: true
-            priority: 10
+            priority: 1
           - name: "stock_zh_index_daily_tx"
             enabled: true
-            priority: 9
+            priority: 0
         
       market_overview:
         description: "市场概览"
         enabled: true
-        priority: 2
         interfaces:
           - name: "stock_market_activity_legu"
             enabled: true
-            priority: 10
+            priority: 1
           - name: "stock_account_statistics_em"
             enabled: true
-            priority: 9
+            priority: 0
 
   # 特殊数据类（特定用途）
   special_data:
@@ -389,44 +376,41 @@ data_categories:
       research_reports:
         description: "研究报告"
         enabled: true
-        priority: 1
         interfaces:
           - name: "stock_analyst_rank_em"
             enabled: true
-            priority: 10
+            priority: 1
           - name: "stock_analyst_detail_em"
             enabled: true
-            priority: 9
+            priority: 0
             
       news_events:
         description: "新闻事件"
         enabled: true
-        priority: 2
         interfaces:
           - name: "stock_news_em"
             enabled: true
-            priority: 10
+            priority: 0
             
       other_data:
         description: "其他数据"
         enabled: true
-        priority: 3
         interfaces:
           - name: "stock_add_stock"
             enabled: false  # 暂时禁用，因为接口有问题
-            priority: 10
+            priority: 4
           - name: "stock_classify_sina"
             enabled: false  # 暂时禁用，因为接口有问题
-            priority: 9
+            priority: 3
           - name: "stock_board_concept_name_ths"  # 同花顺概念板块
             enabled: true
-            priority: 8
+            priority: 2
           - name: "stock_industry_category_cninfo"  # 巨潮行业分类
             enabled: true
-            priority: 7
+            priority: 1
           - name: "stock_dividend_cninfo"  # 巨潮分红数据
             enabled: true
-            priority: 6
+            priority: 0
 
 # 字段映射配置 - 所有接口共用
 field_mappings:

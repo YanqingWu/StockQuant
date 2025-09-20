@@ -25,7 +25,6 @@ class DataTypeConfig:
     """数据类型配置"""
     description: str = ""
     enabled: bool = True
-    priority: int = 1
     interfaces: List[InterfaceConfig] = field(default_factory=list)
     
     def get_enabled_interfaces(self) -> List[InterfaceConfig]:
@@ -33,7 +32,7 @@ class DataTypeConfig:
         if not self.enabled:
             return []
         enabled = [iface for iface in self.interfaces if iface.enabled]
-        return sorted(enabled, key=lambda x: x.priority, reverse=True)
+        return sorted(enabled, key=lambda x: x.priority, reverse=False)
     
     def get_interface_by_name(self, name: str) -> Optional[InterfaceConfig]:
         """根据名称获取接口配置"""
@@ -219,7 +218,6 @@ class ConfigLoader:
                 data_type_config = DataTypeConfig(
                     description=type_data.get('description', ''),
                     enabled=type_data.get('enabled', True),
-                    priority=type_data.get('priority', 1),
                     interfaces=interfaces
                 )
                 data_types[data_type_name] = data_type_config
@@ -269,10 +267,10 @@ class ConfigLoader:
                 if len(interface_names) != len(set(interface_names)):
                     raise ValueError(f"数据类型 '{category_name}.{data_type_name}' 中存在重复的接口名称")
                 
-                # 验证优先级为正整数
+                # 验证优先级为非负整数
                 for iface in type_config.interfaces:
-                    if iface.priority < 1:
-                        raise ValueError(f"接口 '{iface.name}' 的优先级必须大于0")
+                    if iface.priority < 0:
+                        raise ValueError(f"接口 '{iface.name}' 的优先级不能小于0")
         
         # 验证全局配置
         if config.global_config.retry_count < 0:
