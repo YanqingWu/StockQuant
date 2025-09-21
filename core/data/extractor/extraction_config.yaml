@@ -63,8 +63,8 @@ standard_fields:
       - pre_close       # 昨收价
       
     historical_quote:
-      - date            # 日期
       - symbol          # 股票代码
+      - date            # 日期
       - open            # 开盘价
       - high            # 最高价
       - low             # 最低价
@@ -76,14 +76,15 @@ standard_fields:
       - turnover_rate   # 换手率
       
     intraday_data:
-      - time            # 时间
       - symbol          # 股票代码
+      - time            # 时间
       - price           # 价格
       - volume          # 成交量
       - amount          # 成交额
 
   financial_data:
     financial_statements:
+      - symbol          # 股票代码
       - report_date     # 报告期
       - symbol          # 股票代码
       - total_revenue   # 营业总收入
@@ -95,36 +96,37 @@ standard_fields:
       - shareholders_equity # 股东权益合计
       
     financial_indicators:
-      - report_date     # 报告期
       - symbol          # 股票代码
+      - report_date     # 报告期
       - pe              # 市盈率
       - pb              # 市净率
       - eps             # 每股收益
       - bvps            # 每股净资产
       
     dividend_info:
-      - announce_date   # 公告日期
       - symbol          # 股票代码
+      - announce_date   # 公告日期
       - dividend_date   # 分红日期
       - cash_dividend   # 现金分红
 
   technical_data:
     technical_indicators:
-      - date            # 日期
       - symbol          # 股票代码
+      - date            # 日期
       - ma5             # 5日均线
       - ma10            # 10日均线
       - ma20            # 20日均线
       - ma60            # 60日均线
       
     market_sentiment:
-      - date            # 日期
       - symbol          # 股票代码
+      - date            # 日期
       - sentiment_score # 情绪得分
       - comment_count   # 评论数量
 
   market_macro:
     market_indices:
+      - symbol          # 股票代码
       - date            # 日期
       - index_code      # 指数代码
       - index_name      # 指数名称
@@ -137,6 +139,7 @@ standard_fields:
       - pct_change      # 涨跌幅
       
     market_overview:
+      - symbol          # 股票代码
       - date            # 日期
       - market_cap      # 总市值
       - circulating_cap # 流通市值
@@ -146,22 +149,22 @@ standard_fields:
 
   special_data:
     research_reports:
-      - announce_date   # 发布日期
       - symbol          # 股票代码
+      - announce_date   # 发布日期
       - analyst_name    # 分析师姓名
       - rating          # 评级
       - target_price    # 目标价
       
     news_events:
-      - time            # 发布时间
       - symbol          # 股票代码
+      - time            # 发布时间
       - title           # 新闻标题
       - content         # 新闻内容
       - source          # 新闻来源
       
     other_data:
-      - date            # 日期
       - symbol          # 股票代码
+      - date            # 日期
       - data_type       # 数据类型
       - value           # 数据值
 
