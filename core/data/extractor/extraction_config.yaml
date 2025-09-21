@@ -13,56 +13,21 @@ global_config:
 # 标准字段定义 - 定义每种数据类型最终保留的字段
 standard_fields:
   static_info:
-    stock_basic_info:
-      - symbol          # 股票代码
-      - name            # 股票名称
-      - market          # 市场
-      - list_date       # 上市日期
-      - industry        # 行业
-      - area            # 地区
-      - pe              # 市盈率
-      - pb              # 市净率
-      - outstanding     # 流通股本
-      - totals          # 总股本
-      - total_assets    # 总资产
-      - eps             # 每股收益
-      - bvps            # 每股净资产
-      
-    company_profile:
-      - symbol          # 股票代码
-      - name            # 公司名称
-      - industry        # 行业
-      - main_business   # 主营业务
-      - chairman        # 董事长
-      - employees       # 员工数
-      - net_profit      # 净利润
-      
-    industry_classification:
-      - symbol          # 股票代码
-      - name            # 股票名称
-      - industry        # 行业名称
-      - concept_name    # 概念名称
+    basic_info:
+      - symbol            # 股票代码
+      - name              # 股票名称
+      - market            # 市场
+      - list_date         # 上市日期
+      - industry          # 行业
+      - concept           # 概念名称
+      - totals            # 总股本
+      - outstanding       # 流通股本
+      - main_business     # 主营业务
+      - index_membership  # 入选指数成员
 
   market_data:
-    realtime_quote:
-      - symbol          # 股票代码
-      - name            # 股票名称
-      - price           # 当前价格
-      - change          # 涨跌额
-      - pct_change      # 涨跌幅
-      - volume          # 成交量
-      - amount          # 成交额
-      - turnover_rate   # 换手率
-      - pe              # 市盈率
-      - pb              # 市净率
-      - market_cap      # 总市值
-      - circulating_cap # 流通市值
-      - high            # 最高价
-      - low             # 最低价
-      - open            # 开盘价
-      - pre_close       # 昨收价
-      
-    historical_quote:
+    # 日线行情数据
+    daily_quote:
       - symbol          # 股票代码
       - date            # 日期
       - open            # 开盘价
@@ -74,57 +39,206 @@ standard_fields:
       - pct_change      # 涨跌幅
       - change          # 涨跌额
       - turnover_rate   # 换手率
-      
-    intraday_data:
-      - symbol          # 股票代码
-      - time            # 时间
-      - price           # 价格
-      - volume          # 成交量
-      - amount          # 成交额
+      - amplitude       # 振幅
+    
+    # 融资融券数据
+    margin_trading:
+      - symbol              # 股票代码
+      - date                # 日期
+      - margin_balance      # 融资余额
+      - margin_buy_amount   # 融资买入额
+      - margin_repay_amount # 融资偿还额
+      - short_balance       # 融券余量
+      - short_sell_amount   # 融券卖出量
+      - short_repay_amount  # 融券偿还量
+
+    # 筹码分布数据
+    chip_distribution:
+      - symbol              # 股票代码
+      - date                # 日期
+      - profit_ratio        # 获利比例
+      - avg_cost            # 平均成本
+      - cost_90_low         # 90%成本区间下限
+      - cost_90_high        # 90%成本区间上限
+      - concentration_90    # 90%集中度
+      - cost_70_low         # 70%成本区间下限
+      - cost_70_high        # 70%成本区间上限
+      - concentration_70    # 70%集中度
+
+    # 资金流向数据
+    fund_flow:
+      - symbol              # 股票代码
+      - date                # 日期
+      - close_price         # 最新价
+      - pct_change          # 涨跌幅
+      - turnover_rate       # 换手率
+      - inflow_amount       # 流入资金
+      - outflow_amount      # 流出资金
+      - net_amount          # 净流入金额
+      - total_amount        # 成交额
+
+    # 大宗交易数据
+    block_trading:
+      - symbol              # 股票代码
+      - date                # 交易日期
+      - close_price         # 收盘价
+      - pct_change          # 涨跌幅
+      - trade_price         # 成交价
+      - discount_rate       # 折溢率
+      - trade_count         # 成交笔数
+      - trade_volume        # 成交总量
+      - trade_amount        # 成交总额
+      - amount_ratio        # 成交额占比
+
+    # 龙虎榜数据
+    dragon_tiger_list:
+      - symbol              # 股票代码
+      - date                # 上榜日期
+      - close_price         # 收盘价
+      - pct_change          # 涨跌幅
+      - net_buy_amount      # 龙虎榜净买额
+      - buy_amount          # 龙虎榜买入额
+      - sell_amount         # 龙虎榜卖出额
+      - total_amount        # 龙虎榜成交额
+      - net_ratio           # 净买额占比
+      - reason              # 上榜原因
+      - after_1d            # 上榜后1日表现
+      - after_5d            # 上榜后5日表现
+
+    # 沪深港通持股数据
+    hsgt_holding:
+      - symbol              # 股票代码
+      - date                # 日期
+      - close_price         # 收盘价
+      - pct_change          # 涨跌幅
+      - holding_quantity    # 持股数量
+      - holding_value       # 持股市值
+      - holding_ratio       # 持股比例
+      - daily_increase_qty  # 当日增持股数
+      - daily_increase_amt  # 当日增持金额
+      - value_change        # 持股市值变化
+
+    stock_sentiment:
+      - symbol              # 股票代码
+      - date                # 日期
+      - vote_bullish_count  # 看涨数量
+      - vote_bearish_count  # 看跌数量
+      - vote_bullish_ratio  # 看涨比例
+      - vote_bearish_ratio  # 看跌比例
+      - comment_count       # 评论数量
+      - sentiment_score     # 情绪得分
+      - sentiment_type      # 情绪类型（乐观/悲观/中性）
+      - data_source         # 数据来源
+
+    stock_news:
+      - symbol              # 股票代码
+      - news_id             # 新闻ID
+      - title               # 新闻标题
+      - content             # 新闻内容
+      - publish_time        # 发布时间
+      - news_source         # 新闻来源
+      - news_type           # 新闻类型
+      - importance_level    # 重要程度
+      - sentiment_score     # 情绪得分
+      - related_stocks      # 相关股票
 
   financial_data:
-    financial_statements:
-      - symbol          # 股票代码
-      - report_date     # 报告期
-      - symbol          # 股票代码
-      - total_revenue   # 营业总收入
-      - revenue         # 营业收入
-      - net_profit      # 净利润
-      - eps             # 每股收益
-      - total_assets    # 资产总计
-      - total_liabilities # 负债合计
-      - shareholders_equity # 股东权益合计
-      
-    financial_indicators:
-      - symbol          # 股票代码
-      - report_date     # 报告期
-      - pe              # 市盈率
-      - pb              # 市净率
-      - eps             # 每股收益
-      - bvps            # 每股净资产
-      
-    dividend_info:
-      - symbol          # 股票代码
-      - announce_date   # 公告日期
-      - dividend_date   # 分红日期
-      - cash_dividend   # 现金分红
+    # 资产负债表数据（按报告期）
+    balance_sheet:
+      - symbol              # 股票代码
+      - report_date         # 报告期
+      - report_type         # 报告类型（年报/中报/一季报/三季报）
+      - report_period       # 报告期间（如2024-12-31, 2024-06-30等）
+      - total_assets        # 资产总计
+      - current_assets      # 流动资产
+      - non_current_assets  # 非流动资产
+      - total_liabilities   # 负债合计
+      - current_liabilities # 流动负债
+      - non_current_liabilities # 非流动负债
+      - shareholder_equity  # 股东权益合计
+      - cash_deposits       # 货币资金
+      - accounts_receivable # 应收账款
+      - inventory           # 存货
+      - fixed_assets        # 固定资产
+      - intangible_assets   # 无形资产
+      - goodwill           # 商誉
+    
+    # 利润表数据（按报告期）
+    income_statement:
+      - symbol                    # 股票代码
+      - report_date              # 报告期
+      - report_type              # 报告类型（年报/中报/一季报/三季报）
+      - report_period            # 报告期间
+      - total_operating_income   # 营业总收入
+      - operating_income         # 营业收入
+      - total_operating_cost     # 营业总成本
+      - operating_cost           # 营业成本
+      - sales_expense            # 销售费用
+      - management_expense       # 管理费用
+      - research_expense         # 研发费用
+      - finance_expense          # 财务费用
+      - operating_profit         # 营业利润
+      - total_profit             # 利润总额
+      - net_profit               # 净利润
+      - parent_net_profit        # 归属于母公司净利润
+      - non_recurring_profit     # 扣非净利润
+    
+    # 现金流量表数据（按报告期）
+    cash_flow:
+      - symbol                   # 股票代码
+      - report_date             # 报告期
+      - report_type             # 报告类型（年报/中报/一季报/三季报）
+      - report_period           # 报告期间
+      - operating_cash_inflow   # 经营活动现金流入
+      - operating_cash_outflow  # 经营活动现金流出
+      - operating_cash_flow     # 经营活动现金流量净额
+      - investing_cash_flow     # 投资活动现金流量净额
+      - financing_cash_flow     # 筹资活动现金流量净额
+      - net_cash_increase       # 现金及现金等价物净增加额
 
-  technical_data:
-    technical_indicators:
-      - symbol          # 股票代码
-      - date            # 日期
-      - ma5             # 5日均线
-      - ma10            # 10日均线
-      - ma20            # 20日均线
-      - ma60            # 60日均线
-      
-    market_sentiment:
-      - symbol          # 股票代码
-      - date            # 日期
-      - sentiment_score # 情绪得分
-      - comment_count   # 评论数量
+    # 财务指标数据（按报告期）
+    financial_indicators:
+      - symbol                  # 股票代码
+      - report_date            # 报告期
+      - report_type            # 报告类型（年报/中报/一季报/三季报）
+      - report_period          # 报告期间
+      - net_profit_growth      # 净利润同比增长率
+      - operating_income_growth # 营业总收入同比增长率
+      - eps                    # 基本每股收益
+      - bps                    # 每股净资产
+      - net_profit_margin      # 销售净利率
+      - gross_profit_margin    # 销售毛利率
+      - roe                    # 净资产收益率
+      - current_ratio          # 流动比率
+      - quick_ratio            # 速动比率
+      - debt_to_asset_ratio    # 资产负债率
+      - inventory_turnover     # 存货周转率
+      - receivables_turnover   # 应收账款周转率
+
+    # 分红送配数据（按报告期）
+    dividend_info:
+      - symbol                 # 股票代码
+      - report_date           # 报告期
+      - report_type           # 报告类型（年报/中报/一季报/三季报）
+      - report_period         # 报告期间
+      - stock_dividend_ratio  # 送转股份比例
+      - cash_dividend_ratio   # 现金分红比例
+      - dividend_yield        # 股息率
+      - ex_dividend_date      # 除权除息日
+      - record_date           # 股权登记日
+      - payment_date          # 分红发放日
+      - dividend_status       # 方案进度
 
   market_macro:
+    market_overview:
+      - symbol          # 股票代码
+      - date            # 日期
+      - market_cap      # 总市值
+      - circulating_cap # 流通市值
+      - turnover_rate   # 换手率
+      - pe              # 平均市盈率
+      - pb              # 平均市净率
+
     market_indices:
       - symbol          # 股票代码
       - date            # 日期
@@ -137,36 +251,38 @@ standard_fields:
       - volume          # 成交量
       - amount          # 成交额
       - pct_change      # 涨跌幅
-      
-    market_overview:
-      - symbol          # 股票代码
-      - date            # 日期
-      - market_cap      # 总市值
-      - circulating_cap # 流通市值
-      - turnover_rate   # 换手率
-      - pe              # 平均市盈率
-      - pb              # 平均市净率
+    
+    sector_concept:
+      - sector_code         # 板块代码
+      - sector_name         # 板块名称
+      - sector_type         # 板块类型（行业/概念）
+      - date                # 日期
+      - open_price          # 开盘价
+      - high_price          # 最高价
+      - low_price           # 最低价
+      - close_price         # 收盘价
+      - volume              # 成交量
+      - amount              # 成交额
+      - pct_change          # 涨跌幅
+      - change              # 涨跌额
+      - turnover_rate       # 换手率
+      - net_inflow          # 净流入资金
+      - net_inflow_ratio    # 净流入占比
+      - stock_count         # 成分股数量
+      - leading_stocks      # 领涨股票
 
-  special_data:
-    research_reports:
-      - symbol          # 股票代码
-      - announce_date   # 发布日期
-      - analyst_name    # 分析师姓名
-      - rating          # 评级
-      - target_price    # 目标价
-      
-    news_events:
-      - symbol          # 股票代码
-      - time            # 发布时间
-      - title           # 新闻标题
-      - content         # 新闻内容
-      - source          # 新闻来源
-      
-    other_data:
-      - symbol          # 股票代码
-      - date            # 日期
-      - data_type       # 数据类型
-      - value           # 数据值
+    market_activity:
+      - date                # 日期
+      - market_type         # 市场类型（A股/港股/美股）
+      - activity_index      # 活跃度指数
+      - trading_volume      # 总成交量
+      - trading_amount      # 总成交额
+      - stock_count         # 交易股票数量
+      - limit_up_count      # 涨停股票数量
+      - limit_down_count    # 跌停股票数量
+      - avg_turnover_rate   # 平均换手率
+      - market_heat_level   # 市场热度等级
+
 
 # 数据分类配置
 data_categories:
