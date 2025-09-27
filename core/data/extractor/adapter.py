@@ -46,11 +46,94 @@ class StockSymbol:
     US_CODE_RE = re.compile(r"^(?P<code>[A-Z]{1,5})$")  # 美股字母代码
 
     def __init__(self, market: str, code: str) -> None:
+        # 参数校验
+        self._validate_inputs(market, code)
+        
         self.market = self._canon_market(market)
-        self.code = code
+        self.code = code.strip() if isinstance(code, str) else str(code)
 
     def __repr__(self) -> str:
         return f"StockSymbol(market={self.market!r}, code={self.code!r})"
+
+    @classmethod
+    def _validate_inputs(cls, market: str, code: str) -> None:
+        """
+        校验输入参数的有效性
+        
+        Args:
+            market: 市场代码
+            code: 股票代码
+            
+        Raises:
+            ValueError: 当参数格式不正确时
+        """
+        # 校验market参数
+        if not market:
+            raise ValueError("市场代码不能为空")
+        
+        if not isinstance(market, str):
+            raise ValueError(f"市场代码必须是字符串类型，当前类型: {type(market).__name__}")
+        
+        market_clean = market.strip()
+        if not market_clean:
+            raise ValueError("市场代码不能为空字符串")
+        
+        # 校验code参数
+        if not code:
+            raise ValueError("股票代码不能为空")
+        
+        if not isinstance(code, (str, int)):
+            raise ValueError(f"股票代码必须是字符串或数字类型，当前类型: {type(code).__name__}")
+        
+        code_str = str(code).strip()
+        if not code_str:
+            raise ValueError("股票代码不能为空字符串")
+        
+        # 校验市场代码格式
+        canon_market = cls._canon_market(market)
+        if canon_market and canon_market not in {"SH", "SZ", "BJ", "HK", "US"}:
+            raise ValueError(f"不支持的市场代码: {market} (标准化后: {canon_market})")
+        
+        # 校验股票代码格式与市场的匹配性
+        cls._validate_code_market_consistency(code_str, canon_market)
+    
+    @classmethod
+    def _validate_code_market_consistency(cls, code: str, market: str) -> None:
+        """
+        校验股票代码格式与市场代码的一致性
+        
+        Args:
+            code: 股票代码
+            market: 标准化后的市场代码
+            
+        Raises:
+            ValueError: 当代码格式与市场不匹配时
+        """
+        if not market:  # 如果市场为空，跳过一致性检查
+            return
+            
+        # A股市场代码格式校验
+        if market in {"SH", "SZ", "BJ"}:
+            if not re.fullmatch(r"\d{6}", code):
+                raise ValueError(f"A股代码必须是6位数字，当前代码: {code}")
+            
+            # 进一步校验代码前缀与市场的匹配
+            inferred_market = cls._infer_market_by_code(code)
+            if inferred_market and inferred_market != market:
+                raise ValueError(
+                    f"股票代码 {code} 的格式表明它属于 {inferred_market} 市场，"
+                    f"但指定的市场是 {market}"
+                )
+        
+        # 港股代码格式校验
+        elif market == "HK":
+            if not re.fullmatch(r"\d{5}", code):
+                raise ValueError(f"港股代码必须是5位数字，当前代码: {code}")
+        
+        # 美股代码格式校验
+        elif market == "US":
+            if not re.fullmatch(r"[A-Z]{1,5}", code.upper()):
+                raise ValueError(f"美股代码必须是1-5位字母，当前代码: {code}")
 
     @classmethod
     def _canon_market(cls, market: Optional[str]) -> str:

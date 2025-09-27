@@ -968,11 +968,11 @@ class AkshareProvider(BaseAPIProvider):
             .with_source(DataSource.AKSHARE)\
             .with_category(FunctionCategory.STOCK_BASIC)\
             .with_description("深圳证券交易所-股票列表")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_optional_params()\
+            .with_pattern(ParameterPattern.from_params({}))\
             .with_return_type("List[str]")\
             .with_keywords("sz", "B股", "stock", "A股", "name")\
-            .with_example_params({"symbol": 'A股列表'})\
+            .with_example_params({})\
             .build(),
 
         create_interface("stock_institute_hold")\
