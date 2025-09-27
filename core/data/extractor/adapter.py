@@ -28,13 +28,22 @@ class StockSymbol:
         "sz": "SZ",
         "sh": "SH",
         "bj": "BJ",
+        "hk": "HK",
+        "us": "US",
         "szse": "SZ",
         "sse": "SH",
         "bse": "BJ",
+        "hkex": "HK",
+        "nasdaq": "US",
+        "nyse": "US",
+        "港股": "HK",
+        "美股": "US",
     }
 
-    DOT_RE = re.compile(r"^(?P<code>\d{6})\.(?P<mkt>[A-Za-z]{2})$")
-    PREFIX_RE = re.compile(r"^(?P<mkt>[A-Za-z]{2})(?P<code>\d{6})$")
+    DOT_RE = re.compile(r"^(?P<code>\d{5,6}|[A-Z]{1,5})\.(?P<mkt>[A-Za-z]{2})$")
+    PREFIX_RE = re.compile(r"^(?P<mkt>[A-Za-z]{2})(?P<code>\d{5,6}|[A-Z]{1,5})$")
+    HK_CODE_RE = re.compile(r"^(?P<code>\d{5})$")  # 港股5位数字代码
+    US_CODE_RE = re.compile(r"^(?P<code>[A-Z]{1,5})$")  # 美股字母代码
 
     def __init__(self, market: str, code: str) -> None:
         self.market = self._canon_market(market)
@@ -87,30 +96,59 @@ class StockSymbol:
         m = cls.DOT_RE.match(s2)
         if m:
             return cls(m.group("mkt"), m.group("code"))
-        # 前缀
-        m = cls.PREFIX_RE.match(s2)
-        if m:
-            return cls(m.group("mkt"), m.group("code"))
-        # 纯代码
+        
+        # 纯代码优先匹配（避免被前缀模式误匹配）
+        # A股6位数字代码
         if re.fullmatch(r"\d{6}", s2):
             mkt = cls._canon_market(hint_market) or cls._infer_market_by_code(s2)
             return cls(mkt, s2)
+        
+        # 港股5位数字代码
+        m = cls.HK_CODE_RE.match(s2)
+        if m:
+            mkt = cls._canon_market(hint_market) or "HK"
+            return cls(mkt, m.group("code"))
+        
+        # 美股字母代码
+        m = cls.US_CODE_RE.match(s2)
+        if m:
+            mkt = cls._canon_market(hint_market) or "US"
+            return cls(mkt, m.group("code"))
+        
+        # 前缀（放在最后，避免误匹配纯代码）
+        m = cls.PREFIX_RE.match(s2)
+        if m:
+            return cls(m.group("mkt"), m.group("code"))
+        
         return None
 
     @staticmethod
     def _infer_market_by_code(code: str) -> str:
         # 简单规则：
-        # - 6 打头 -> SH
-        # - 0/2/3 打头 -> SZ
+        # - 6 打头 -> SH (上海A股)
+        # - 0/2/3 打头 -> SZ (深圳A股)
         # - 8 打头 -> BJ（北交所/新三板）
+        # - 5位数字 -> HK (港股)
+        # - 字母代码 -> US (美股)
         if not code:
             return ""
+        
+        # 港股：5位数字代码
+        if re.fullmatch(r"\d{5}", code):
+            return "HK"
+        
+        # 美股：字母代码
+        if re.fullmatch(r"[A-Z]{1,5}", code):
+            return "US"
+        
+        # A股：6位数字代码
         if code.startswith("6"):
             return "SH"
         if code[0] in {"0", "2", "3"}:
             return "SZ"
         if code.startswith("8"):
             return "BJ"
+        
         return ""
 
     # 格式化输出

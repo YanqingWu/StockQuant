@@ -481,7 +481,7 @@ class ExtractorManager:
             数据分类和数据类型的映射
         """
         result = {}
-        for category_name, category_config in self.config.data_categories.items():
+        for category_name, category_config in self.config.interfaces_config.items():
             enabled_types = list(category_config.get_enabled_data_types().keys())
             if enabled_types:
                 result[category_name] = enabled_types
