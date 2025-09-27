@@ -655,19 +655,19 @@ interfaces_config:
           priority: 0
           markets: ["SH", "SZ", "BJ"]
         
-        - name: "stock_profile_cninfo"
-          enabled: true
-          priority: 0
-          markets: ["SH", "SZ", "BJ"]
-
-    company_profile:
-      description: "公司详细信息"
-      interfaces:
         - name: "stock_individual_info_em"
           enabled: true
           priority: 1
           markets: ["SH", "SZ", "BJ"]
 
+    company_profile:
+      description: "公司详细信息"
+      interfaces:
+        - name: "stock_profile_cninfo"
+          enabled: true
+          priority: 0
+          markets: ["SH", "SZ", "BJ"]
+  
     daily_market:
       quote:
         description: "日行情数据"
