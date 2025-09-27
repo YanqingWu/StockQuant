@@ -229,16 +229,26 @@ class ExtractorManager:
 
             # 列过滤（标准字段）
             try:
-                # 标准字段过滤：仅当配置存在且有匹配列时才进行裁剪；否则保持原列不动
+                # 标准字段过滤：确保所有标准字段都存在，即使数据为空也创建空列
                 standard_fields = self.config.get_standard_fields(category, data_type)
                 if standard_fields:
+                    # 保留存在的标准字段
                     keep_cols = [c for c in df.columns if c in standard_fields]
                     if keep_cols:
                         df = df[keep_cols]
                     else:
-                        logger.debug(
-                            f"标准字段 {category}.{data_type} 配置为 {standard_fields}，但返回列 {list(df.columns)} 无匹配，跳过裁剪保留原列"
-                        )
+                        # 如果没有匹配的列，创建一个空的DataFrame但保留原有行数
+                        df = pd.DataFrame(index=df.index)
+                    
+                    # 为所有缺失的标准字段添加空列
+                    missing_fields = [f for f in standard_fields if f not in df.columns]
+                    for field in missing_fields:
+                        df[field] = None  # 或者使用 pd.NA
+                    
+                    # 按标准字段顺序重新排列列
+                    df = df[standard_fields]
+                    
+                    logger.debug(f"标准字段处理完成: {category}.{data_type}, 保留字段: {list(df.columns)}")
             except Exception as _e:
                 logger.debug(f"标准字段过滤失败，保留原列: {_e}")
 
