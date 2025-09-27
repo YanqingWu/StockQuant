@@ -90,19 +90,26 @@ class ExtractionConfig:
         """获取数据分类配置"""
         return self.interfaces_config.get(category)
     
-    def get_data_type_config(self, category: str, data_type: str) -> Optional[DataTypeConfig]:
-        """获取数据类型配置"""
-        category_config = self.get_category_config(category)
-        if category_config:
-            return category_config.get_data_type_config(data_type)
-        return None
-    
     def get_enabled_interfaces(self, category: str, data_type: str, market: Optional[str] = None) -> List[InterfaceConfig]:
-        """获取指定数据类型的启用接口"""
+        """获取指定数据类型的启用接口，支持多层嵌套结构"""
         config = self.get_data_type_config(category, data_type)
         if config:
             return config.get_enabled_interfaces(market)
         return []
+    
+    def get_data_type_config(self, category: str, data_type: str) -> Optional[DataTypeConfig]:
+        """获取数据类型配置，支持多层嵌套结构（如 daily_market.quote）"""
+        category_config = self.get_category_config(category)
+        if not category_config:
+            return None
+        
+        # 处理多层嵌套的数据类型
+        if '.' in data_type:
+            # 对于嵌套结构，直接查找完整的键名
+            return category_config.data_types.get(data_type)
+        else:
+            # 对于简单结构，直接查找
+            return category_config.data_types.get(data_type)
     
     def get_standard_fields(self, category: str, data_type: str) -> List[str]:
         """获取标准字段列表"""

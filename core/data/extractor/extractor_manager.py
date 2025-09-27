@@ -48,7 +48,7 @@ class ExtractorManager:
             current_dir = Path(__file__).parent
             config_path = current_dir / "extraction_config.yaml"
         
-        self.config = self.config_loader.load_from_file(str(config_path))
+        self.config = self.config_loader.load_config()
         
         # 初始化task manager和executor
         self.provider_manager = api_provider_manager
@@ -282,18 +282,26 @@ class ExtractorManager:
         Returns:
             提取结果
         """
-        # 获取启用的接口列表
-        interfaces = self.config.get_enabled_interfaces(category, data_type)
-        if not interfaces:
-            return ExtractionResult(
-                success=False,
-                data=None,
-                error=f"未找到启用的接口: {category}.{data_type}"
-            )
-        
         # 标准化参数
         standard_params = to_standard_params(params)
         params_dict = standard_params.to_dict()
+        
+        # 从参数中提取市场信息用于接口筛选
+        market = None
+        if standard_params.symbol and hasattr(standard_params.symbol, 'market'):
+            market = standard_params.symbol.market
+        elif standard_params.market:
+            market = standard_params.market
+        
+        # 获取启用的接口列表，根据市场进行筛选
+        interfaces = self.config.get_enabled_interfaces(category, data_type, market)
+        if not interfaces:
+            market_info = f" (市场: {market})" if market else ""
+            return ExtractionResult(
+                success=False,
+                data=None,
+                error=f"未找到启用的接口: {category}.{data_type}{market_info}"
+            )
         
         # 初始化参数适配器
         param_adapter = AkshareStockParamAdapter()
@@ -350,210 +358,113 @@ class ExtractorManager:
             error=f"所有接口执行失败: {category}.{data_type}"
         )
     
-    # ==================== 静态信息类接口 ====================
+    # ==================== 股票相关接口 ====================
     
-    def get_stock_basic_info(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """
-        获取股票基本信息
-        
-        Args:
-            params: 标准参数或参数字典，必须包含symbol
-        
-        Returns:
-            提取结果
-        """
-        return self._execute_interface("static_info", "stock_basic_info", params)
+    # 股票基础信息
+    def get_stock_profile(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取股票基础信息"""
+        return self._execute_interface("stock", "profile", params)
     
-    def get_company_profile(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """
-        获取公司概况信息
-        
-        Args:
-            params: 标准参数或参数字典，必须包含symbol
-        
-        Returns:
-            提取结果
-        """
-        return self._execute_interface("static_info", "company_profile", params)
+    def get_stock_company_profile(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取公司详细信息"""
+        return self._execute_interface("stock", "company_profile", params)
     
-    def get_industry_classification(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """
-        获取行业分类信息
-        
-        Args:
-            params: 标准参数或参数字典，必须包含symbol
-        
-        Returns:
-            提取结果
-        """
-        return self._execute_interface("static_info", "industry_classification", params)
+    # 股票行情数据
+    def get_stock_daily_quote(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取股票日行情数据"""
+        return self._execute_interface("stock", "daily_market.quote", params)
     
-    # ==================== 市场数据类接口 ====================
+    def get_stock_financing_data(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取融资融券数据"""
+        return self._execute_interface("stock", "daily_market.financing", params)
     
-    def get_realtime_quote(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """
-        获取实时行情数据
-        
-        Args:
-            params: 标准参数或参数字典，必须包含symbol
-        
-        Returns:
-            提取结果
-        """
-        return self._execute_interface("market_data", "realtime_quote", params)
+    def get_stock_cost_distribution(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取成本分布数据"""
+        return self._execute_interface("stock", "daily_market.cost_distribution", params)
     
-    def get_historical_quote(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """
-        获取历史行情数据
-        
-        Args:
-            params: 标准参数或参数字典，必须包含symbol, start_date, end_date
-                   可选参数: period, adjust
-        
-        Returns:
-            提取结果
-        """
-        return self._execute_interface("market_data", "historical_quote", params)
+    def get_stock_fund_flow(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取股票资金流向数据"""
+        return self._execute_interface("stock", "daily_market.fund_flow", params)
     
-    def get_intraday_data(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """
-        获取分时数据
-        
-        Args:
-            params: 标准参数或参数字典，必须包含symbol, date
-        
-        Returns:
-            提取结果
-        """
-        return self._execute_interface("market_data", "intraday_data", params)
+    def get_stock_dragon_tiger(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取龙虎榜数据"""
+        return self._execute_interface("stock", "daily_market.dragon_tiger", params)
     
-    # ==================== 财务数据类接口 ====================
+    def get_stock_sentiment(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取股票情绪数据"""
+        return self._execute_interface("stock", "daily_market.sentiment", params)
     
-    def get_financial_statements(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """
-        获取财务报表数据
-        
-        Args:
-            params: 标准参数或参数字典，必须包含symbol, report_date
-        
-        Returns:
-            提取结果
-        """
-        return self._execute_interface("financial_data", "financial_statements", params)
+    def get_stock_news(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取股票新闻数据"""
+        return self._execute_interface("stock", "daily_market.news", params)
     
-    def get_financial_indicators(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """
-        获取财务指标
-        
-        Args:
-            params: 标准参数或参数字典，必须包含symbol, report_date
-        
-        Returns:
-            提取结果
-        """
-        return self._execute_interface("financial_data", "financial_indicators", params)
+    # 股票财务数据
+    def get_stock_balance_sheet(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取资产负债表"""
+        return self._execute_interface("stock", "financials.balance_sheet", params)
     
-    def get_dividend_info(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """
-        获取分红配股信息
-        
-        Args:
-            params: 标准参数或参数字典，必须包含symbol，可选year
-        
-        Returns:
-            提取结果
-        """
-        return self._execute_interface("financial_data", "dividend_info", params)
+    def get_stock_income_statement(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取利润表"""
+        return self._execute_interface("stock", "financials.income_statement", params)
     
-    # ==================== 技术分析类接口 ====================
+    def get_stock_cash_flow(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取现金流量表"""
+        return self._execute_interface("stock", "financials.cash_flow", params)
     
-    def get_technical_indicators(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """
-        获取技术指标
-        
-        Args:
-            params: 标准参数或参数字典，必须包含symbol, date
-        
-        Returns:
-            提取结果
-        """
-        return self._execute_interface("technical_data", "technical_indicators", params)
+    # ==================== 市场相关接口 ====================
     
-    def get_market_sentiment(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """
-        获取市场情绪指标
-        
-        Args:
-            params: 标准参数或参数字典，必须包含symbol, date
-        
-        Returns:
-            提取结果
-        """
-        return self._execute_interface("technical_data", "market_sentiment", params)
-    
-    # ==================== 市场宏观类接口 ====================
+    # 市场概览
+    def get_market_overview(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取市场概览数据"""
+        return self._execute_interface("market", "market_overview", params)
     
     def get_market_indices(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """
-        获取市场指数
-        
-        Args:
-            params: 标准参数或参数字典，必须包含index_code, start_date, end_date
-        
-        Returns:
-            提取结果
-        """
-        return self._execute_interface("market_macro", "market_indices", params)
+        """获取市场指数数据"""
+        return self._execute_interface("market", "market_indices", params)
     
-    def get_market_overview(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """
-        获取市场概览
-        
-        Args:
-            params: 标准参数或参数字典，必须包含date
-        
-        Returns:
-            提取结果
-        """
-        return self._execute_interface("market_macro", "market_overview", params)
+    def get_market_activity(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取市场活跃度数据"""
+        return self._execute_interface("market", "market_activity", params)
     
-    # ==================== 特殊数据类接口 ====================
+    # 行业板块
+    def get_industry_sector_metadata(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取行业板块元数据"""
+        return self._execute_interface("market", "industry_sector.metadata", params)
     
-    def get_research_reports(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """
-        获取研究报告
-        
-        Args:
-            params: 标准参数或参数字典，必须包含symbol，可选limit
-        
-        Returns:
-            提取结果
-        """
-        return self._execute_interface("special_data", "research_reports", params)
+    def get_industry_sector_quote(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取行业板块行情"""
+        return self._execute_interface("market", "industry_sector.quote", params)
     
-    def get_news_events(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """
-        获取新闻事件
-        
-        Args:
-            params: 标准参数或参数字典，必须包含symbol，可选limit
-        
-        Returns:
-            提取结果
-        """
-        return self._execute_interface("special_data", "news_events", params)
+    def get_industry_sector_constituents(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取行业板块成分股"""
+        return self._execute_interface("market", "industry_sector.constituents", params)
     
-    def get_other_data(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """
-        获取其他数据
-        
-        Args:
-            params: 标准参数或参数字典，必须包含symbol, data_type及其他参数
-        
-        Returns:
-            提取结果
-        """
-        return self._execute_interface("special_data", "other_data", params)
+    # 概念板块
+    def get_concept_sector_metadata(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取概念板块元数据"""
+        return self._execute_interface("market", "concept_sector.metadata", params)
+    
+    def get_concept_sector_quote(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取概念板块行情"""
+        return self._execute_interface("market", "concept_sector.quote", params)
+    
+    def get_concept_sector_constituents(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取概念板块成分股"""
+        return self._execute_interface("market", "concept_sector.constituents", params)
+    
+    # 板块实时行情
+    def get_sector_spot_data(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取板块实时行情"""
+        return self._execute_interface("market", "sector_spot", params)
+    
+    # 技术分析
+    def get_technical_indicators(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取技术指标数据"""
+        return self._execute_interface("market", "technical_analysis.indicators", params)
+    
+    def get_technical_ranking(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取技术分析排名数据"""
+        return self._execute_interface("market", "technical_analysis.ranking", params)
     
     # ==================== 工具方法 ====================
     
