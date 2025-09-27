@@ -607,10 +607,6 @@ class ExtractorManager:
         """获取股票基础信息"""
         return self._execute_interface("stock", "profile", params)
     
-    def get_stock_company_profile(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """获取公司详细信息"""
-        return self._execute_interface("stock", "company_profile", params)
-    
     # 股票行情数据
     def get_stock_daily_quote(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
         """获取股票日行情数据"""
