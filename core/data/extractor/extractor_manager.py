@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from datetime import datetime, date
 import pandas as pd
 from .config_loader import ConfigLoader, ExtractionConfig
-from .adapter import to_standard_params, StandardParams, AkshareStockParamAdapter
+from .adapter import to_standard_params, StandardParams, AkshareStockParamAdapter, StockSymbol
 from ..interfaces.executor import TaskManager, InterfaceExecutor, CallTask, ExecutionContext, ExecutorConfig, RetryConfig, CacheConfig
 from ..interfaces.base import api_provider_manager
 
@@ -241,6 +241,44 @@ class ExtractorManager:
                         )
             except Exception as _e:
                 logger.debug(f"标准字段过滤失败，保留原列: {_e}")
+
+            # 转换symbol字段为统一格式
+            try:
+                if 'symbol' in df.columns:
+                    def convert_symbol_to_unified_format(symbol_value):
+                        """将symbol字段转换为统一的StockSymbol格式"""
+                        if pd.isna(symbol_value) or symbol_value is None:
+                            return symbol_value
+                        
+                        # 如果已经是StockSymbol对象，直接转换为dot格式
+                        if isinstance(symbol_value, StockSymbol):
+                            return symbol_value.to_dot()
+                        
+                        # 如果是字符串，尝试解析为StockSymbol
+                        if isinstance(symbol_value, str):
+                            parsed_symbol = StockSymbol.parse(symbol_value.strip())
+                            if parsed_symbol:
+                                return parsed_symbol.to_dot()
+                            else:
+                                # 如果无法解析，保持原值
+                                return symbol_value
+                        
+                        # 其他类型，转换为字符串后尝试解析
+                        try:
+                            str_value = str(symbol_value).strip()
+                            parsed_symbol = StockSymbol.parse(str_value)
+                            if parsed_symbol:
+                                return parsed_symbol.to_dot()
+                            else:
+                                return str_value
+                        except Exception:
+                            return symbol_value
+                    
+                    # 应用转换函数到symbol列
+                    df['symbol'] = df['symbol'].apply(convert_symbol_to_unified_format)
+                    logger.debug(f"已将symbol字段转换为统一格式")
+            except Exception as _e:
+                logger.debug(f"symbol字段转换失败，保持原格式: {_e}")
 
             # 若无数据（空 DataFrame），则判定失败；仅列不匹配不视为失败
             if df is None or df.empty:
