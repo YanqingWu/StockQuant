@@ -19,6 +19,7 @@ class InterfaceConfig:
     enabled: bool = True
     priority: int = 1
     markets: List[str] = field(default_factory=list)  # 新增：适用市场列表
+    post_processor: Optional[str] = None  # 新增：后处理器函数名
     
     def is_market_supported(self, market: str) -> bool:
         """检查是否支持指定市场"""
@@ -110,6 +111,13 @@ class ExtractionConfig:
         else:
             # 对于简单结构，直接查找
             return category_config.data_types.get(data_type)
+    
+    def get_interface_config(self, category: str, data_type: str, interface_name: str) -> Optional[InterfaceConfig]:
+        """获取指定接口的配置"""
+        data_type_config = self.get_data_type_config(category, data_type)
+        if data_type_config:
+            return data_type_config.get_interface_by_name(interface_name)
+        return None
     
     def get_standard_fields(self, category: str, data_type: str) -> List[str]:
         """获取标准字段列表"""
@@ -258,7 +266,8 @@ class ConfigLoader:
                     name=interface_data['name'],
                     enabled=interface_data.get('enabled', True),
                     priority=interface_data.get('priority', 1),
-                    markets=interface_data.get('markets', [])
+                    markets=interface_data.get('markets', []),
+                    post_processor=interface_data.get('post_processor')
                 )
                 interfaces.append(interface)
             

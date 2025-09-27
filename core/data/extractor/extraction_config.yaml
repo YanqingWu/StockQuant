@@ -659,6 +659,7 @@ interfaces_config:
           enabled: true
           priority: 1
           markets: ["SH", "SZ", "BJ"]
+          post_processor: "convert_item_value_to_columns"
 
     company_profile:
       description: "公司详细信息"

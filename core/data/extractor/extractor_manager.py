@@ -126,6 +126,47 @@ class ExtractorManager:
                 
         return filtered_data
     
+    def _apply_post_processor(self, data: Any, category: str, data_type: str, 
+                             interface_name: str) -> Any:
+        """
+        应用后处理器函数
+        
+        Args:
+            data: 原始数据
+            category: 数据分类
+            data_type: 数据类型
+            interface_name: 接口名称
+            
+        Returns:
+            处理后的数据
+        """
+        try:
+            # 获取接口配置
+            interface_config = self.config.get_interface_config(category, data_type, interface_name)
+            if not interface_config or not interface_config.post_processor:
+                logger.debug(f"接口 {interface_name} 未配置后处理器，跳过处理")
+                return data
+            
+            # 动态导入并调用后处理器函数
+            try:
+                from . import post_processors
+                processor_func = getattr(post_processors, interface_config.post_processor, None)
+                if processor_func:
+                    logger.debug(f"应用后处理器: {interface_config.post_processor}")
+                    processed_data = processor_func(data)
+                    logger.debug(f"后处理器 {interface_config.post_processor} 执行成功")
+                    return processed_data
+                else:
+                    logger.warning(f"后处理器函数 {interface_config.post_processor} 不存在，跳过处理")
+                    return data
+            except ImportError as e:
+                logger.error(f"导入后处理器模块失败: {e}")
+                return data
+                
+        except Exception as e:
+            logger.error(f"后处理器执行失败: {e}")
+            return data  # 失败时返回原数据
+    
     def _process_extraction_result(self, raw_data: Any, category: str, data_type: str, 
                                  interface_name: str) -> ExtractionResult:
         """
@@ -219,6 +260,9 @@ class ExtractorManager:
                     error="空数据",
                     source_interface=interface_name
                 )
+
+            # 应用后处理器（在列名映射之前）
+            df = self._apply_post_processor(df, category, data_type, interface_name)
 
             # 列名映射
             try:
