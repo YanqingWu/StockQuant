@@ -19,17 +19,19 @@ standard_fields:
       - market            # 市场（SSE/SZSE/BSE/HKEX 等）
       - list_date         # 上市日期
       - industry          # 所属行业
+      - industry_code     # 行业代码
       - concepts          # 所属概念列表
+      - concept_codes     # 概念代码列表
       - totals            # 总股本
       - outstanding       # 流通股本
-      - main_business     # 主营业务
-      - index_membership  # 入选指数成员
+      - index_codes       # 所属指数代码列表
+      - stock_type        # 股票类型（A股/B股/H股等）
+      - board_type        # 板块类型（主板/创业板/科创板/北交所）
 
     company_profile:
       - full_name               # 公司全称
       - short_name              # 公司简称
       - english_name            # 英文名称
-      - former_name             # 曾用名（若有）
       - legal_representative    # 法定代表人
       - chairman                # 董事长
       - general_manager         # 总经理
@@ -40,22 +42,18 @@ standard_fields:
       - province                # 省份
       - city                    # 城市
       - address                 # 通讯地址
-      - postal_code             # 邮政编码（若有）
       - office_address          # 办公地址
       - website                 # 公司网站
       - email                   # 电子邮箱
       - phone                   # 联系电话
-      - fax                     # 传真（若有）
       - business_scope          # 经营范围
+      - main_business           # 主营业务
       - listed_board            # 上市板块（主板/创业板/科创板等）
       - listing_status          # 上市状态（在市/停牌/退市）
       - exchange                # 所属交易所
-      - b_share_code            # B股代码（若有）
-      - b_share_name            # B股名称（若有）
-      - h_share_code            # H股代码（若有）
-      - h_share_name            # H股名称（若有）
-      - as_of_date              # 信息快照日期（若有）
-      - update_time             # 更新时间（若有）
+      - establishment_date      # 成立日期
+      - listing_date            # 上市日期
+      - update_time             # 更新时间
 
     daily_market:
       quote:
@@ -64,73 +62,100 @@ standard_fields:
         - high            # 最高
         - low             # 最低
         - close           # 收盘
-        - pre_close       # 昨收（可选）
+        - pre_close       # 昨收
         - volume          # 成交量
         - amount          # 成交额
-        - vwap            # 加权平均价（可选）
         - pct_change      # 涨跌幅
-        - change          # 涨跌额（可选）
+        - change          # 涨跌额
         - turnover_rate   # 换手率
-        - turnover_rate_free_float # 流通换手率（可选）
-        - amplitude       # 振幅（可选）
-        - volume_ratio     # 量比（可选）
-        - market_cap       # 总市值（可选）
-        - float_market_cap # 流通市值（可选）
-        - limit_up_price   # 涨停价（可选）
-        - limit_down_price # 跌停价（可选）
-        - is_limit_up      # 是否涨停（可选）
-        - is_limit_down    # 是否跌停（可选）
-        - suspended        # 是否停牌（可选）
-        - adjust_factor    # 复权因子（可选）
-        - pe               # 市盈率（可选）
-        - pb               # 市净率（可选）
-        - dividend_yield   # 股息率（可选）
+        - amplitude       # 振幅
+        - volume_ratio    # 量比
+        - market_cap      # 总市值
+        - float_market_cap # 流通市值
+        - pe_ttm          # 滚动市盈率
+        - pb              # 市净率
+        - ps_ttm          # 滚动市销率
+        - pcf_ttm         # 滚动市现率
+        - is_limit_up     # 是否涨停
+        - is_limit_down   # 是否跌停
+        - suspended       # 是否停牌
 
       financing:
         - date                # 日期
         - margin_balance      # 融资余额
         - short_balance       # 融券余量
-        - margin_buy_amount   # 融资买入额（可选）
-        - margin_repay_amount # 融资偿还额（可选）
-        - short_sell_amount   # 融券卖出量（可选）
-        - short_repay_amount  # 融券偿还量（可选）
+        - margin_buy_amount   # 融资买入额
+        - margin_repay_amount # 融资偿还额
+        - short_sell_amount   # 融券卖出量
+        - short_repay_amount  # 融券偿还量
+        - net_margin_change   # 融资净变化
+        - net_short_change    # 融券净变化
 
       cost_distribution:
         - date            # 日期
         - profit_ratio    # 获利比例
+        - loss_ratio      # 套牢比例
         - avg_cost        # 平均成本
-        - cost_90_low     # 90%成本区间下限（可选）
-        - cost_90_high    # 90%成本区间上限（可选）
-        - concentration_90 # 90%集中度（可选）
-        - cost_70_low     # 70%成本区间下限（可选）
-        - cost_70_high    # 70%成本区间上限（可选）
-        - concentration_70 # 70%集中度（可选）
+        - cost_90_low     # 90%成本区间下限
+        - cost_90_high    # 90%成本区间上限
+        - concentration_90 # 90%集中度
+        - cost_70_low     # 70%成本区间下限
+        - cost_70_high    # 70%成本区间上限
+        - concentration_70 # 70%集中度
 
       fund_flow:
         - date                # 日期
         - close               # 最新价
         - pct_change          # 涨跌幅
         - turnover_rate       # 换手率
-        - inflow_amount       # 流入资金
-        - outflow_amount      # 流出资金
-        - net_amount          # 净流入金额
-        - total_amount        # 成交额
+        - main_inflow         # 主力资金流入
+        - main_outflow        # 主力资金流出
+        - main_net_inflow     # 主力资金净流入
+        - retail_inflow       # 散户资金流入
+        - retail_outflow      # 散户资金流出
+        - retail_net_inflow   # 散户资金净流入
+        - large_order_inflow  # 大单流入
+        - large_order_outflow # 大单流出
+        - medium_order_inflow # 中单流入
+        - medium_order_outflow # 中单流出
+        - small_order_inflow  # 小单流入
+        - small_order_outflow # 小单流出
+        - inflow_amount       # 流入资金（兼容字段）
+        - outflow_amount      # 流出资金（兼容字段）
+        - net_amount          # 净流入金额（兼容字段）
+        - total_amount        # 成交额（兼容字段）
 
       dragon_tiger:
         - date            # 上榜日期
-        - net_buy_amount  # 龙虎榜净买额
-        - buy_amount      # 龙虎榜买入额
-        - sell_amount     # 龙虎榜卖出额
+        - lhb_net_buy     # 龙虎榜净买额
+        - lhb_buy_amount  # 龙虎榜买入额
+        - lhb_sell_amount # 龙虎榜卖出额
+        - lhb_reason      # 上榜原因
+        - after_1d_return # 上榜后1日收益率
+        - after_5d_return # 上榜后5日收益率
+        - after_10d_return # 上榜后10日收益率
+        - net_buy_amount  # 龙虎榜净买额（兼容字段）
+        - buy_amount      # 龙虎榜买入额（兼容字段）
+        - sell_amount     # 龙虎榜卖出额（兼容字段）
         - total_amount    # 龙虎榜成交额
-        - reason          # 上榜原因
-        - after_1d        # 上榜后1日表现
-        - after_5d        # 上榜后5日表现
-        - after_10d       # 上榜后10日表现
+        - reason          # 上榜原因（兼容字段）
+        - after_1d        # 上榜后1日表现（兼容字段）
+        - after_5d        # 上榜后5日表现（兼容字段）
+        - after_10d       # 上榜后10日表现（兼容字段）
+        - seat_name       # 营业部名称
+        - seat_type       # 营业部类型（机构/个人）
+        - buy_rank        # 买入排名
+        - sell_rank       # 卖出排名
 
       sentiment:
         - date            # 日期
         - comment_count   # 评论数量
         - sentiment_score # 情绪得分
+        - bullish_ratio   # 看多比例
+        - bearish_ratio   # 看空比例
+        - popularity_rank # 人气排名
+        - attention_score # 关注度得分
+        - market_participation # 市场参与度
 
       news:
         - news_id         # 新闻ID（若有）
@@ -146,12 +171,12 @@ standard_fields:
         - total_assets          # 资产总计
         - total_liabilities     # 负债合计
         - shareholder_equity    # 股东权益
-        - cash_deposits         # 货币资金（可选）
-        - accounts_receivable   # 应收账款（可选）
-        - inventory             # 存货（可选）
-        - fixed_assets          # 固定资产（可选）
-        - intangible_assets     # 无形资产（可选）
-        - goodwill              # 商誉（可选）
+        - cash_deposits         # 货币资金
+        - accounts_receivable   # 应收账款
+        - inventory             # 存货
+        - fixed_assets          # 固定资产
+        - intangible_assets     # 无形资产
+        - goodwill              # 商誉
 
       income_statement:
         - report_date           # 报告期
@@ -167,7 +192,7 @@ standard_fields:
         - total_profit          # 利润总额
         - net_profit            # 净利润
         - parent_net_profit     # 归母净利润
-        - non_recurring_profit  # 扣非净利润（可选）
+        - non_recurring_profit  # 扣非净利润
 
       cash_flow:
         - report_date           # 报告期
@@ -175,34 +200,34 @@ standard_fields:
         - operating_cash_outflow # 经营活动现金流出
         - operating_cash_flow   # 经营活动现金流量净额
         - investing_cash_flow   # 投资活动现金流量净额
-        - financing_cash_flow   # 籌資活動现金流量淨額: "financing_cash_flow"
+        - financing_cash_flow   # 筹资活动现金流量净额
         - net_cash_increase     # 现金及现金等价物净增加额
 
       indicators:
         - report_date           # 报告期
         - eps                   # 每股收益
         - bps                   # 每股净资产
-        - pe                    # 市盈率（可选）
-        - pe_ttm                # 滚动市盈率（可选）
-        - pb                    # 市净率（可选）
+        - pe                    # 市盈率
+        - pe_ttm                # 滚动市盈率
+        - pb                    # 市净率
         - roe                   # 净资产收益率
         - gross_profit_margin   # 毛利率
         - net_profit_margin     # 销售净利率
-        - current_ratio         # 流动比率（可选）
+        - current_ratio         # 流动比率
         - quick_ratio           # 速动比率
-        - debt_to_asset_ratio   # 资产负债率（可选）
+        - debt_to_asset_ratio   # 资产负债率
         - dividend_yield        # 股息率
-        - dividend_yield_ttm    # 滚动股息率（可选）
+        - dividend_yield_ttm    # 滚动股息率
 
       dividend:
         - report_date           # 报告期
         - stock_dividend_ratio  # 送转股份比例
         - cash_dividend_ratio   # 现金分红比例
-        - dividend_yield        # 股息率（可选）
+        - dividend_yield        # 股息率
         - ex_dividend_date      # 除权除息日
         - record_date           # 股权登记日
-        - payment_date          # 分红发放日（可选）
-        - dividend_status       # 方案进度（可选）
+        - payment_date          # 分红发放日
+        - dividend_status       # 方案进度
 
     holdings:
       fund_holdings:
@@ -234,51 +259,229 @@ standard_fields:
         - sign_date              # 签署日期
         - contract_name          # 合同名称
         - contract_amount        # 合同金额
-        - contract_party         # 签署主体（若有）
-        - counterparty           # 其他签署方（若有）
+        - contract_party         # 签署主体
+        - counterparty           # 其他签署方
 
       suspension:                # 停复牌事件（股票维度）
-        - start_date             # 停牌起始日（可选）
-        - end_date               # 停牌截止日（可选）
-        - reason                 # 停牌原因（可选）
-        - resume_date            # 复牌日期（可选）
+        - start_date             # 停牌起始日
+        - end_date               # 停牌截止日
+        - reason                 # 停牌原因
+        - resume_date            # 复牌日期
 
     research_and_analyst:
       research_report:
         - report_date         # 报告日期
         - institution         # 研究机构
-        - analyst             # 分析师（若有）
+        - analyst             # 分析师
         - rating              # 评级
-        - rating_change       # 评级变动（若有）
-        - target_price        # 目标价（若有）
-        - industry            # 所属行业（若有）
+        - rating_change       # 评级变动
+        - target_price        # 目标价
+        - industry            # 所属行业
         - title               # 报告标题
-        - summary             # 摘要（若有）
-        - report_count        # 近一月个股研报数（可选）
-        - report_link         # 报告PDF链接（可选）
-        - eps_forecast        # 盈利预测-收益（可选）
-        - pe_forecast         # 盈利预测-市盈率（可选）
+        - summary             # 摘要
+        - report_count        # 近一月个股研报数
+        - report_link         # 报告PDF链接
+        - eps_forecast        # 盈利预测-收益
+        - pe_forecast         # 盈利预测-市盈率
 
       analyst_rating:
         - date                # 日期
         - institution         # 机构
         - rating              # 评级
-        - previous_rating     # 上次评级（若有）
-        - target_price        # 目标价（若有）
+        - previous_rating     # 上次评级
+        - target_price        # 目标价
 
       profit_forecast_consensus:
         - report_date             # 报告期
         - year                    # 预测年份
         - eps_forecast            # 每股收益预测
-        - revenue_forecast        # 营业收入预测（可选）
-        - net_profit_forecast     # 净利润预测（可选）
-        - analyst_count           # 参与分析师数量（可选）
-        - consensus_rating        # 一致评级（可选）
-        - target_price_consensus  # 一致目标价（可选）
+        - revenue_forecast        # 营业收入预测
+        - net_profit_forecast     # 净利润预测
+        - analyst_count           # 参与分析师数量
+        - consensus_rating        # 一致评级
+        - target_price_consensus  # 一致目标价
 
       opinions:                  # 机构/媒体观点
         - date                   # 日期
         - opinion_type           # 观点类型（看多/看空/中性等）
+
+    technical_analysis:
+      indicators:                # 技术指标数据
+        - date                   # 日期
+        - macd                   # MACD值
+        - macd_signal            # MACD信号线
+        - macd_histogram         # MACD柱状图
+        - kdj_k                  # KDJ-K值
+        - kdj_d                  # KDJ-D值
+        - kdj_j                  # KDJ-J值
+        - rsi_6                  # 6日RSI
+        - rsi_12                 # 12日RSI
+        - rsi_24                 # 24日RSI
+        - boll_upper             # 布林带上轨
+        - boll_mid               # 布林带中轨
+        - boll_lower             # 布林带下轨
+        - boll_width             # 布林带宽度
+        - ma_5                   # 5日均线
+        - ma_10                  # 10日均线
+        - ma_20                  # 20日均线
+        - ma_30                  # 30日均线
+        - ma_60                  # 60日均线
+        - ma_120                 # 120日均线
+        - ma_250                 # 250日均线
+        - ema_12                 # 12日指数移动平均
+        - ema_26                 # 26日指数移动平均
+        - cci                    # 顺势指标CCI
+        - williams_r             # 威廉指标WR
+        - bias_6                 # 6日乖离率
+        - bias_12                # 12日乖离率
+        - bias_24                # 24日乖离率
+        - dmi_pdi                # DMI正向指标
+        - dmi_mdi                # DMI负向指标
+        - dmi_adx                # DMI趋向平均值
+        - dmi_adxr               # DMI评估数值
+
+      ranking:                   # 技术分析排名数据
+        - date                   # 日期
+        - rank                   # 排名
+        - rank_change            # 排名变化（可选）
+        - score                  # 评分（可选）
+        - reason                 # 入选原因（可选）
+        - technical_indicator    # 技术指标值（可选）
+        - period                 # 统计周期（可选）
+
+      breakthrough:              # 突破数据
+        - date                   # 日期
+        - breakthrough_type      # 突破类型（向上/向下）
+        - breakthrough_price     # 突破价格
+        - support_level          # 支撑位（可选）
+        - resistance_level       # 阻力位（可选）
+        - volume_confirmation    # 成交量确认（可选）
+
+    market_valuation:
+      overall_metrics:           # 整体估值指标
+        - date                   # 日期
+        - pe_percentile          # 市盈率分位数
+        - pb_percentile          # 市净率分位数
+        - dividend_yield_percentile # 股息率分位数（可选）
+        - valuation_level        # 估值水平（高估/合理/低估）
+        - historical_comparison  # 历史比较（可选）
+
+      index_valuation:           # 指数估值
+        - date                   # 日期
+        - index_code             # 指数代码
+        - index_name             # 指数名称
+        - pe                     # 市盈率
+        - pb                     # 市净率
+        - dividend_yield         # 股息率
+        - roe                    # 净资产收益率（可选）
+
+    esg_data:
+      esg_rating:                # ESG评级
+        - date                   # 日期
+        - esg_score              # ESG总分
+        - environment_score      # 环境得分
+        - social_score           # 社会得分
+        - governance_score       # 治理得分
+        - esg_rating             # ESG评级（AAA/AA/A等）
+        - rating_agency          # 评级机构
+        - industry_rank          # 行业排名（可选）
+        - percentile_rank        # 百分位排名（可选）
+
+    block_trading:
+      daily_summary:             # 大宗交易日度汇总
+        - date                   # 日期
+        - transaction_count      # 交易笔数
+        - total_volume           # 总成交量
+        - total_amount           # 总成交额
+        - avg_discount_rate      # 平均折价率
+        - premium_rate           # 溢价率（可选）
+
+      individual_transaction:    # 个股大宗交易
+        - date                   # 日期
+        - block_trade_price      # 大宗交易价格
+        - block_trade_volume     # 大宗交易数量
+        - block_trade_amount     # 大宗交易金额
+        - transaction_price      # 成交价格（兼容字段）
+        - transaction_volume     # 成交数量（兼容字段）
+        - transaction_amount     # 成交金额（兼容字段）
+        - discount_rate          # 折价率
+        - premium_rate           # 溢价率
+        - buyer_type             # 买方类型（可选）
+        - seller_type            # 卖方类型（可选）
+
+    margin_trading:
+      summary_data:              # 融资融券汇总
+        - date                   # 日期
+        - margin_balance         # 融资余额
+        - margin_buy_amount      # 融资买入额
+        - margin_repay_amount    # 融资偿还额
+        - short_balance          # 融券余量
+        - short_sell_volume      # 融券卖出量
+        - short_repay_volume     # 融券偿还量
+        - margin_trading_balance # 融资融券余额
+        - net_margin_change      # 融资净变化
+        - net_short_change       # 融券净变化
+
+    market_sentiment:
+      sentiment_indicators:      # 市场情绪指标
+        - date                   # 日期
+        - bullish_ratio          # 看多比例
+        - bearish_ratio          # 看空比例
+        - neutral_ratio          # 中性比例（可选）
+        - sentiment_index        # 情绪指数
+        - confidence_level       # 信心水平（可选）
+        - fear_greed_index       # 恐惧贪婪指数（可选）
+
+      market_activity:           # 市场活跃度
+        - date                   # 日期
+        - activity_index         # 活跃度指数
+        - participation_rate     # 参与率
+        - turnover_activity      # 换手活跃度
+        - price_activity         # 价格活跃度（可选）
+
+      unusual_activity:          # 异动数据
+        - date                   # 日期
+        - unusual_type           # 异动类型
+        - trigger_condition      # 触发条件
+        - intensity_level        # 强度等级
+        - volume_ratio           # 成交量比率
+        - limit_up_count         # 涨停次数
+        - limit_down_count       # 跌停次数
+        - price_change_speed     # 价格变化速度
+
+    new_stock:
+      ipo_data:                  # 新股发行数据
+        - ipo_date               # 发行日期
+        - issue_price            # 发行价格
+        - issue_volume           # 发行数量
+        - issue_amount           # 发行金额
+        - subscription_ratio     # 申购倍数
+        - winning_rate           # 中签率
+        - expected_return        # 预期收益率（可选）
+
+      performance:               # 新股表现
+        - date                   # 日期
+        - days_since_ipo         # 上市天数
+        - first_day_return       # 首日收益率
+        - cumulative_return      # 累计收益率
+        - break_issue_price_date # 破发日期（可选）
+
+    repurchase:
+      repurchase_plan:           # 回购计划
+        - announcement_date      # 公告日期
+        - plan_amount_min        # 计划回购金额下限
+        - plan_amount_max        # 计划回购金额上限
+        - plan_volume_min        # 计划回购数量下限（可选）
+        - plan_volume_max        # 计划回购数量上限（可选）
+        - repurchase_purpose     # 回购目的
+        - implementation_period  # 实施期限
+
+      repurchase_progress:       # 回购进展
+        - date                   # 日期
+        - cumulative_amount      # 累计回购金额
+        - cumulative_volume      # 累计回购数量
+        - progress_ratio         # 完成比例
+        - remaining_amount       # 剩余金额（可选）
 
   market:
     market_overview:
@@ -361,6 +564,74 @@ standard_fields:
         - weight         # 权重（若有）
         - in_date        # 纳入日期（若有）
         - out_date       # 移出日期（若有）
+
+    fund_flow:
+      market_level:              # 市场级别资金流向
+        - date                   # 日期
+        - total_inflow           # 总流入
+        - total_outflow          # 总流出
+        - net_inflow             # 净流入
+        - main_inflow            # 主力流入
+        - main_outflow           # 主力流出
+        - main_net_inflow        # 主力净流入
+        - retail_inflow          # 散户流入（可选）
+        - retail_outflow         # 散户流出（可选）
+
+      sector_level:              # 行业/概念级别资金流向
+        - date                   # 日期
+        - sector_code            # 板块代码
+        - sector_name            # 板块名称
+        - sector_type            # 板块类型（行业/概念）
+        - net_inflow             # 净流入
+        - inflow_ratio           # 流入占比
+        - main_net_inflow        # 主力净流入
+        - rank                   # 排名（可选）
+
+      hsgt_flow:                 # 沪深港通资金流向
+        - date                   # 日期
+        - hk_to_sh_net           # 港资买沪股净额
+        - hk_to_sz_net           # 港资买深股净额
+        - total_northbound_net   # 北向资金净流入
+        - sh_to_hk_net           # 沪股通净流出（可选）
+        - sz_to_hk_net           # 深股通净流出（可选）
+        - total_southbound_net   # 南向资金净流出（可选）
+
+      big_deal_tracking:         # 大单追踪
+        - date                   # 日期
+        - big_buy_amount         # 大单买入金额
+        - big_sell_amount        # 大单卖出金额
+        - big_net_amount         # 大单净额
+        - super_big_net_amount   # 超大单净额（可选）
+        - deal_count             # 大单笔数（可选）
+
+    analyst_research:
+      analyst_rating:            # 分析师评级详情
+        - date                   # 日期
+        - analyst_name           # 分析师姓名
+        - institution_name       # 机构名称
+        - rating                 # 评级
+        - target_price           # 目标价
+        - rating_change          # 评级变化
+        - research_report_title  # 研报标题（可选）
+        - key_points             # 核心观点（可选）
+
+      institutional_research:    # 机构调研
+        - research_date          # 调研日期
+        - institution_type       # 机构类型
+        - institution_name       # 机构名称
+        - research_method        # 调研方式
+        - participant_count      # 参与人数（可选）
+        - research_content       # 调研内容（可选）
+
+      consensus_data:            # 一致预期数据
+        - date                   # 日期
+        - forecast_year          # 预测年份
+        - eps_consensus          # 每股收益一致预期
+        - revenue_consensus      # 营收一致预期（可选）
+        - rating_consensus       # 评级一致预期
+        - target_price_consensus # 目标价一致预期
+        - analyst_count          # 覆盖分析师数量
+        - update_frequency       # 更新频率（可选）
 
 
 interfaces_config:
@@ -488,6 +759,37 @@ interfaces_config:
             enabled: true
             priority: 1
             markets: ["SH", "SZ", "BJ"]
+            description: "个股资金流向数据"
+          
+          - name: "stock_fund_flow_big_deal"
+            enabled: true
+            priority: 2
+            markets: ["SH", "SZ", "BJ"]
+            description: "大单资金流向数据"
+          
+          - name: "stock_fund_flow_concept"
+            enabled: true
+            priority: 3
+            markets: ["SH", "SZ", "BJ"]
+            description: "概念板块资金流向"
+          
+          - name: "stock_fund_flow_industry"
+            enabled: true
+            priority: 4
+            markets: ["SH", "SZ", "BJ"]
+            description: "行业板块资金流向"
+          
+          - name: "stock_main_fund_flow"
+            enabled: true
+            priority: 5
+            markets: ["SH", "SZ", "BJ"]
+            description: "主力资金流向数据"
+          
+          - name: "stock_retail_fund_flow"
+            enabled: true
+            priority: 6
+            markets: ["SH", "SZ", "BJ"]
+            description: "散户资金流向数据"
 
       dragon_tiger:
         description: "龙虎榜数据"
@@ -496,26 +798,49 @@ interfaces_config:
             enabled: true
             priority: 1
             markets: ["SH", "SZ"]
+            description: "东方财富龙虎榜详细数据"
           
           - name: "stock_lhb_detail_daily_sina"
             enabled: true
             priority: 2
             markets: ["SH", "SZ"]
+            description: "新浪龙虎榜每日数据"
           
           - name: "stock_lhb_stock_statistic_em"
             enabled: true
             priority: 3
             markets: ["SH", "SZ"]
+            description: "东方财富龙虎榜个股统计"
           
           - name: "stock_lhb_jgstatistic_em"
             enabled: true
             priority: 4
             markets: ["SH", "SZ"]
+            description: "东方财富龙虎榜机构统计"
           
           - name: "stock_lhb_jgmmtj_em"
             enabled: true
             priority: 5
             markets: ["SH", "SZ"]
+            description: "东方财富龙虎榜机构买卖统计"
+          
+          - name: "stock_lhb_ggtj_em"
+            enabled: true
+            priority: 6
+            markets: ["SH", "SZ"]
+            description: "东方财富龙虎榜个股统计增强版"
+          
+          - name: "stock_lhb_traderstatistic_em"
+            enabled: true
+            priority: 7
+            markets: ["SH", "SZ"]
+            description: "东方财富龙虎榜营业部统计"
+          
+          - name: "stock_lhb_hyyyb_em"
+            enabled: true
+            priority: 8
+            markets: ["SH", "SZ"]
+            description: "东方财富龙虎榜活跃营业部"
 
       sentiment:
         description: "情绪数据"
@@ -855,6 +1180,21 @@ interfaces_config:
           enabled: true
           priority: 1
           markets: ["SH", "SZ"]
+        
+        - name: "stock_zh_index_daily"
+          enabled: true
+          priority: 2
+          markets: ["SH", "SZ"]
+        
+        - name: "stock_zh_index_daily_tx"
+          enabled: true
+          priority: 3
+          markets: ["SH", "SZ"]
+        
+        - name: "stock_zh_index_hist_csindex"
+          enabled: true
+          priority: 4
+          markets: ["SH", "SZ"]
 
     market_activity:
       description: "市场活跃度"
@@ -895,6 +1235,11 @@ interfaces_config:
             enabled: true
             priority: 1
             markets: ["SH", "SZ"]
+          
+          - name: "stock_board_industry_index_ths"
+            enabled: true
+            priority: 2
+            markets: ["SH", "SZ"]
 
       constituents:
         description: "行业板块成分股"
@@ -920,6 +1265,11 @@ interfaces_config:
             enabled: true
             priority: 1
             markets: ["SH", "SZ"]
+          
+          - name: "stock_board_concept_index_ths"
+            enabled: true
+            priority: 2
+            markets: ["SH", "SZ"]
 
       constituents:
         description: "概念板块成分股"
@@ -928,6 +1278,414 @@ interfaces_config:
             enabled: true
             priority: 1
             markets: ["SH", "SZ"]
+
+    sector_spot:
+      description: "板块实时行情"
+      interfaces:
+        - name: "stock_sector_spot"
+          enabled: true
+          priority: 1
+          markets: ["SH", "SZ"]
+
+    technical_analysis:
+      indicators:
+        description: "技术指标数据"
+        interfaces:
+          - name: "stock_zh_a_hist_163"
+            enabled: true
+            priority: 1
+            markets: ["SH", "SZ"]
+            description: "网易财经技术指标数据"
+          
+          - name: "stock_technical_analysis_indicator_sina"
+            enabled: true
+            priority: 2
+            markets: ["SH", "SZ"]
+            description: "新浪技术指标数据"
+          
+          - name: "stock_zh_a_hist_tx"
+            enabled: true
+            priority: 3
+            markets: ["SH", "SZ"]
+            description: "腾讯财经技术指标数据"
+          
+          - name: "stock_technical_analysis_ths"
+            enabled: true
+            priority: 4
+            markets: ["SH", "SZ"]
+            description: "同花顺技术指标数据"
+
+      ranking:
+        description: "技术分析排名数据"
+        interfaces:
+          - name: "stock_rank_cxg_ths"
+            enabled: true
+            priority: 1
+            markets: ["SH", "SZ"]
+            description: "创新高股票列表"
+          
+          - name: "stock_rank_cxd_ths"
+            enabled: true
+            priority: 2
+            markets: ["SH", "SZ"]
+            description: "创新低股票列表"
+          
+          - name: "stock_rank_ljqs_ths"
+            enabled: true
+            priority: 3
+            markets: ["SH", "SZ"]
+            description: "量价齐升股票列表"
+          
+          - name: "stock_rank_ljqd_ths"
+            enabled: true
+            priority: 4
+            markets: ["SH", "SZ"]
+            description: "量价齐跌股票列表"
+          
+          - name: "stock_rank_xstp_ths"
+            enabled: true
+            priority: 5
+            markets: ["SH", "SZ"]
+            description: "向上突破股票列表"
+          
+          - name: "stock_rank_xxtp_ths"
+            enabled: true
+            priority: 6
+            markets: ["SH", "SZ"]
+            description: "向下突破股票列表"
+
+      breakthrough:
+        description: "突破数据"
+        interfaces:
+          - name: "stock_rank_xstp_ths"
+            enabled: true
+            priority: 1
+            markets: ["SH", "SZ"]
+            description: "向上突破股票数据"
+          
+          - name: "stock_rank_xxtp_ths"
+            enabled: true
+            priority: 2
+            markets: ["SH", "SZ"]
+            description: "向下突破股票数据"
+
+    market_valuation:
+      description: "市场估值数据"
+      interfaces:
+        - name: "stock_a_all_pb"
+          enabled: true
+          priority: 1
+          markets: ["SH", "SZ"]
+          description: "全部A股市净率数据"
+        
+        - name: "stock_zh_index_value_csindex"
+          enabled: true
+          priority: 2
+          markets: ["SH", "SZ"]
+          description: "中证指数估值数据"
+
+    esg_data:
+      description: "ESG数据"
+      interfaces:
+        - name: "stock_esg_hz_sina"
+          enabled: true
+          priority: 1
+          markets: ["SH", "SZ"]
+          description: "A股ESG指标"
+        
+        - name: "stock_esg_msci_sina"
+          enabled: true
+          priority: 2
+          markets: ["HK"]
+          description: "港股MSCI ESG评级"
+        
+        - name: "stock_esg_zd_sina"
+          enabled: true
+          priority: 3
+          markets: ["SH", "SZ", "HK"]
+          description: "A股/港股ESG指标"
+
+    block_trading:
+      description: "大宗交易数据"
+      interfaces:
+        - name: "stock_dzjy_mrtj"
+          enabled: true
+          priority: 1
+          markets: ["SH", "SZ"]
+          description: "每日大宗交易统计"
+        
+        - name: "stock_dzjy_sctj"
+          enabled: true
+          priority: 2
+          markets: ["SH", "SZ"]
+          description: "每日大宗交易统计"
+        
+        - name: "stock_dzjy_hygtj"
+          enabled: true
+          priority: 3
+          markets: ["SH", "SZ"]
+          description: "个股大宗交易"
+        
+        - name: "stock_dzjy_mrmx"
+          enabled: true
+          priority: 4
+          markets: ["SH", "SZ"]
+          description: "大宗交易每日明细"
+        
+        - name: "stock_dzjy_detail_em"
+          enabled: true
+          priority: 5
+          markets: ["SH", "SZ"]
+          description: "东方财富大宗交易详情"
+        
+        - name: "stock_dzjy_premium_em"
+          enabled: true
+          priority: 6
+          markets: ["SH", "SZ"]
+          description: "大宗交易溢价率数据"
+
+    margin_trading_summary:
+      description: "融资融券总体数据"
+      interfaces:
+        - name: "stock_margin_sse"
+          enabled: true
+          priority: 1
+          markets: ["SH"]
+          description: "上海证券交易所融资融券总数据"
+        
+        - name: "stock_margin_szse"
+          enabled: true
+          priority: 2
+          markets: ["SZ"]
+          description: "深圳证券交易所融资融券总数据"
+        
+        - name: "stock_margin_detail_em"
+          enabled: true
+          priority: 3
+          markets: ["SH", "SZ"]
+          description: "东方财富融资融券详细数据"
+        
+        - name: "stock_margin_balance_em"
+          enabled: true
+          priority: 4
+          markets: ["SH", "SZ"]
+          description: "融资融券余额数据"
+
+    market_sentiment:
+      description: "市场情绪数据"
+      interfaces:
+        - name: "stock_zh_vote_baidu"
+          enabled: true
+          priority: 1
+          markets: ["SH", "SZ"]
+          description: "百度看多看空比例"
+        
+        - name: "stock_market_activity_legu"
+          enabled: true
+          priority: 2
+          markets: ["SH", "SZ"]
+          description: "市场活跃度统计"
+        
+        - name: "stock_changes_em"
+          enabled: true
+          priority: 3
+          markets: ["SH", "SZ", "BJ"]
+          description: "盘口异动数据"
+        
+        - name: "stock_hot_rank_em"
+          enabled: true
+          priority: 4
+          markets: ["SH", "SZ", "BJ"]
+          description: "股票人气排行榜"
+        
+        - name: "stock_hot_rank_detail_em"
+          enabled: true
+          priority: 5
+          markets: ["SH", "SZ", "BJ"]
+          description: "股票人气排行详情"
+        
+        - name: "stock_attention_baidu"
+          enabled: true
+          priority: 6
+          markets: ["SH", "SZ"]
+          description: "百度股票关注度"
+        
+        - name: "stock_market_participation_em"
+          enabled: true
+          priority: 7
+          markets: ["SH", "SZ", "BJ"]
+          description: "市场参与度统计"
+        
+        - name: "stock_volume_ratio_em"
+          enabled: true
+          priority: 8
+          markets: ["SH", "SZ", "BJ"]
+          description: "量比排行数据"
+        
+        - name: "stock_limit_up_down_statistics"
+          enabled: true
+          priority: 9
+          markets: ["SH", "SZ", "BJ"]
+          description: "涨跌停统计数据"
+
+    new_stock_data:
+      description: "新股数据"
+      interfaces:
+        - name: "stock_dxsyl_em"
+          enabled: true
+          priority: 1
+          markets: ["SH", "SZ"]
+          description: "新股打新收益率"
+
+    repurchase_data:
+      description: "股票回购数据"
+      interfaces:
+        - name: "stock_repurchase_em"
+          enabled: true
+          priority: 1
+          markets: ["SH", "SZ", "BJ"]
+          description: "股票回购统计"
+
+    board_industry_data:
+      description: "行业板块补充数据"
+      interfaces:
+        - name: "stock_board_industry_summary_ths"
+          enabled: true
+          priority: 1
+          markets: ["SH", "SZ"]
+          description: "同花顺行业一览表"
+        
+        - name: "stock_board_industry_name_ths"
+          enabled: true
+          priority: 2
+          markets: ["SH", "SZ"]
+          description: "同花顺行业名称"
+        
+        - name: "stock_board_industry_info_ths"
+          enabled: true
+          priority: 3
+          markets: ["SH", "SZ"]
+          description: "板块涨幅信息"
+        
+        - name: "stock_board_industry_name_em"
+          enabled: true
+          priority: 4
+          markets: ["SH", "SZ"]
+          description: "东方财富板块排行"
+
+    board_concept_data:
+      description: "概念板块补充数据"
+      interfaces:
+        - name: "stock_board_concept_summary_ths"
+          enabled: true
+          priority: 1
+          markets: ["SH", "SZ"]
+          description: "同花顺概念板块"
+        
+        - name: "stock_board_concept_name_ths"
+          enabled: true
+          priority: 2
+          markets: ["SH", "SZ"]
+          description: "同花顺概念板块名称"
+        
+        - name: "stock_board_concept_info_ths"
+          enabled: true
+          priority: 3
+          markets: ["SH", "SZ"]
+          description: "概念板块行情"
+        
+        - name: "stock_board_concept_name_em_async"
+          enabled: true
+          priority: 4
+          markets: ["SH", "SZ"]
+          description: "概念板块行情"
+        
+        - name: "stock_board_change_em"
+          enabled: true
+          priority: 5
+          markets: ["SH", "SZ"]
+          description: "当日板块异动详情"
+        
+        - name: "stock_concept_cons_futu"
+          enabled: true
+          priority: 6
+          markets: ["SH", "SZ"]
+          description: "富途概念板块成分股"
+
+    fund_flow_data:
+      description: "资金流向补充数据"
+      interfaces:
+        - name: "stock_market_fund_flow"
+          enabled: true
+          priority: 1
+          markets: ["SH", "SZ"]
+          description: "A股大盘资金流向"
+        
+        - name: "stock_fund_flow_industry"
+          enabled: true
+          priority: 2
+          markets: ["SH", "SZ"]
+          description: "行业资金流向"
+        
+        - name: "stock_fund_flow_concept"
+          enabled: true
+          priority: 3
+          markets: ["SH", "SZ"]
+          description: "概念资金流向"
+        
+        - name: "stock_sector_fund_flow_summary"
+          enabled: true
+          priority: 4
+          markets: ["SH", "SZ"]
+          description: "行业个股资金流"
+        
+        - name: "stock_sector_fund_flow_rank"
+          enabled: true
+          priority: 5
+          markets: ["SH", "SZ"]
+          description: "行业个股资金流排名"
+        
+        - name: "stock_fund_flow_big_deal"
+          enabled: true
+          priority: 6
+          markets: ["SH", "SZ"]
+          description: "资金流向大单追踪"
+        
+        - name: "stock_hsgt_fund_flow_summary_em"
+          enabled: true
+          priority: 7
+          markets: ["SH", "SZ"]
+          description: "沪深港通资金流向"
+        
+        - name: "stock_hsgt_board_rank_em"
+          enabled: true
+          priority: 8
+          markets: ["SH", "SZ"]
+          description: "北向资金增持行业板块排行"
+
+    analyst_data:
+      description: "分析师数据"
+      interfaces:
+        - name: "stock_analyst_rank_em"
+          enabled: true
+          priority: 1
+          markets: ["SH", "SZ", "BJ"]
+          description: "分析师详情"
+        
+        - name: "stock_analyst_detail_em"
+          enabled: true
+          priority: 2
+          markets: ["SH", "SZ", "BJ"]
+          description: "分析师股评"
+
+    institutional_research:
+      description: "机构调研数据"
+      interfaces:
+        - name: "stock_jgdy_tj_em"
+          enabled: true
+          priority: 1
+          markets: ["SH", "SZ", "BJ"]
+          description: "机构调研统计"
 
 
 field_mappings:
@@ -1154,10 +1912,45 @@ field_mappings:
   "综合得分": "composite_score"
   "关注指数": "attention_index"
   "目前排名": "current_rank"
-  "上升": "rank_change"
+  "上升": "rise_count"
   "排名": "rank"
+
+  # ESG数据
+  "ESG评分": "esg_score"
+  "ESG等级": "esg_rating"
+  "环境": "environment_score"
+  "环境等级": "environment_rating"
+  "环境总评": "environment_score"
+  "社会": "social_score"
+  "社会等级": "social_rating"
+  "社会责任总评": "social_score"
+  "公司治理": "governance_score"
+  "公司治理等级": "governance_rating"
+  "治理总评": "governance_score"
+  "评级日期": "rating_date"
+  "评分日期": "rating_date"
   
-  # 事件
+  # 股票回购
+  "计划回购价格区间": "planned_repurchase_price"
+  "计划回购数量区间-下限": "planned_repurchase_volume_min"
+  "计划回购数量区间-上限": "planned_repurchase_volume_max"
+  "计划回购金额区间-下限": "planned_repurchase_amount_min"
+  "计划回购金额区间-上限": "planned_repurchase_amount_max"
+  "回购起始时间": "repurchase_start_date"
+  "实施进度": "implementation_status"
+  "已回购股份价格区间-下限": "actual_repurchase_price_min"
+  "已回购股份价格区间-上限": "actual_repurchase_price_max"
+  "已回购股份数量": "actual_repurchase_volume"
+  "已回购金额": "actual_repurchase_amount"
+  "占公告前一日总股本比例-下限": "repurchase_ratio_min"
+  "占公告前一日总股本比例-上限": "repurchase_ratio_max"
+
+  # 大宗交易
+  "大宗交易成交总额": "block_trade_total_amount"
+  "溢价成交总额": "premium_trade_amount"
+  "溢价成交总额占比": "premium_trade_ratio"
+  "折价成交总额": "discount_trade_amount"
+  "折价成交总额占比": "discount_trade_ratio"
   "合同名称": "contract_name"
   "合同金额": "contract_amount"
   "签署主体": "contract_party"
@@ -1265,3 +2058,33 @@ field_mappings:
   "领涨股": "leader_stock_name"
   "领涨股票": "leader_stock_name"
   "龙头股": "leader_stock_name"
+
+  # 融资融券
+  "信用交易日期": "margin_date"
+  "标的证券代码": "underlying_symbol"
+  "标的证券简称": "underlying_name"
+  "融资余额": "margin_balance"
+  "融资买入额": "margin_buy_amount"
+  "融资偿还额": "margin_repay_amount"
+  "融券余量": "short_balance_volume"
+  "融券余量金额": "short_balance_amount"
+  "融券卖出量": "short_sell_volume"
+  "融券偿还量": "short_repay_volume"
+  "融券余额": "short_balance"
+  "融资融券余额": "total_margin_balance"
+
+  # 技术分析和排名
+  "综合得分": "comprehensive_score"
+  "技术排名": "technical_rank"
+  "主力成本": "main_cost"
+  "机构参与度": "institutional_participation"
+  "技术指标": "technical_indicator"
+  "MACD": "macd"
+  "KDJ": "kdj"
+  "RSI": "rsi"
+  "突破类型": "breakthrough_type"
+  "向上突破": "upward_breakthrough"
+  "向下突破": "downward_breakthrough"
+  "人气排名": "popularity_rank"
+  "新晋粉丝": "new_fans"
+  "铁杆粉丝": "loyal_fans"
