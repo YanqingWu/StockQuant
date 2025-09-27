@@ -935,11 +935,11 @@ class AkshareProvider(BaseAPIProvider):
             .with_source(DataSource.AKSHARE)\
             .with_category(FunctionCategory.STOCK_BASIC)\
             .with_description("上海证券交易所-股票列表")\
-            .with_optional_params("symbol")\
-            .with_pattern(ParameterPattern.from_params(["symbol"]))\
+            .with_optional_params()\
+            .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("List[str]")\
             .with_keywords("B股", "stock", "A股", "name", "sh")\
-            .with_example_params({"symbol": '主板A股'})\
+            .with_example_params({})\
             .build(),
 
         create_interface("stock_info_sz_change_name")\
@@ -969,7 +969,7 @@ class AkshareProvider(BaseAPIProvider):
             .with_category(FunctionCategory.STOCK_BASIC)\
             .with_description("深圳证券交易所-股票列表")\
             .with_optional_params()\
-            .with_pattern(ParameterPattern.from_params({}))\
+            .with_pattern(ParameterPattern.from_params([]))\
             .with_return_type("List[str]")\
             .with_keywords("sz", "B股", "stock", "A股", "name")\
             .with_example_params({})\

@@ -210,7 +210,8 @@ class StockSymbol:
         # 简单规则：
         # - 6 打头 -> SH (上海A股)
         # - 0/2/3 打头 -> SZ (深圳A股)
-        # - 8 打头 -> BJ（北交所/新三板）
+        # - 4/8 打头 -> BJ（北交所/新三板）
+        # - 920 打头 -> BJ（北交所新代码号段）
         # - 5位数字 -> HK (港股)
         # - 字母代码 -> US (美股)
         if not code:
@@ -229,7 +230,9 @@ class StockSymbol:
             return "SH"
         if code[0] in {"0", "2", "3"}:
             return "SZ"
-        if code.startswith("8"):
+        if code[0] in {"4", "8"}:  # 新三板和北交所
+            return "BJ"
+        if code.startswith("920"):  # 北交所新代码号段
             return "BJ"
         
         return ""
