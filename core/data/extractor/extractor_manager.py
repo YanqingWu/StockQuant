@@ -3,7 +3,7 @@
 """
 
 import logging
-from typing import Dict, List, Any, Optional, Union
+from typing import Dict, List, Any, Optional, Union, Tuple
 from pathlib import Path
 from dataclasses import dataclass
 from datetime import datetime, date
@@ -320,7 +320,7 @@ class ExtractorManager:
     
     def _execute_interface(self, category: str, data_type: str, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
         """
-        执行指定数据类型的接口，使用标准参数和task manager
+        执行指定数据类型的接口，使用标准参数和task manager，支持多接口数据合并
         
         Args:
             category: 数据分类
@@ -379,7 +379,8 @@ class ExtractorManager:
         # 批量执行
         batch_result = self.task_manager.execute_all(context=context)
 
-        # 按接口优先级选择第一个成功结果
+        # 收集所有成功的结果进行数据合并
+        successful_results = []
         if batch_result and batch_result.results:
             for interface in interfaces:
                 # 查找该接口的结果
@@ -392,20 +393,169 @@ class ExtractorManager:
                     extraction_result = self._process_extraction_result(result.data, category, data_type, interface.name)
                     if extraction_result.success:
                         logger.info(f"接口 {interface.name} 执行成功")
-                        return extraction_result
+                        successful_results.append((interface, extraction_result))
                     else:
                         logger.warning(f"接口 {interface.name} 数据处理失败: {extraction_result.error}")
                 else:
                     logger.warning(f"接口 {interface.name} 执行失败: {result.error}")
-                
-        # 返回失败结果
-        return ExtractionResult(
-            success=False,
-            data=None,
-            interface_name=None,
-            error=f"所有接口执行失败: {category}.{data_type}"
-        )
+        
+        # 如果没有成功的结果，返回失败
+        if not successful_results:
+            return ExtractionResult(
+                success=False,
+                data=None,
+                interface_name=None,
+                error=f"所有接口执行失败: {category}.{data_type}"
+            )
+        
+        # 如果只有一个成功结果，直接返回
+        if len(successful_results) == 1:
+            return successful_results[0][1]
+        
+        # 多个成功结果，进行数据合并
+        logger.info(f"开始合并 {len(successful_results)} 个接口的数据")
+        merged_result = self._merge_interface_results(successful_results, standard_params, category, data_type)
+        
+        return merged_result
     
+    def _merge_interface_results(self, successful_results: List[Tuple[Any, ExtractionResult]], 
+                                standard_params: StandardParams, category: str, data_type: str) -> ExtractionResult:
+        """
+        合并多个接口的数据结果
+        
+        Args:
+            successful_results: 成功的接口结果列表，每个元素为(interface, extraction_result)
+            standard_params: 标准化参数
+            category: 数据分类
+            data_type: 数据类型
+            
+        Returns:
+            合并后的提取结果
+        """
+        try:
+            # 获取目标股票symbol
+            target_symbol = standard_params.symbol
+            if not target_symbol:
+                # 如果没有指定symbol，返回第一个成功结果
+                return successful_results[0][1]
+            
+            # 按接口优先级排序
+            successful_results.sort(key=lambda x: x[0].priority)
+            
+            # 初始化合并后的数据
+            merged_data = None
+            merged_interface_names = []
+            
+            for interface, extraction_result in successful_results:
+                interface_data = extraction_result.data
+                merged_interface_names.append(interface.name)
+                
+                if interface_data is None or interface_data.empty:
+                    continue
+                
+                # 查找目标股票数据
+                target_row = self._find_target_stock_data(interface_data, target_symbol)
+                
+                if target_row is not None:
+                    if merged_data is None:
+                        # 第一个有效数据作为基础
+                        merged_data = target_row.copy()
+                        logger.info(f"使用接口 {interface.name} 作为基础数据")
+                    else:
+                        # 合并数据，优先保留已有数据，补充缺失字段
+                        merged_data = self._merge_stock_data(merged_data, target_row, interface.name)
+                else:
+                    logger.warning(f"接口 {interface.name} 中未找到目标股票 {target_symbol} 的数据")
+            
+            if merged_data is None:
+                return ExtractionResult(
+                    success=False,
+                    data=None,
+                    interface_name=None,
+                    error=f"所有接口中都未找到目标股票 {target_symbol} 的数据"
+                )
+            
+            # 将合并后的单行数据转换为DataFrame
+            if isinstance(merged_data, pd.Series):
+                merged_df = pd.DataFrame([merged_data])
+            else:
+                merged_df = merged_data
+            
+            logger.info(f"数据合并完成，使用了接口: {', '.join(merged_interface_names)}")
+            
+            return ExtractionResult(
+                success=True,
+                data=merged_df,
+                interface_name=f"merged({', '.join(merged_interface_names)})",
+                error=None
+            )
+            
+        except Exception as e:
+            logger.error(f"数据合并过程中发生错误: {e}")
+            # 合并失败时返回优先级最高的结果
+            return successful_results[0][1]
+    
+    def _find_target_stock_data(self, data: pd.DataFrame, target_symbol: StockSymbol) -> Optional[pd.Series]:
+        """
+        在DataFrame中查找目标股票的数据
+        
+        Args:
+            data: 数据DataFrame
+            target_symbol: 目标股票symbol
+            
+        Returns:
+            目标股票的数据行，如果未找到返回None
+        """
+        if data is None or data.empty:
+            return None
+        
+        # 使用标准的symbol格式和列名
+        target_symbol_str = target_symbol.to_dot()  # 标准格式，如 "601727.SH"
+        
+        # 检查标准的symbol列
+        if 'symbol' in data.columns:
+            matched_rows = data[data['symbol'].astype(str) == target_symbol_str]
+            if not matched_rows.empty:
+                logger.debug(f"在symbol列中找到匹配的股票 {target_symbol_str}")
+                return matched_rows.iloc[0]
+        
+        # 如果DataFrame只有一行数据，可能是单股票查询结果
+        if len(data) == 1:
+            logger.debug(f"DataFrame只有一行数据，假设为目标股票数据")
+            return data.iloc[0]
+        
+        logger.warning(f"未找到目标股票 {target_symbol_str} 的数据")
+        return None
+    
+    def _merge_stock_data(self, base_data: pd.Series, new_data: pd.Series, interface_name: str) -> pd.Series:
+        """
+        合并两个股票数据Series
+        
+        Args:
+            base_data: 基础数据
+            new_data: 新数据
+            interface_name: 新数据来源接口名
+            
+        Returns:
+            合并后的数据
+        """
+        merged = base_data.copy()
+        
+        # 统计补充的字段数量
+        filled_count = 0
+        
+        for col in new_data.index:
+            # 如果基础数据中该字段为空或不存在，则使用新数据补充
+            if col not in merged.index or pd.isna(merged[col]) or merged[col] == '' or merged[col] == 0:
+                if pd.notna(new_data[col]) and new_data[col] != '' and new_data[col] != 0:
+                    merged[col] = new_data[col]
+                    filled_count += 1
+        
+        if filled_count > 0:
+            logger.info(f"从接口 {interface_name} 补充了 {filled_count} 个字段")
+        
+        return merged
+
     # ==================== 股票相关接口 ====================
     
     # 股票基础信息

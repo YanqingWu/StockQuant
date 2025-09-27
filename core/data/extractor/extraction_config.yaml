@@ -645,27 +645,27 @@ interfaces_config:
       interfaces:
         - name: "stock_info_sh_name_code"
           enabled: true
-          priority: 1
+          priority: 0
           markets: ["SH"]
         
         - name: "stock_info_sz_name_code"
           enabled: true
-          priority: 2
+          priority: 0
           markets: ["SZ"]
         
         - name: "stock_info_bj_name_code"
           enabled: true
-          priority: 3
+          priority: 0
           markets: ["BJ"]
         
         - name: "stock_info_a_code_name"
           enabled: true
-          priority: 4
+          priority: 0
           markets: ["SH", "SZ", "BJ"]
         
         - name: "stock_profile_cninfo"
           enabled: true
-          priority: 5
+          priority: 0
           markets: ["SH", "SZ", "BJ"]
 
     company_profile:
