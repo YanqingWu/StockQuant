@@ -484,6 +484,17 @@ standard_fields:
         - remaining_amount       # 剩余金额（可选）
 
   market:
+    stock_list: # 市场股票列表
+      - symbol            # 股票代码
+      - name              # 股票简称
+      - full_name         # 公司全称
+      - list_date         # 上市日期
+      - total_shares      # 总股本
+      - outstanding_shares # 流通股本
+      - industry          # 所属行业
+      - region            # 地区
+      - board_type        # 板块
+
     market_overview:
       - date                    # 日期
       - exchange                # 交易所（SSE/SZSE 等）
@@ -1160,6 +1171,29 @@ interfaces_config:
             markets: ["SH", "SZ", "BJ"]
 
   market:
+    stock_list:
+      description: "股票列表"
+      interfaces:
+        - name: "stock_info_a_code_name"
+          enabled: true
+          priority: 1
+          markets: ["SH", "SZ", "BJ"]
+        
+        - name: "stock_info_sh_name_code"
+          enabled: true
+          priority: 2
+          markets: ["SH"]
+        
+        - name: "stock_info_sz_name_code"
+          enabled: true
+          priority: 3
+          markets: ["SZ"]
+        
+        - name: "stock_info_bj_name_code"
+          enabled: true
+          priority: 4
+          markets: ["BJ"]
+
     market_overview:
       description: "市场概览"
       interfaces:

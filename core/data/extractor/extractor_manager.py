@@ -413,6 +413,11 @@ class ExtractorManager:
     
     # ==================== 市场相关接口 ====================
     
+    # 市场股票列表
+    def get_stock_list(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取市场股票列表"""
+        return self._execute_interface("market", "stock_list", params)
+    
     # 市场概览
     def get_market_overview(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
         """获取市场概览数据"""
