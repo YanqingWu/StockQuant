@@ -16,7 +16,6 @@ standard_fields:
     profile:
       - symbol            # 股票代码
       - name              # 股票名称
-      - market            # 市场（SSE/SZSE/BSE/HKEX 等）
       - list_date         # 上市日期
       - industry          # 所属行业
       - industry_code     # 行业代码
@@ -25,8 +24,6 @@ standard_fields:
       - totals            # 总股本
       - outstanding       # 流通股本
       - index_codes       # 所属指数代码列表
-      - stock_type        # 股票类型（A股/B股/H股等）
-      - board_type        # 板块类型（主板/创业板/科创板/北交所）
 
     company_profile:
       - full_name               # 公司全称
@@ -48,12 +45,7 @@ standard_fields:
       - phone                   # 联系电话
       - business_scope          # 经营范围
       - main_business           # 主营业务
-      - listed_board            # 上市板块（主板/创业板/科创板等）
       - listing_status          # 上市状态（在市/停牌/退市）
-      - exchange                # 所属交易所
-      - establishment_date      # 成立日期
-      - listing_date            # 上市日期
-      - update_time             # 更新时间
 
     daily_market:
       quote:
