@@ -18,6 +18,11 @@ class InterfaceConfig:
     name: str
     enabled: bool = True
     priority: int = 1
+    markets: List[str] = field(default_factory=list)  # 新增：适用市场列表
+    
+    def is_market_supported(self, market: str) -> bool:
+        """检查是否支持指定市场"""
+        return not self.markets or market in self.markets
 
 
 @dataclass
@@ -26,9 +31,14 @@ class DataTypeConfig:
     description: str = ""
     interfaces: List[InterfaceConfig] = field(default_factory=list)
     
-    def get_enabled_interfaces(self) -> List[InterfaceConfig]:
-        """获取启用的接口，按优先级排序"""
+    def get_enabled_interfaces(self, market: Optional[str] = None) -> List[InterfaceConfig]:
+        """获取启用的接口，按优先级排序，可按市场过滤"""
         enabled = [iface for iface in self.interfaces if iface.enabled]
+        
+        # 如果指定了市场，进行过滤
+        if market:
+            enabled = [iface for iface in enabled if iface.is_market_supported(market)]
+        
         return sorted(enabled, key=lambda x: x.priority, reverse=False)
     
     def get_interface_by_name(self, name: str) -> Optional[InterfaceConfig]:
@@ -40,7 +50,7 @@ class DataTypeConfig:
 
 
 @dataclass
-class DataCategoryConfig:
+class CategoryConfig:
     """数据分类配置"""
     description: str = ""
     cache_duration: int = 300
@@ -50,6 +60,10 @@ class DataCategoryConfig:
     def get_enabled_data_types(self) -> Dict[str, DataTypeConfig]:
         """获取启用的数据类型"""
         return self.data_types
+    
+    def get_data_type_config(self, data_type: str) -> Optional[DataTypeConfig]:
+        """获取数据类型配置"""
+        return self.data_types.get(data_type)
 
 
 @dataclass
@@ -69,25 +83,25 @@ class ExtractionConfig:
     description: str = ""
     global_config: GlobalConfig = field(default_factory=GlobalConfig)
     standard_fields: Dict[str, Dict[str, List[str]]] = field(default_factory=dict)
-    data_categories: Dict[str, DataCategoryConfig] = field(default_factory=dict)
+    interfaces_config: Dict[str, CategoryConfig] = field(default_factory=dict)  # 重命名
     field_mappings: Dict[str, str] = field(default_factory=dict)
     
-    def get_category_config(self, category: str) -> Optional[DataCategoryConfig]:
+    def get_category_config(self, category: str) -> Optional[CategoryConfig]:
         """获取数据分类配置"""
-        return self.data_categories.get(category)
+        return self.interfaces_config.get(category)
     
     def get_data_type_config(self, category: str, data_type: str) -> Optional[DataTypeConfig]:
         """获取数据类型配置"""
         category_config = self.get_category_config(category)
         if category_config:
-            return category_config.data_types.get(data_type)
+            return category_config.get_data_type_config(data_type)
         return None
     
-    def get_enabled_interfaces(self, category: str, data_type: str) -> List[InterfaceConfig]:
+    def get_enabled_interfaces(self, category: str, data_type: str, market: Optional[str] = None) -> List[InterfaceConfig]:
         """获取指定数据类型的启用接口"""
         config = self.get_data_type_config(category, data_type)
         if config:
-            return config.get_enabled_interfaces()
+            return config.get_enabled_interfaces(market)
         return []
     
     def get_standard_fields(self, category: str, data_type: str) -> List[str]:
@@ -108,33 +122,70 @@ class ExtractionConfig:
 class ConfigLoader:
     """配置文件加载器"""
     
-    def __init__(self):
+    def __init__(self, config_path: Optional[Path] = None):
+        """
+        初始化配置加载器
+        
+        Args:
+            config_path: 配置文件路径，如果为None则使用默认路径
+        """
+        if config_path is None:
+            # 默认配置文件路径
+            current_dir = Path(__file__).parent
+            config_path = current_dir / "extraction_config.yaml"
+        
+        self.config_path = Path(config_path)
         self._config: Optional[ExtractionConfig] = None
-        self._config_path: Optional[Path] = None
+        self._last_modified: Optional[float] = None
     
-    def load_from_file(self, config_path: str) -> ExtractionConfig:
-        """从文件加载配置"""
-        path = Path(config_path)
-        if not path.exists():
-            raise FileNotFoundError(f"配置文件不存在: {config_path}")
+    def load_config(self, force_reload: bool = False) -> ExtractionConfig:
+        """
+        加载配置文件
+        
+        Args:
+            force_reload: 是否强制重新加载
+            
+        Returns:
+            ExtractionConfig: 配置对象
+            
+        Raises:
+            FileNotFoundError: 配置文件不存在
+            yaml.YAMLError: YAML解析错误
+            ValueError: 配置验证失败
+        """
+        # 检查文件是否存在
+        if not self.config_path.exists():
+            raise FileNotFoundError(f"配置文件不存在: {self.config_path}")
+        
+        # 检查是否需要重新加载
+        current_modified = self.config_path.stat().st_mtime
+        if not force_reload and self._config is not None and self._last_modified == current_modified:
+            return self._config
         
         try:
-            with open(path, 'r', encoding='utf-8') as f:
-                config_data = yaml.safe_load(f)
+            # 读取YAML文件
+            with open(self.config_path, 'r', encoding='utf-8') as f:
+                raw_config = yaml.safe_load(f)
             
-            config = self._parse_config(config_data)
+            # 解析配置
+            config = self._parse_config(raw_config)
+            
+            # 验证配置
             self._validate_config(config)
             
+            # 缓存配置
             self._config = config
-            self._config_path = path
+            self._last_modified = current_modified
             
-            logger.info(f"成功加载配置文件: {config_path}")
+            logger.info(f"成功加载配置文件: {self.config_path}")
             return config
             
         except yaml.YAMLError as e:
-            raise ValueError(f"配置文件格式错误: {e}")
+            logger.error(f"YAML解析错误: {e}")
+            raise
         except Exception as e:
-            raise ValueError(f"加载配置文件失败: {e}")
+            logger.error(f"配置加载失败: {e}")
+            raise
     
     def load_from_dict(self, config_data: Dict[str, Any]) -> ExtractionConfig:
         """从字典加载配置"""
@@ -186,41 +237,66 @@ class ConfigLoader:
         # 解析标准字段
         standard_fields = config_data.get('standard_fields', {})
         
-        # 解析数据分类配置
-        data_categories = {}
-        categories_data = config_data.get('data_categories', {})
+        # 解析接口配置 - 支持多层嵌套结构
+        interfaces_config = {}
+        interfaces_data = config_data.get('interfaces_config', {})
         
-        for category_name, category_data in categories_data.items():
-            # 解析数据类型
-            data_types = {}
-            data_types_data = category_data.get('data_types', {})
+        def parse_interfaces_recursive(data: Dict[str, Any]) -> List[InterfaceConfig]:
+            """递归解析接口配置"""
+            interfaces = []
+            interfaces_list = data.get('interfaces', [])
             
-            for data_type_name, type_data in data_types_data.items():
-                # 解析接口配置
-                interfaces = []
-                interfaces_data = type_data.get('interfaces', [])
-                
-                for iface_data in interfaces_data:
-                    interface = InterfaceConfig(
-                        name=iface_data['name'],
-                        enabled=iface_data.get('enabled', True),
-                        priority=iface_data.get('priority', 1)
-                    )
-                    interfaces.append(interface)
-                
-                data_type_config = DataTypeConfig(
-                    description=type_data.get('description', ''),
-                    interfaces=interfaces
+            for interface_data in interfaces_list:
+                interface = InterfaceConfig(
+                    name=interface_data['name'],
+                    enabled=interface_data.get('enabled', True),
+                    priority=interface_data.get('priority', 1),
+                    markets=interface_data.get('markets', [])
                 )
-                data_types[data_type_name] = data_type_config
+                interfaces.append(interface)
             
-            category_config = DataCategoryConfig(
+            return interfaces
+        
+        def parse_data_type_recursive(data: Dict[str, Any], path: str = "") -> Dict[str, DataTypeConfig]:
+            """递归解析数据类型配置"""
+            data_types = {}
+            
+            for key, value in data.items():
+                # 跳过分类级别的配置字段
+                if key in ['description', 'cache_duration', 'retry_strategy']:
+                    continue
+                
+                if isinstance(value, dict):
+                    # 检查是否直接包含interfaces
+                    if 'interfaces' in value:
+                        # 直接包含接口的数据类型
+                        interfaces = parse_interfaces_recursive(value)
+                        data_type = DataTypeConfig(
+                            description=value.get('description', ''),
+                            interfaces=interfaces
+                        )
+                        data_types[key] = data_type
+                    else:
+                        # 可能是嵌套的数据类型结构，需要进一步解析
+                        nested_data_types = parse_data_type_recursive(value, f"{path}.{key}" if path else key)
+                        # 将嵌套的数据类型展平，使用点号分隔
+                        for nested_key, nested_data_type in nested_data_types.items():
+                            full_key = f"{key}.{nested_key}"
+                            data_types[full_key] = nested_data_type
+            
+            return data_types
+        
+        for category_name, category_data in interfaces_data.items():
+            # 递归解析数据类型配置
+            data_types = parse_data_type_recursive(category_data)
+            
+            category = CategoryConfig(
                 description=category_data.get('description', ''),
                 cache_duration=category_data.get('cache_duration', 300),
                 retry_strategy=category_data.get('retry_strategy', 'standard'),
                 data_types=data_types
             )
-            data_categories[category_name] = category_config
+            interfaces_config[category_name] = category
         
         # 解析字段映射
         field_mappings = config_data.get('field_mappings', {})
@@ -230,20 +306,20 @@ class ConfigLoader:
             description=config_data.get('description', ''),
             global_config=global_config,
             standard_fields=standard_fields,
-            data_categories=data_categories,
+            interfaces_config=interfaces_config,  # 使用新的字段名
             field_mappings=field_mappings
         )
     
     def _validate_config(self, config: ExtractionConfig) -> None:
         """验证配置"""
-        # 验证数据分类不为空
-        if not config.data_categories:
-            raise ValueError("配置中必须包含至少一个数据分类")
+        # 验证接口配置不为空
+        if not config.interfaces_config:
+            raise ValueError("配置中必须包含至少一个接口分类")
         
-        # 验证每个数据分类
-        for category_name, category_config in config.data_categories.items():
+        # 验证每个接口分类
+        for category_name, category_config in config.interfaces_config.items():
             if not category_config.data_types:
-                logger.warning(f"数据分类 '{category_name}' 没有包含数据类型")
+                logger.warning(f"接口分类 '{category_name}' 没有包含数据类型")
                 continue
             
             # 验证每个数据类型至少有一个接口
@@ -280,29 +356,68 @@ class ConfigLoader:
     
     def _config_to_dict(self, config: ExtractionConfig) -> Dict[str, Any]:
         """将配置转换为字典"""
-        # 转换数据分类
-        data_categories = {}
-        for category_name, category_config in config.data_categories.items():
-            data_types = {}
-            for data_type_name, type_config in category_config.data_types.items():
-                interfaces = []
-                for iface in type_config.interfaces:
-                    interfaces.append({
-                        'name': iface.name,
-                        'enabled': iface.enabled,
-                        'priority': iface.priority
-                    })
-                data_types[data_type_name] = {
-                    'description': type_config.description,
-                    'interfaces': interfaces
-                }
-            
-            data_categories[category_name] = {
+        # 转换接口配置
+        interfaces_config = {}
+        for category_name, category_config in config.interfaces_config.items():
+            category_dict = {
                 'description': category_config.description,
                 'cache_duration': category_config.cache_duration,
-                'retry_strategy': category_config.retry_strategy,
-                'data_types': data_types
+                'retry_strategy': category_config.retry_strategy
             }
+            
+            # 处理数据类型，支持多层嵌套结构
+            nested_structure = {}
+            for data_type_name, type_config in category_config.data_types.items():
+                # 处理点号分隔的嵌套结构
+                if '.' in data_type_name:
+                    parts = data_type_name.split('.')
+                    current = nested_structure
+                    
+                    # 构建嵌套结构
+                    for i, part in enumerate(parts[:-1]):
+                        if part not in current:
+                            current[part] = {}
+                        current = current[part]
+                    
+                    # 设置最终的接口配置
+                    interfaces = []
+                    for iface in type_config.interfaces:
+                        interface_dict = {
+                            'name': iface.name,
+                            'enabled': iface.enabled,
+                            'priority': iface.priority
+                        }
+                        # 只有当markets不为空时才添加到字典中
+                        if iface.markets:
+                            interface_dict['markets'] = iface.markets
+                        interfaces.append(interface_dict)
+                    
+                    current[parts[-1]] = {
+                        'description': type_config.description,
+                        'interfaces': interfaces
+                    }
+                else:
+                    # 直接的数据类型
+                    interfaces = []
+                    for iface in type_config.interfaces:
+                        interface_dict = {
+                            'name': iface.name,
+                            'enabled': iface.enabled,
+                            'priority': iface.priority
+                        }
+                        # 只有当markets不为空时才添加到字典中
+                        if iface.markets:
+                            interface_dict['markets'] = iface.markets
+                        interfaces.append(interface_dict)
+                    
+                    nested_structure[data_type_name] = {
+                        'description': type_config.description,
+                        'interfaces': interfaces
+                    }
+            
+            # 合并嵌套结构到分类字典
+            category_dict.update(nested_structure)
+            interfaces_config[category_name] = category_dict
         
         return {
             'version': config.version,
@@ -315,6 +430,6 @@ class ConfigLoader:
                 'log_level': config.global_config.log_level
             },
             'standard_fields': config.standard_fields,
-            'data_categories': data_categories,
+            'interfaces_config': interfaces_config,  # 使用新的字段名
             'field_mappings': config.field_mappings
         }
