@@ -655,7 +655,7 @@ interfaces_config:
         
         - name: "stock_individual_info_em"
           enabled: true
-          priority: 1
+          priority: 0
           markets: ["SH", "SZ", "BJ"]
           post_processor: "convert_item_value_to_columns"
 
