@@ -487,13 +487,6 @@ standard_fields:
     stock_list: # 市场股票列表
       - symbol            # 股票代码
       - name              # 股票简称
-      - full_name         # 公司全称
-      - list_date         # 上市日期
-      - total_shares      # 总股本
-      - outstanding_shares # 流通股本
-      - industry          # 所属行业
-      - region            # 地区
-      - board_type        # 板块
 
     market_overview:
       - date                    # 日期
@@ -1728,10 +1721,13 @@ field_mappings:
   "股票代码": "symbol"
   "证券代码": "symbol"
   "标的代码": "symbol"
+  "A股代码": "symbol"
   "名称": "name"
   "股票名称": "name"
   "股票简称": "name"
+  "证券简称": "name"
   "证券名称": "name"
+  "A股简称": "name"
   "市场": "market"
   "交易所": "exchange"
   "上市日期": "list_date"
