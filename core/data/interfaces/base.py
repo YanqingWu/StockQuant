@@ -135,7 +135,7 @@ class APIRegistry:
         self._pattern_index: Dict[ParameterPattern, Set[str]] = {}
         self._source_index: Dict[DataSource, Set[str]] = {}
         self._category_index: Dict[FunctionCategory, Set[str]] = {}
-        self._keyword_index: Dict[str, Set[str]] = {}  # 关键词索引
+        self._keyword_index: Dict[str, Set[str]] = {}
     
     def register_interface(self, metadata: InterfaceMetadata) -> None:
         """注册单个接口"""
@@ -463,27 +463,36 @@ class InterfaceBuilder:
 
 
 # 全局API提供者管理器实例
-api_provider_manager = APIProviderManager()
+_api_provider_manager = APIProviderManager()
+
+
+def get_api_provider_manager() -> APIProviderManager:
+    """获取API提供者管理器的单例实例
+    
+    Returns:
+        APIProviderManager: 全局API提供者管理器实例
+    """
+    return _api_provider_manager
 
 
 def register_provider(provider: BaseAPIProvider) -> None:
     """注册API提供者的便捷函数"""
-    api_provider_manager.register_provider(provider)
+    get_api_provider_manager().register_provider(provider)
 
 
 def get_interface_metadata(interface_name: str) -> Optional[InterfaceMetadata]:
     """获取接口元数据的便捷函数"""
-    return api_provider_manager.get_interface_metadata(interface_name)
+    return get_api_provider_manager().get_interface_metadata(interface_name)
 
 
 def search_interfaces(keyword: str) -> List[str]:
     """搜索接口的便捷函数"""
-    return api_provider_manager.search_interfaces(keyword)
+    return get_api_provider_manager().search_interfaces(keyword)
 
 
 def find_interface_by_source_and_name(source: DataSource, interface_name: str) -> Optional[InterfaceMetadata]:
     """根据数据源和接口名称查找接口的便捷函数"""
-    return api_provider_manager.find_interface_by_source_and_name(source, interface_name)
+    return get_api_provider_manager().find_interface_by_source_and_name(source, interface_name)
 
 
 def create_interface(name: str) -> InterfaceBuilder:

@@ -12,7 +12,7 @@ from .config_loader import ConfigLoader, ExtractionConfig
 from .adapter import to_standard_params, StandardParams, AkshareStockParamAdapter, StockSymbol
 from ..interfaces.executor import TaskManager, InterfaceExecutor, CallTask, ExecutionContext, ExecutorConfig, RetryConfig
 from ..cache.persistent_cache import PersistentCacheConfig
-from ..interfaces.base import api_provider_manager
+from ..interfaces.base import get_api_provider_manager
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -53,7 +53,7 @@ class ExtractorManager:
         self.config = self.config_loader.load_config()
         
         # 初始化task manager和executor
-        self.provider_manager = api_provider_manager
+        self.provider_manager = get_api_provider_manager()
         
         # 从全局配置注入执行器配置（缓存/重试/超时）
         global_cfg = self.config.global_config
