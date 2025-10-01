@@ -23,22 +23,16 @@ class SQLiteStorage:
         self._init_db()
     
     def _init_db(self):
-        """初始化数据库表"""
+        """初始化数据库表 - 永久存储版本"""
         with self._get_connection() as conn:
             conn.execute('''
                 CREATE TABLE IF NOT EXISTS cache_entries (
                     key TEXT PRIMARY KEY,
                     value BLOB NOT NULL,
                     created_at REAL NOT NULL,
-                    expires_at REAL,
                     access_count INTEGER DEFAULT 0,
                     last_access REAL NOT NULL
                 )
-            ''')
-            
-            conn.execute('''
-                CREATE INDEX IF NOT EXISTS idx_expires_at 
-                ON cache_entries(expires_at)
             ''')
             
             conn.execute('''
@@ -61,11 +55,11 @@ class SQLiteStorage:
             conn.close()
     
     def get(self, key: str) -> Optional[Any]:
-        """获取缓存值"""
+        """获取缓存值 - 永久存储，无过期检查"""
         with self._lock:
             with self._get_connection() as conn:
                 cursor = conn.execute('''
-                    SELECT value, expires_at, access_count 
+                    SELECT value, access_count 
                     FROM cache_entries 
                     WHERE key = ?
                 ''', (key,))
@@ -74,14 +68,8 @@ class SQLiteStorage:
                 if not row:
                     return None
                 
-                value_blob, expires_at, access_count = row
+                value_blob, access_count = row
                 current_time = time.time()
-                
-                # 检查是否过期
-                if expires_at is not None and current_time > expires_at:
-                    conn.execute('DELETE FROM cache_entries WHERE key = ?', (key,))
-                    conn.commit()
-                    return None
                 
                 # 更新访问统计
                 conn.execute('''
@@ -100,22 +88,18 @@ class SQLiteStorage:
                     return None
     
     def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
-        """设置缓存值"""
-        if ttl is not None and ttl <= 0:
-            return
-            
+        """设置缓存值 - 永久存储"""
         with self._lock:
             try:
                 value_blob = pickle.dumps(value)
                 current_time = time.time()
-                expires_at = current_time + ttl if ttl is not None else None
                 
                 with self._get_connection() as conn:
                     conn.execute('''
                         INSERT OR REPLACE INTO cache_entries 
-                        (key, value, created_at, expires_at, access_count, last_access)
-                        VALUES (?, ?, ?, ?, 0, ?)
-                    ''', (key, value_blob, current_time, expires_at, current_time))
+                        (key, value, created_at, access_count, last_access)
+                        VALUES (?, ?, ?, 0, ?)
+                    ''', (key, value_blob, current_time, current_time))
                     conn.commit()
                     
             except pickle.PickleError:
@@ -137,30 +121,18 @@ class SQLiteStorage:
                 conn.commit()
     
     def cleanup_expired(self) -> int:
-        """清理过期条目"""
-        with self._lock:
-            current_time = time.time()
-            with self._get_connection() as conn:
-                cursor = conn.execute('''
-                    DELETE FROM cache_entries 
-                    WHERE expires_at IS NOT NULL AND expires_at < ?
-                ''', (current_time,))
-                conn.commit()
-                return cursor.rowcount
+        """清理过期条目 - 由于不再使用TTL，返回0"""
+        # 不再需要清理过期缓存，因为缓存是永久的
+        return 0
     
     def get_stats(self) -> dict:
-        """获取存储统计信息"""
+        """获取存储统计信息 - 永久存储版本"""
         with self._lock:
             with self._get_connection() as conn:
                 cursor = conn.execute('SELECT COUNT(*) FROM cache_entries')
                 total_entries = cursor.fetchone()[0]
                 
                 current_time = time.time()
-                cursor = conn.execute('''
-                    SELECT COUNT(*) FROM cache_entries 
-                    WHERE expires_at < ?
-                ''', (current_time,))
-                expired_entries = cursor.fetchone()[0]
                 
                 db_size = os.path.getsize(self.db_path) if os.path.exists(self.db_path) else 0
                 
@@ -176,8 +148,8 @@ class SQLiteStorage:
                 
                 return {
                     'total_entries': total_entries,
-                    'expired_entries': expired_entries,
-                    'valid_entries': total_entries - expired_entries,
+                    'expired_entries': 0,  # 不再有过期条目
+                    'valid_entries': total_entries,
                     'db_size_bytes': db_size,
                     'db_size_mb': db_size / (1024 * 1024),
                     'avg_access_count': round(avg_access, 2),

@@ -52,29 +52,24 @@ class PersistentCache:
             self._start_cleanup_thread()
     
     def get(self, key: str) -> Optional[Any]:
-        """获取缓存值"""
+        """获取缓存值 - 永久存储，无过期检查"""
         if not self.config.enabled:
             return None
         
         with self._lock:
             self._stats['hits'] += 1
-            current_time = time.time()
             
             # 检查内存缓存
             if key in self._memory_cache:
                 entry = self._memory_cache[key]
-                
-                if current_time <= entry['expires_at']:
-                    self._memory_cache.move_to_end(key)
-                    self._stats['memory_hits'] += 1
-                    return entry['value']
-                else:
-                    del self._memory_cache[key]
+                self._memory_cache.move_to_end(key)  # LRU更新
+                self._stats['memory_hits'] += 1
+                return entry['value']
             
             # 检查持久化存储
             value = self._storage.get(key)
             if value is not None:
-                self._add_to_memory_cache(key, value, self.config.ttl)
+                self._add_to_memory_cache(key, value)
                 self._stats['storage_hits'] += 1
                 return value
             
@@ -84,21 +79,16 @@ class PersistentCache:
             return None
     
     def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
-        """设置缓存值"""
+        """设置缓存值 - 永久存储，不使用TTL"""
         if not self.config.enabled:
-            return
-        
-        ttl_to_use = self.config.ttl if ttl is None else int(ttl)
-        
-        if ttl_to_use <= 0:
             return
         
         with self._lock:
             self._stats['sets'] += 1
             
-            # 添加到内存缓存和持久化存储
-            self._add_to_memory_cache(key, value, ttl_to_use)
-            self._storage.set(key, value, ttl_to_use)
+            # 添加到内存缓存和持久化存储（永久存储）
+            self._add_to_memory_cache(key, value)
+            self._storage.set(key, value)
     
     def clear(self) -> None:
         """清空缓存"""
@@ -106,10 +96,8 @@ class PersistentCache:
             self._memory_cache.clear()
             self._storage.clear()
     
-    def _add_to_memory_cache(self, key: str, value: Any, ttl: int) -> None:
-        """添加条目到内存缓存"""
-        current_time = time.time()
-        
+    def _add_to_memory_cache(self, key: str, value: Any) -> None:
+        """添加条目到内存缓存 - LRU策略，无过期时间"""
         if key in self._memory_cache:
             del self._memory_cache[key]
         
@@ -119,41 +107,20 @@ class PersistentCache:
             del self._memory_cache[oldest_key]
             self._stats['evictions'] += 1
         
-        # 添加新条目
+        # 添加新条目（永久存储）
         self._memory_cache[key] = {
-            'value': value,
-            'expires_at': current_time + ttl
+            'value': value
         }
     
     def _start_cleanup_thread(self) -> None:
-        """启动后台清理线程"""
-        def cleanup_worker():
-            while True:
-                try:
-                    time.sleep(self.config.cleanup_interval)
-                    self._cleanup_expired()
-                except Exception:
-                    pass
-        
-        cleanup_thread = threading.Thread(target=cleanup_worker, daemon=True)
-        cleanup_thread.start()
+        """启动后台清理线程 - 由于不再使用TTL，此方法保留但不执行清理"""
+        # 不再需要清理过期缓存，因为缓存是永久的
+        pass
     
     def _cleanup_expired(self) -> None:
-        """清理过期条目"""
-        with self._lock:
-            current_time = time.time()
-            
-            # 清理内存缓存中的过期条目
-            expired_keys = [
-                key for key, entry in self._memory_cache.items()
-                if current_time > entry['expires_at']
-            ]
-            
-            for key in expired_keys:
-                del self._memory_cache[key]
-            
-            # 清理持久化存储中的过期条目
-            self._storage.cleanup_expired()
+        """清理过期条目 - 由于不再使用TTL，此方法保留但不执行清理"""
+        # 不再需要清理过期缓存，因为缓存是永久的
+        pass
     
     def delete(self, key: str) -> bool:
         """删除指定缓存条目"""
@@ -214,21 +181,9 @@ class PersistentCache:
             return list(memory_keys | storage_keys)
     
     def cleanup_expired(self) -> int:
-        """手动清理过期条目"""
-        with self._lock:
-            current_time = time.time()
-            
-            expired_memory_keys = [
-                key for key, entry in self._memory_cache.items()
-                if current_time > entry['expires_at']
-            ]
-            
-            for key in expired_memory_keys:
-                del self._memory_cache[key]
-            
-            expired_storage_count = self._storage.cleanup_expired()
-            
-            return len(expired_memory_keys) + expired_storage_count
+        """手动清理过期条目 - 由于不再使用TTL，返回0"""
+        # 不再需要清理过期缓存，因为缓存是永久的
+        return 0
     
     def reset_stats(self) -> None:
         """重置统计信息"""

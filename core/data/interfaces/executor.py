@@ -18,6 +18,7 @@ from threading import Lock
 import akshare as ak
 
 from .base import APIProviderManager, InterfaceMetadata
+from ..cache.persistent_cache import PersistentCache, PersistentCacheConfig
 
 
 logger = logging.getLogger(__name__)
@@ -174,14 +175,6 @@ class RetryConfig:
     exponential_base: float = 2.0  # 指数退避基数
 
 
-@dataclass
-class CacheConfig:
-    """缓存配置"""
-    enabled: bool = True
-    ttl: int = 300  # 缓存时间（秒）
-    max_size: int = 1000  # 最大缓存条目数
-
-
 class ExecutorPlugin(ABC):
     """执行器插件接口"""
     
@@ -206,7 +199,7 @@ class ExecutorConfig:
     """执行器配置"""
     plugins: List[ExecutorPlugin] = field(default_factory=list)
     rate_limits: Dict[str, RateLimit] = field(default_factory=dict)  # 接口名 -> 频率限制
-    cache_config: Optional[CacheConfig] = None
+    cache_config: Optional[PersistentCacheConfig] = None  # 使用新的缓存配置
     retry_config: RetryConfig = field(default_factory=RetryConfig)
     default_timeout: float = 0.0  # 0表示无超时，>0表示有超时
     # 接口特定超时配置
@@ -246,76 +239,7 @@ class ExecutionContext:
     user_data: Dict[str, Any] = field(default_factory=dict)
 
 
-class SimpleCache:
-    """简单缓存实现"""
-    
-    def __init__(self, config: CacheConfig):
-        self.config = config
-        self.cache = {}
-        self.write_times = {}
-        self.expires = {}
-        self.lock = Lock()
-    
-    def get(self, key: str) -> Optional[Any]:
-        """获取缓存"""
-        if not self.config.enabled:
-            return None
-            
-        with self.lock:
-            if key in self.cache:
-                now = time.time()
-                # 优先使用每键过期时间
-                if key in self.expires:
-                    if now < self.expires[key]:
-                        return self.cache[key]
-                    # 过期，删除
-                    del self.cache[key]
-                    del self.expires[key]
-                    if key in self.write_times:
-                        del self.write_times[key]
-                    return None
-                # 回退到全局 TTL 检查
-                if key in self.write_times and (now - self.write_times[key] < self.config.ttl):
-                    return self.cache[key]
-                # 过期，删除
-                del self.cache[key]
-                if key in self.write_times:
-                    del self.write_times[key]
-        return None
-    
-    def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
-        """设置缓存，支持每键 TTL"""
-        if not self.config.enabled:
-            return
-        
-        ttl_to_use = self.config.ttl if ttl is None else int(ttl)
-        # ttl<=0 视为不缓存
-        if ttl_to_use <= 0:
-            return
-            
-        with self.lock:
-            # 检查缓存大小限制
-            if len(self.cache) >= self.config.max_size and self.write_times:
-                # 删除最旧的条目（按写入时间）
-                oldest_key = min(self.write_times.keys(), key=self.write_times.get)
-                if oldest_key in self.cache:
-                    del self.cache[oldest_key]
-                if oldest_key in self.write_times:
-                    del self.write_times[oldest_key]
-                if oldest_key in self.expires:
-                    del self.expires[oldest_key]
-            
-            now = time.time()
-            self.cache[key] = value
-            self.write_times[key] = now
-            self.expires[key] = now + float(ttl_to_use)
-    
-    def clear(self) -> None:
-        """清空缓存"""
-        with self.lock:
-            self.cache.clear()
-            self.write_times.clear()
-            self.expires.clear()
+
 
 
 class ThreadPoolTimeoutManager:
@@ -398,7 +322,16 @@ class InterfaceExecutor:
         self.provider_manager = provider_manager
         self.config = config or ExecutorConfig()
         
-        self.cache = SimpleCache(self.config.cache_config or CacheConfig())
+        # 初始化新的缓存系统
+        if self.config.cache_config:
+            self.cache = PersistentCache(self.config.cache_config)
+            logger.info(f"初始化持久化缓存系统，数据库路径: {self.config.cache_config.db_path}")
+        else:
+            # 使用默认配置
+            default_cache_config = PersistentCacheConfig()
+            self.cache = PersistentCache(default_cache_config)
+            logger.info("使用默认持久化缓存配置")
+        
         self.rate_limiters = {}
         
         # 初始化频率限制器
@@ -514,15 +447,9 @@ class InterfaceExecutor:
         return self.config.default_timeout
     
     def _get_cache_ttl_for_interface(self, interface_name: str) -> int:
-        """根据接口元数据或全局配置获取缓存 TTL（秒）"""
-        try:
-            metadata = self.provider_manager.get_interface_metadata(interface_name)
-            if metadata and getattr(metadata, "cache_duration", None) is not None:
-                return int(metadata.cache_duration)
-        except Exception as e:
-            logger.debug(f"Metadata cache_duration lookup failed for {interface_name}: {e}")
-        # 回退到全局 TTL（默认配置的 ttl）
-        return int(getattr(self.cache.config, "ttl", 300))
+        """获取缓存TTL - 由于改为永久存储，此方法保留但返回固定值"""
+        # 不再使用TTL，缓存是永久的，但保留方法以兼容现有代码
+        return 0
     
     def _call_akshare_interface(self, task: CallTask) -> Any:
         """调用akshare接口"""
@@ -604,17 +531,21 @@ class InterfaceExecutor:
                 # 应用频率限制
                 self._apply_rate_limit(task.interface_name)
                 
-                # 检查缓存（按会话可关闭）
+                # 检查缓存（按会话可关闭，TTL=0时也禁用缓存）
                 cache_key = self._get_cache_key(task.interface_name, task.params)
-                if context.cache_enabled:
+                ttl = self._get_cache_ttl_for_interface(task.interface_name)
+                cache_enabled = context.cache_enabled and ttl > 0
+                
+                if cache_enabled:
                     cached_result = self.cache.get(cache_key)
                     if cached_result is not None:
-                        logger.debug(f"Cache hit for {task.interface_name}")
+                        logger.info(f"缓存命中 - 接口: {task.interface_name}, 缓存键: {cache_key[:50]}...")
                         result = CallResult(
                             task_id=task.task_id,
                             interface_name=task.interface_name,
                             success=True,
                             data=cached_result,
+                            execution_time=0.001,  # 缓存命中时设置一个很小的执行时间
                             metadata={"from_cache": True}
                         )
                         
@@ -622,6 +553,8 @@ class InterfaceExecutor:
                         self._plugins_after(result, context)
                         
                         return result
+                    else:
+                        logger.debug(f"缓存未命中 - 接口: {task.interface_name}, 缓存键: {cache_key[:50]}...")
                 
                 # 执行接口调用（使用混合超时机制）
                 start_time = time.time()
@@ -642,10 +575,10 @@ class InterfaceExecutor:
                     if timeout_seconds > 0 and execution_time > timeout_seconds:
                         raise TimeoutError(f"Interface {task.interface_name} timed out after {execution_time:.2f}s (limit: {timeout_seconds}s)")
                 
-                # 缓存结果（按会话可关闭 + 每接口 TTL）
-                if context.cache_enabled:
-                    ttl = self._get_cache_ttl_for_interface(task.interface_name)
-                    self.cache.set(cache_key, data, ttl=ttl)
+                # 缓存结果（仅在TTL>0时缓存）
+                if cache_enabled:
+                    self.cache.set(cache_key, data)
+                    logger.info(f"缓存存储 - 接口: {task.interface_name}, 永久存储, 缓存键: {cache_key[:50]}...")
                 
                 result = CallResult(
                     task_id=task.task_id,
@@ -832,22 +765,28 @@ class InterfaceExecutor:
                 # 应用频率限制（异步）
                 await self._apply_rate_limit_async(task.interface_name)
 
-                # 检查缓存（按会话可关闭）
+                # 检查缓存（按会话可关闭，TTL=0时也禁用缓存）
                 cache_key = self._get_cache_key(task.interface_name, task.params)
-                if context.cache_enabled:
+                ttl = self._get_cache_ttl_for_interface(task.interface_name)
+                cache_enabled = context.cache_enabled and ttl > 0
+                
+                if cache_enabled:
                     cached_result = self.cache.get(cache_key)
                     if cached_result is not None:
-                        logger.debug(f"Cache hit for {task.interface_name}")
+                        logger.info(f"异步缓存命中 - 接口: {task.interface_name}, 缓存键: {cache_key[:50]}...")
                         result = CallResult(
                             task_id=task.task_id,
                             interface_name=task.interface_name,
                             success=True,
                             data=cached_result,
+                            execution_time=0.001,  # 缓存命中时设置一个很小的执行时间
                             metadata={"from_cache": True}
                         )
                         # 执行插件的after_execute
                         self._plugins_after(result, context)
                         return result
+                    else:
+                        logger.debug(f"异步缓存未命中 - 接口: {task.interface_name}, 缓存键: {cache_key[:50]}...")
 
                 # 异步调用：避免阻塞事件循环
                 start_time = time.time()
@@ -858,10 +797,10 @@ class InterfaceExecutor:
                 if self.config.enable_async_timeout and self.async_timeout_manager and execution_time > 0:
                     await self.async_timeout_manager.record_execution_time(task.interface_name, execution_time)
 
-                # 设置缓存（每接口TTL + 会话开关）
-                if context.cache_enabled:
-                    ttl = self._get_cache_ttl_for_interface(task.interface_name)
-                    self.cache.set(cache_key, data, ttl=ttl)
+                # 设置缓存（仅在TTL>0时缓存）
+                if cache_enabled:
+                    self.cache.set(cache_key, data)
+                    logger.info(f"异步缓存存储 - 接口: {task.interface_name}, 永久存储, 缓存键: {cache_key[:50]}...")
 
                 result = CallResult(
                     task_id=task.task_id,
