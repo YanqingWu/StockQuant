@@ -87,7 +87,7 @@ class SQLiteStorage:
                     conn.commit()
                     return None
     
-    def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+    def set(self, key: str, value: Any) -> None:
         """设置缓存值 - 永久存储"""
         with self._lock:
             try:

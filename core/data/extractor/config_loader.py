@@ -54,7 +54,6 @@ class DataTypeConfig:
 class CategoryConfig:
     """数据分类配置"""
     description: str = ""
-    cache_duration: int = 300
     retry_strategy: str = "standard"
     data_types: Dict[str, DataTypeConfig] = field(default_factory=dict)
     
@@ -73,7 +72,6 @@ class GlobalConfig:
     timeout: int = 30
     retry_count: int = 3
     enable_cache: bool = True
-    default_cache_duration: int = 300
     log_level: str = "INFO"
 
 
@@ -245,7 +243,6 @@ class ConfigLoader:
             timeout=global_data.get('timeout', 30),
             retry_count=global_data.get('retry_count', 3),
             enable_cache=global_data.get('enable_cache', True),
-            default_cache_duration=global_data.get('default_cache_duration', 300),
             log_level=global_data.get('log_level', 'INFO')
         )
         
@@ -279,7 +276,7 @@ class ConfigLoader:
             
             for key, value in data.items():
                 # 跳过分类级别的配置字段
-                if key in ['description', 'cache_duration', 'retry_strategy']:
+                if key in ['description', 'retry_strategy']:
                     continue
                 
                 if isinstance(value, dict):
@@ -308,7 +305,6 @@ class ConfigLoader:
             
             category = CategoryConfig(
                 description=category_data.get('description', ''),
-                cache_duration=category_data.get('cache_duration', 300),
                 retry_strategy=category_data.get('retry_strategy', 'standard'),
                 data_types=data_types
             )
@@ -361,9 +357,6 @@ class ConfigLoader:
         if config.global_config.timeout <= 0:
             raise ValueError("超时时间必须大于0")
         
-        if config.global_config.default_cache_duration < 0:
-            raise ValueError("默认缓存时间不能为负数")
-        
         # 验证字段映射
         if config.field_mappings:
             for chinese_field, english_field in config.field_mappings.items():
@@ -377,7 +370,6 @@ class ConfigLoader:
         for category_name, category_config in config.interfaces_config.items():
             category_dict = {
                 'description': category_config.description,
-                'cache_duration': category_config.cache_duration,
                 'retry_strategy': category_config.retry_strategy
             }
             
@@ -442,7 +434,6 @@ class ConfigLoader:
                 'timeout': config.global_config.timeout,
                 'retry_count': config.global_config.retry_count,
                 'enable_cache': config.global_config.enable_cache,
-                'default_cache_duration': config.global_config.default_cache_duration,
                 'log_level': config.global_config.log_level
             },
             'standard_fields': config.standard_fields,

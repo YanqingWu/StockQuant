@@ -7,7 +7,6 @@ global_config:
   timeout: 30
   retry_count: 3
   enable_cache: true
-  default_cache_duration: 300  # 5分钟默认缓存
   log_level: "INFO"
 
 

@@ -193,7 +193,6 @@ class CacheManager:
         recommendations = []
         
         if stats.hit_rate < 0.5:
-            recommendations.append("Consider increasing TTL to improve hit rate")
             recommendations.append("Review caching strategy - ensure frequently accessed data is cached")
         
         memory_usage = stats.memory_cache_size / config.memory_cache_size if config.memory_cache_size > 0 else 0
@@ -259,7 +258,6 @@ class CacheManager:
             'generated_at': datetime.now().isoformat(),
             'cache_config': {
                 'enabled': self.cache.config.enabled,
-                'ttl': self.cache.config.ttl,
                 'max_size': self.cache.config.max_size,
                 'persistent': self.cache.config.persistent,
                 'memory_cache_size': self.cache.config.memory_cache_size,

@@ -13,7 +13,6 @@ import os
 class CacheConfig:
     """基础缓存配置"""
     enabled: bool = True
-    ttl: int = 300  # 缓存时间（秒）
     max_size: int = 1000  # 最大缓存条目数
 
 
@@ -50,7 +49,6 @@ class PersistentCacheConfig(CacheConfig):
         
         return cls(
             enabled=cache_config.enabled,
-            ttl=cache_config.ttl,
             max_size=cache_config.max_size,
             **kwargs
         )
@@ -59,6 +57,5 @@ class PersistentCacheConfig(CacheConfig):
         """转换为基础CacheConfig（向后兼容）"""
         return CacheConfig(
             enabled=self.enabled,
-            ttl=self.ttl,
             max_size=self.max_size
         )

@@ -10,7 +10,8 @@ from datetime import datetime, date
 import pandas as pd
 from .config_loader import ConfigLoader, ExtractionConfig
 from .adapter import to_standard_params, StandardParams, AkshareStockParamAdapter, StockSymbol
-from ..interfaces.executor import TaskManager, InterfaceExecutor, CallTask, ExecutionContext, ExecutorConfig, RetryConfig, CacheConfig
+from ..interfaces.executor import TaskManager, InterfaceExecutor, CallTask, ExecutionContext, ExecutorConfig, RetryConfig
+from ..cache.persistent_cache import PersistentCacheConfig
 from ..interfaces.base import api_provider_manager
 
 logger = logging.getLogger(__name__)
@@ -56,9 +57,8 @@ class ExtractorManager:
         # 从全局配置注入执行器配置（缓存/重试/超时）
         global_cfg = self.config.global_config
         self.executor_config = ExecutorConfig(
-            cache_config=CacheConfig(
+            cache_config=PersistentCacheConfig(
                 enabled=bool(global_cfg.enable_cache),
-                ttl=int(global_cfg.default_cache_duration),
             ),
             retry_config=RetryConfig(
                 max_retries=int(global_cfg.retry_count)

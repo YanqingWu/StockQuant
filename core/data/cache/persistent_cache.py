@@ -78,8 +78,8 @@ class PersistentCache:
             self._stats['hits'] -= 1
             return None
     
-    def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
-        """设置缓存值 - 永久存储，不使用TTL"""
+    def set(self, key: str, value: Any) -> None:
+        """设置缓存值 - 永久存储"""
         if not self.config.enabled:
             return
         

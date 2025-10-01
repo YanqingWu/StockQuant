@@ -121,7 +121,6 @@ class InterfaceMetadata:
     example_params: Optional[Dict[str, Any]] = None  # 示例参数
     keywords: Optional[List[str]] = None  # 关键词（用于搜索）
     frequency_limit: Optional[int] = None  # 频率限制（每分钟调用次数）
-    cache_duration: Optional[int] = None  # 缓存时长（秒）
     is_deprecated: bool = False  # 是否已废弃
     version: str = "1.0"  # 版本号
 
@@ -427,11 +426,6 @@ class InterfaceBuilder:
     def with_frequency_limit(self, frequency_limit: int) -> 'InterfaceBuilder':
         """设置频率限制"""
         self.metadata.frequency_limit = frequency_limit
-        return self
-    
-    def with_cache_duration(self, cache_duration: int) -> 'InterfaceBuilder':
-        """设置缓存时长"""
-        self.metadata.cache_duration = cache_duration
         return self
     
     def with_return_type(self, return_type: str) -> 'InterfaceBuilder':

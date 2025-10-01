@@ -446,11 +446,6 @@ class InterfaceExecutor:
         # 4. 使用默认配置
         return self.config.default_timeout
     
-    def _get_cache_ttl_for_interface(self, interface_name: str) -> int:
-        """获取缓存TTL - 由于改为永久存储，此方法保留但返回固定值"""
-        # 不再使用TTL，缓存是永久的，但保留方法以兼容现有代码
-        return 0
-    
     def _call_akshare_interface(self, task: CallTask) -> Any:
         """调用akshare接口"""
         if hasattr(ak, task.interface_name):
@@ -531,10 +526,9 @@ class InterfaceExecutor:
                 # 应用频率限制
                 self._apply_rate_limit(task.interface_name)
                 
-                # 检查缓存（按会话可关闭，TTL=0时也禁用缓存）
+                # 检查缓存（按会话可关闭）
                 cache_key = self._get_cache_key(task.interface_name, task.params)
-                ttl = self._get_cache_ttl_for_interface(task.interface_name)
-                cache_enabled = context.cache_enabled and ttl > 0
+                cache_enabled = context.cache_enabled
                 
                 if cache_enabled:
                     cached_result = self.cache.get(cache_key)
@@ -575,7 +569,7 @@ class InterfaceExecutor:
                     if timeout_seconds > 0 and execution_time > timeout_seconds:
                         raise TimeoutError(f"Interface {task.interface_name} timed out after {execution_time:.2f}s (limit: {timeout_seconds}s)")
                 
-                # 缓存结果（仅在TTL>0时缓存）
+                # 缓存结果
                 if cache_enabled:
                     self.cache.set(cache_key, data)
                     logger.info(f"缓存存储 - 接口: {task.interface_name}, 永久存储, 缓存键: {cache_key[:50]}...")
@@ -752,7 +746,7 @@ class InterfaceExecutor:
         return result
 
     async def _execute_with_retry_async(self, task: CallTask, context: ExecutionContext) -> CallResult:
-        """异步版本的带重试执行（卸载阻塞到线程，支持异步频率限制与每接口TTL缓存）"""
+        """异步版本的带重试执行（卸载阻塞到线程，支持异步频率限制与永久缓存）"""
         last_error: Optional[Exception] = None
         total_attempts = 0
 
@@ -765,10 +759,9 @@ class InterfaceExecutor:
                 # 应用频率限制（异步）
                 await self._apply_rate_limit_async(task.interface_name)
 
-                # 检查缓存（按会话可关闭，TTL=0时也禁用缓存）
+                # 检查缓存（按会话可关闭）
                 cache_key = self._get_cache_key(task.interface_name, task.params)
-                ttl = self._get_cache_ttl_for_interface(task.interface_name)
-                cache_enabled = context.cache_enabled and ttl > 0
+                cache_enabled = context.cache_enabled
                 
                 if cache_enabled:
                     cached_result = self.cache.get(cache_key)
@@ -797,7 +790,7 @@ class InterfaceExecutor:
                 if self.config.enable_async_timeout and self.async_timeout_manager and execution_time > 0:
                     await self.async_timeout_manager.record_execution_time(task.interface_name, execution_time)
 
-                # 设置缓存（仅在TTL>0时缓存）
+                # 设置缓存
                 if cache_enabled:
                     self.cache.set(cache_key, data)
                     logger.info(f"异步缓存存储 - 接口: {task.interface_name}, 永久存储, 缓存键: {cache_key[:50]}...")
