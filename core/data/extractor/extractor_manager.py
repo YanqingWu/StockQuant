@@ -2,13 +2,11 @@
 为每种数据类型提供专门的提取接口，基于配置文件进行字段映射和过滤，集成标准参数和task manager
 """
 
-import logging
 from typing import Dict, List, Any, Optional, Union, Tuple
 from pathlib import Path
 from dataclasses import dataclass
-from datetime import datetime, date
 import pandas as pd
-from .config_loader import ConfigLoader, ExtractionConfig
+from .config_loader import ConfigLoader
 from .adapter import to_standard_params, StandardParams, AkshareStockParamAdapter, StockSymbol
 from ..interfaces.executor import TaskManager, InterfaceExecutor, CallTask, ExecutionContext, ExecutorConfig, RetryConfig
 from ..cache.persistent_cache import PersistentCacheConfig
@@ -24,7 +22,7 @@ class ExtractionResult:
     success: bool
     data: Any
     error: Optional[str] = None
-    interface_name: Optional[str] = None  # 添加接口名称字段
+    interface_name: Optional[str] = None
     source_interface: Optional[str] = None
     extracted_fields: Optional[List[str]] = None
 
@@ -478,6 +476,16 @@ class ExtractorManager:
             合并后的提取结果
         """
         try:
+            # 检查是否有成功的结果
+            if not successful_results:
+                return ExtractionResult(
+                    success=False,
+                    data=None,
+                    error="没有成功的结果可供合并",
+                    interface_name=None,
+                    source_interface=None
+                )
+            
             # 获取目标股票symbol
             target_symbol = standard_params.symbol
             if not target_symbol:
@@ -538,7 +546,16 @@ class ExtractorManager:
         except Exception as e:
             logger.error(f"数据合并过程中发生错误: {e}")
             # 合并失败时返回优先级最高的结果
-            return successful_results[0][1]
+            if successful_results:
+                return successful_results[0][1]
+            else:
+                return ExtractionResult(
+                    success=False,
+                    data=None,
+                    error=f"数据合并失败且没有可用结果: {e}",
+                    interface_name=None,
+                    source_interface=None
+                )
     
     def _find_target_stock_data(self, data: pd.DataFrame, target_symbol: StockSymbol) -> Optional[pd.Series]:
         """
