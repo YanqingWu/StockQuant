@@ -993,7 +993,6 @@ class TaskManager:
     职责边界：
     - 负责任务的组织、筛选与批次编排；
     - 具体执行策略（并发、重试、超时、限流、缓存、插件）统一交由 InterfaceExecutor 处理；
-    - 当前实现默认单线程/单协程使用，不保证跨线程并发下的队列安全。
     """
     
     def __init__(self, executor: InterfaceExecutor):
