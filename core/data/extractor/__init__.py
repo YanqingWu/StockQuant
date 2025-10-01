@@ -1,6 +1,6 @@
 """数据提取模块"""
 
-from .extractor_manager import ExtractorManager
+from .extractor import Extractor
 from .config_loader import ConfigLoader, ExtractionConfig
 from .adapter import StandardParams, StockSymbol, AkshareStockParamAdapter
 
@@ -10,7 +10,7 @@ from core.logging import get_logger
 logger = get_logger(__name__)
 
 __all__ = [
-    'ExtractorManager',
+    'Extractor',
     'ConfigLoader', 
     'ExtractionConfig',
     'StandardParams',

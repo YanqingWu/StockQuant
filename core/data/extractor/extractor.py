@@ -1,4 +1,4 @@
-"""数据提取管理器
+"""数据提取器
 为每种数据类型提供专门的提取接口，基于配置文件进行字段映射和过滤，集成标准参数和task manager
 """
 
@@ -27,15 +27,15 @@ class ExtractionResult:
     extracted_fields: Optional[List[str]] = None
 
 
-class ExtractorManager:
+class Extractor:
     """
-    数据提取管理器
+    数据提取器
     为每种数据类型提供专门的提取接口，基于配置文件进行字段映射和过滤
     """
     
     def __init__(self, config_path: Optional[str] = None):
         """
-        初始化提取管理器
+        初始化提取器
         
         Args:
             config_path: 配置文件路径，如果不提供则使用默认路径
@@ -73,7 +73,7 @@ class ExtractorManager:
         self.executor = InterfaceExecutor(self.provider_manager, self.executor_config)
         self.task_manager = TaskManager(self.executor)
         
-        logger.info(f"ExtractorManager 初始化完成，配置版本: {self.config.version}")
+        logger.info(f"Extractor 初始化完成，配置版本: {self.config.version}")
     
     def _apply_field_mapping(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -556,7 +556,7 @@ class ExtractorManager:
                     interface_name=None,
                     source_interface=None
                 )
-    
+
     def _find_target_stock_data(self, data: pd.DataFrame, target_symbol: StockSymbol) -> Optional[pd.Series]:
         """
         在DataFrame中查找目标股票的数据
