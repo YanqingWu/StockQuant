@@ -19,9 +19,9 @@ import akshare as ak
 
 from .base import APIProviderManager, InterfaceMetadata
 from ..cache.persistent_cache import PersistentCache, PersistentCacheConfig
+from core.logging import get_logger
 
-
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class ErrorType(Enum):

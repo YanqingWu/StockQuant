@@ -7,6 +7,9 @@
 from dataclasses import dataclass
 from typing import Optional
 import os
+from core.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -35,11 +38,15 @@ class PersistentCacheConfig(CacheConfig):
         # 确保数据库路径是绝对路径
         if not os.path.isabs(self.db_path):
             self.db_path = os.path.abspath(self.db_path)
+            logger.debug(f"数据库路径已转换为绝对路径: {self.db_path}")
             
         # 确保数据库目录存在
         db_dir = os.path.dirname(self.db_path)
         if db_dir and not os.path.exists(db_dir):
             os.makedirs(db_dir, exist_ok=True)
+            logger.debug(f"创建数据库目录: {db_dir}")
+        
+        logger.info(f"持久化缓存配置初始化完成: db_path={self.db_path}, memory_cache_size={self.memory_cache_size}")
     
     @classmethod
     def from_cache_config(cls, cache_config: CacheConfig, **kwargs) -> 'PersistentCacheConfig':

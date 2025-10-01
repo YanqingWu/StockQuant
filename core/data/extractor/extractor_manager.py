@@ -13,8 +13,9 @@ from .adapter import to_standard_params, StandardParams, AkshareStockParamAdapte
 from ..interfaces.executor import TaskManager, InterfaceExecutor, CallTask, ExecutionContext, ExecutorConfig, RetryConfig
 from ..cache.persistent_cache import PersistentCacheConfig
 from ..interfaces.base import api_provider_manager
+from core.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 @dataclass

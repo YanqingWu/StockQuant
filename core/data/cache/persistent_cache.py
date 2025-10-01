@@ -11,6 +11,9 @@ from collections import OrderedDict
 
 from .cache_config import CacheConfig, PersistentCacheConfig
 from .storage import SQLiteStorage
+from core.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class PersistentCache:
@@ -18,9 +21,12 @@ class PersistentCache:
     
     def __init__(self, config: Union[CacheConfig, PersistentCacheConfig]):
         """初始化持久化缓存"""
+        logger.info(f"初始化持久化缓存: enabled={config.enabled}")
+        
         # 处理配置兼容性
         if isinstance(config, CacheConfig) and not isinstance(config, PersistentCacheConfig):
             self.config = PersistentCacheConfig.from_cache_config(config, persistent=True)
+            logger.debug("从基础CacheConfig转换为PersistentCacheConfig")
         else:
             self.config = config
         
@@ -31,7 +37,12 @@ class PersistentCache:
         self._lock = threading.RLock()
         
         # 初始化存储后端
-        self._storage = SQLiteStorage(self.config.db_path)
+        try:
+            self._storage = SQLiteStorage(self.config.db_path)
+            logger.info(f"SQLite存储后端初始化成功: {self.config.db_path}")
+        except Exception as e:
+            logger.error(f"SQLite存储后端初始化失败: {e}")
+            raise
         
         # 内存LRU缓存
         self._memory_cache: OrderedDict[str, dict] = OrderedDict()
@@ -50,10 +61,12 @@ class PersistentCache:
         # 启动后台清理线程
         if self.config.cleanup_interval > 0:
             self._start_cleanup_thread()
+            logger.debug(f"后台清理线程已启动，清理间隔: {self.config.cleanup_interval}秒")
     
     def get(self, key: str) -> Optional[Any]:
         """获取缓存值 - 永久存储，无过期检查"""
         if not self.config.enabled:
+            logger.debug(f"缓存已禁用，跳过获取: {key}")
             return None
         
         with self._lock:
@@ -64,6 +77,7 @@ class PersistentCache:
                 entry = self._memory_cache[key]
                 self._memory_cache.move_to_end(key)  # LRU更新
                 self._stats['memory_hits'] += 1
+                logger.debug(f"内存缓存命中: {key}")
                 return entry['value']
             
             # 检查持久化存储
@@ -71,16 +85,19 @@ class PersistentCache:
             if value is not None:
                 self._add_to_memory_cache(key, value)
                 self._stats['storage_hits'] += 1
+                logger.debug(f"持久化存储命中: {key}")
                 return value
             
             # 未找到
             self._stats['misses'] += 1
             self._stats['hits'] -= 1
+            logger.debug(f"缓存未命中: {key}")
             return None
     
     def set(self, key: str, value: Any) -> None:
         """设置缓存值 - 永久存储"""
         if not self.config.enabled:
+            logger.debug(f"缓存已禁用，跳过设置: {key}")
             return
         
         with self._lock:
@@ -89,23 +106,32 @@ class PersistentCache:
             # 添加到内存缓存和持久化存储（永久存储）
             self._add_to_memory_cache(key, value)
             self._storage.set(key, value)
+            logger.debug(f"缓存已设置: {key}")
     
     def clear(self) -> None:
         """清空缓存"""
         with self._lock:
+            memory_count = len(self._memory_cache)
             self._memory_cache.clear()
             self._storage.clear()
+            logger.info(f"缓存已清空: 内存缓存条目数={memory_count}")
     
     def _add_to_memory_cache(self, key: str, value: Any) -> None:
         """添加条目到内存缓存 - LRU策略，无过期时间"""
         if key in self._memory_cache:
             del self._memory_cache[key]
+            logger.debug(f"更新内存缓存条目: {key}")
         
         # 检查内存缓存大小限制
+        evicted_count = 0
         while len(self._memory_cache) >= self.config.memory_cache_size:
             oldest_key = next(iter(self._memory_cache))
             del self._memory_cache[oldest_key]
             self._stats['evictions'] += 1
+            evicted_count += 1
+        
+        if evicted_count > 0:
+            logger.debug(f"内存缓存已满，驱逐了 {evicted_count} 个条目")
         
         # 添加新条目（永久存储）
         self._memory_cache[key] = {

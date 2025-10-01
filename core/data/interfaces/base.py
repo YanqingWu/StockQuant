@@ -9,6 +9,9 @@ from typing import Dict, List, Any, Optional, Set
 from dataclasses import dataclass, field
 from enum import Enum
 import logging
+from core.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class ParameterPatternGenerator:
@@ -141,6 +144,11 @@ class APIRegistry:
         """注册单个接口"""
         interface_name = metadata.name
         
+        # 检查是否已存在
+        if interface_name in self._interfaces:
+            logger.warning(f"接口 {interface_name} 已存在，跳过注册")
+            return
+        
         # 存储接口元数据
         self._interfaces[interface_name] = metadata
         
@@ -150,13 +158,14 @@ class APIRegistry:
         self._update_category_index(interface_name, metadata.function_category)
         self._update_keyword_index(interface_name, metadata)
         
-        logger.debug(f"注册接口: {interface_name}")
+        logger.debug(f"注册接口: {interface_name} (数据源: {metadata.data_source.value}, 分类: {metadata.function_category.value})")
     
     def register_interfaces(self, interfaces: List[InterfaceMetadata]) -> None:
         """批量注册接口"""
+        logger.info(f"开始批量注册 {len(interfaces)} 个接口")
         for metadata in interfaces:
             self.register_interface(metadata)
-        logger.info(f"批量注册 {len(interfaces)} 个接口")
+        logger.info(f"批量注册完成，共注册 {len(interfaces)} 个接口")
     
     def get_interface_metadata(self, interface_name: str) -> Optional[InterfaceMetadata]:
         """获取接口元数据"""
@@ -309,16 +318,19 @@ class APIProviderManager:
     
     def register_provider(self, provider: BaseAPIProvider) -> None:
         """注册API提供者"""
+        logger.info(f"开始注册API提供者: {provider.name}")
         self._providers[provider.name] = provider
         
         # 将提供者的接口注册到全局注册表
         provider_registry = provider.get_registry()
+        interface_count = 0
         for interface_name in provider_registry.list_all_interfaces():
             metadata = provider_registry.get_interface_metadata(interface_name)
             if metadata:
                 self._global_registry.register_interface(metadata)
+                interface_count += 1
         
-        logger.info(f"注册API提供者: {provider.name}, 接口数量: {len(provider.get_supported_interfaces())}")
+        logger.info(f"API提供者注册完成: {provider.name}, 接口数量: {interface_count}")
     
     def get_provider(self, provider_name: str) -> Optional[BaseAPIProvider]:
         """获取API提供者"""

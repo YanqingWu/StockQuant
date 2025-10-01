@@ -6,8 +6,9 @@
 import pandas as pd
 import logging
 from typing import Any
+from core.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def convert_item_value_to_columns(data: Any) -> Any:

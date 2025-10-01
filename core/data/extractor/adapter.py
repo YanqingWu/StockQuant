@@ -11,6 +11,9 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, List, Tuple, Union
 
 from ..interfaces.base import get_interface_metadata
+from core.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class StockSymbol:

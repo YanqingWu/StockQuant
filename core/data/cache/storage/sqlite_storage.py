@@ -11,6 +11,9 @@ import threading
 import os
 from typing import Any, Optional, List, Tuple
 from contextlib import contextmanager
+from core.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class SQLiteStorage:
@@ -18,9 +21,15 @@ class SQLiteStorage:
     
     def __init__(self, db_path: str):
         """初始化SQLite存储"""
+        logger.info(f"初始化SQLite存储: {db_path}")
         self.db_path = db_path
         self._lock = threading.RLock()
-        self._init_db()
+        try:
+            self._init_db()
+            logger.info("SQLite数据库初始化成功")
+        except Exception as e:
+            logger.error(f"SQLite数据库初始化失败: {e}")
+            raise
     
     def _init_db(self):
         """初始化数据库表 - 永久存储版本"""

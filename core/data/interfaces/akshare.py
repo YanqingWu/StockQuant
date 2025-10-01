@@ -10,15 +10,20 @@ from .base import (
     BaseAPIProvider, InterfaceMetadata, FunctionCategory, create_interface,
     DataSource, ParameterPattern
 )
+from core.logging import get_logger
+
+logger = get_logger(__name__)
 
 class AkshareProvider(BaseAPIProvider):
     """AKShare数据接口提供者"""
 
     def __init__(self):
+        logger.info("初始化AKShare数据接口提供者")
         super().__init__("akshare", DataSource.AKSHARE)
 
     def register_interfaces(self) -> None:
         """注册所有接口"""
+        logger.info("开始注册AKShare接口")
         interfaces = []
 
         interfaces.extend(self._register_stock_basic_interfaces())
@@ -33,6 +38,7 @@ class AkshareProvider(BaseAPIProvider):
 
         # 批量注册所有接口
         self.registry.register_interfaces(interfaces)
+        logger.info(f"AKShare接口注册完成，共注册 {len(interfaces)} 个接口")
 
     def _register_stock_basic_interfaces(self) -> List[InterfaceMetadata]:
         """注册STOCK_BASIC接口"""

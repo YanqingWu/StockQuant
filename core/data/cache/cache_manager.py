@@ -11,6 +11,9 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
 from .persistent_cache import PersistentCache
+from core.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -55,6 +58,7 @@ class CacheManager:
     
     def __init__(self, cache: PersistentCache):
         """初始化缓存管理器"""
+        logger.info("初始化缓存管理器")
         self.cache = cache
         self._lock = threading.RLock()
         self._stats_history: List[CacheStats] = []
@@ -62,6 +66,7 @@ class CacheManager:
         self._monitoring_enabled = False
         self._monitor_thread: Optional[threading.Thread] = None
         self._monitor_interval = 60
+        logger.debug(f"缓存管理器配置: max_history_size={self._max_history_size}, monitor_interval={self._monitor_interval}")
     
     def get_current_stats(self) -> CacheStats:
         """获取当前缓存统计信息"""

@@ -9,6 +9,12 @@ from .persistent_cache import PersistentCache
 from .cache_manager import CacheManager, CacheStats
 from .storage import SQLiteStorage
 
+# 导入日志系统
+from core.logging import get_logger
+
+# 模块级logger
+logger = get_logger(__name__)
+
 __all__ = [
     'CacheConfig',
     'PersistentCacheConfig', 

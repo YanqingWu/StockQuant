@@ -4,12 +4,12 @@
 """
 
 import yaml
-import logging
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field
+from core.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 @dataclass
