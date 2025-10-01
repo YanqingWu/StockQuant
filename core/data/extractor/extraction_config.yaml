@@ -668,72 +668,82 @@ interfaces_config:
       quote:
         description: "日行情数据"
         interfaces:
+          - name: "stock_zh_a_hist"
+            enabled: true
+            priority: 0
+            markets: ["SH", "SZ"]
+
           - name: "stock_zh_a_daily"
             enabled: true
             priority: 1
             markets: ["SH", "SZ"]
           
-          - name: "stock_zh_a_hist"
+          - name: "stock_zh_a_hist_tx"
+            enabled: true
+            priority: 1
+            markets: ["SZ"]
+          
+          - name: "stock_zh_kcb_daily"
             enabled: true
             priority: 2
             markets: ["SH", "SZ"]
           
-          - name: "stock_zh_a_hist_tx"
-            enabled: true
-            priority: 3
-            markets: ["SH", "SZ"]
-          
-          - name: "stock_zh_kcb_daily"
-            enabled: true
-            priority: 4
-            markets: ["SH"]
-          
           - name: "stock_zh_b_daily"
             enabled: true
-            priority: 5
+            priority: 2
             markets: ["SH", "SZ"]
           
           - name: "stock_zh_a_cdr_daily"
             enabled: true
-            priority: 6
-            markets: ["SH", "SZ"]
+            priority: 2
+            markets: ["SH", "SZ", "BJ"]
           
           - name: "stock_zh_ah_daily"
             enabled: true
             priority: 7
-            markets: ["SH", "SZ"]
+            markets: ["SZ", "SH"]
           
           - name: "stock_hk_daily"
             enabled: true
-            priority: 8
+            priority: 0
             markets: ["HK"]
           
           - name: "stock_hk_hist"
             enabled: true
-            priority: 9
+            priority: 0
             markets: ["HK"]
           
           - name: "stock_us_daily"
             enabled: true
-            priority: 10
+            priority: 0
             markets: ["US"]
           
           - name: "stock_us_hist"
             enabled: true
-            priority: 11
+            priority: 0
             markets: ["US"]
       
       financing:
         description: "融资融券数据"
         interfaces:
+          - name: "stock_margin_szse"
+            enabled: true
+            priority: 0
+            markets: ["SZ"]
+          
+          - name: "stock_margin_detail_szse"
+            enabled: true
+            priority: 1
+            markets: ["SZ"]
+
           - name: "stock_margin_underlying_info_szse"
             enabled: true
             priority: 1
             markets: ["SZ"]
           
-          - name: "stock_margin_underlying_info_sse"
+          - name: "stock_margin_sse"
             enabled: true
-            priority: 2
+            priority: 0
             markets: ["SH"]
 
       cost_distribution:
