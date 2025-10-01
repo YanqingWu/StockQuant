@@ -2,9 +2,10 @@
 """
 
 import asyncio
-import logging
 import time
 import uuid
+import hashlib
+import json
 import random
 import threading
 from abc import ABC, abstractmethod
@@ -17,7 +18,7 @@ from queue import PriorityQueue, Queue, Empty
 from threading import Lock
 import akshare as ak
 
-from .base import APIProviderManager, InterfaceMetadata
+from .base import APIProviderManager
 from ..cache.persistent_cache import PersistentCache, PersistentCacheConfig
 from core.logging import get_logger
 
@@ -210,11 +211,11 @@ class ExecutorConfig:
     enable_async_timeout: bool = True   # 是否启用协程超时（异步执行）
     thread_pool_max_workers: int = 10   # 线程池最大工作线程数
     
-    # 新增：异步批量执行的全局并发上限（<=0 表示不限制）
+    # 步批量执行的全局并发上限（<=0 表示不限制）
     async_max_concurrency: int = 20
-    # 新增：异步每批并发创建任务数量（<=0 时退回默认50）
+    # 异步每批并发创建任务数量（<=0 时退回默认50）
     async_batch_size: int = 50
-    # 新增：自定义缓存键函数；签名 (interface_name: str, params: Dict[str, Any]) -> str
+    # 定义缓存键函数；签名 (interface_name: str, params: Dict[str, Any]) -> str
     cache_key_func: Optional[Callable[[str, Dict[str, Any]], str]] = None
 
 
@@ -237,9 +238,6 @@ class ExecutionContext:
     
     # 扩展属性
     user_data: Dict[str, Any] = field(default_factory=dict)
-
-
-
 
 
 class ThreadPoolTimeoutManager:
@@ -350,7 +348,7 @@ class InterfaceExecutor:
         if self.config.enable_async_timeout:
             self.async_timeout_manager = AsyncTimeoutManager()
     
-    # 新增：资源关闭与上下文管理
+    # 源关闭与上下文管理
     def shutdown(self) -> None:
         try:
             if self.thread_timeout_manager:
@@ -368,9 +366,7 @@ class InterfaceExecutor:
     
     def _get_cache_key(self, interface_name: str, params: Dict[str, Any]) -> str:
         """生成缓存键"""
-        import hashlib
-        import json
-        
+
         # 优先使用用户自定义的缓存键函数
         if getattr(self.config, 'cache_key_func', None):
             try:
@@ -404,7 +400,7 @@ class InterfaceExecutor:
                     logger.debug(f"Rate limit reached for {interface_name}, waiting {wait_time:.2f}s")
                     time.sleep(wait_time)
     
-    # 新增：异步版本的频率限制，避免在协程中阻塞事件循环
+    # 异步版本的频率限制，避免在协程中阻塞事件循环
     async def _apply_rate_limit_async(self, interface_name: str) -> None:
         """应用频率限制（异步非阻塞）"""
         limiter = self.rate_limiters.get(interface_name)
@@ -1071,7 +1067,6 @@ class TaskManager:
                 end_time=time.time()
             )
         
-        # 关键修复：以关键字参数方式传递 context，避免被误认为 callback
         return await self.executor.execute_async(tasks, context=context)
     
     def execute_by_filter(self, 

@@ -8,7 +8,6 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Any, Optional, Set
 from dataclasses import dataclass, field
 from enum import Enum
-import logging
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -126,8 +125,6 @@ class InterfaceMetadata:
     frequency_limit: Optional[int] = None  # 频率限制（每分钟调用次数）
     is_deprecated: bool = False  # 是否已废弃
     version: str = "1.0"  # 版本号
-
-logger = logging.getLogger(__name__)
 
 
 class APIRegistry:
