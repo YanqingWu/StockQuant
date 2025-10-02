@@ -4,6 +4,7 @@ Akshare适配器实现
 """
 
 from typing import Any, Dict, Optional
+from core.data.extractor.config_loader import ConfigLoader
 from .base import TransformContext, TransformChain, ValidationChain
 from .transformers import (
     ValueMapper, SymbolTransformer, DateTransformer, 
@@ -19,16 +20,15 @@ logger = get_logger(__name__)
 
 class AkshareStockParamAdapter:
     """
-    Akshare 参数适配器（重构版）
-    保持对外接口不变，内部使用新的转换器架构
+    Akshare 参数适配器
     """
     
-    def __init__(self, config_loader=None):
+    def __init__(self, config_loader: Optional['ConfigLoader'] = None) -> None:
         """初始化适配器，可选传入配置加载器"""
         self.config_loader = config_loader
         
         # 初始化参数映射器
-        if config_loader and hasattr(config_loader, 'get_parameter_mappings'):
+        if config_loader:
             interface_mappings = config_loader.get_parameter_mappings()
             self.parameter_mapper = ParameterMapper(interface_mappings)
         else:
@@ -41,7 +41,7 @@ class AkshareStockParamAdapter:
         # 初始化委托用的transformer实例（避免重复创建）
         self._init_delegate_transformers()
     
-    def _init_transform_chain(self):
+    def _init_transform_chain(self) -> None:
         """初始化转换链"""
         self.transform_chain = TransformChain([
             ValueMapper(),
@@ -55,7 +55,7 @@ class AkshareStockParamAdapter:
             SpecialHandler(),
         ])
     
-    def _init_validation_chain(self):
+    def _init_validation_chain(self) -> None:
         """初始化验证链"""
         self.validation_chain = ValidationChain([
             RequiredValidator(),
@@ -63,7 +63,7 @@ class AkshareStockParamAdapter:
             RangeValidator(),
         ])
     
-    def _init_delegate_transformers(self):
+    def _init_delegate_transformers(self) -> None:
         """初始化委托用的transformer实例"""
         self._market_transformer = None
         self._date_transformer = None

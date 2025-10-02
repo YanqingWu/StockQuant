@@ -65,7 +65,7 @@ class SymbolTransformer(BaseTransformer):
     def _detect_target_format(self, context: TransformContext, field: str) -> str:
         """检测目标格式 - 基于示例参数智能检测，避免硬编码"""
         # 优先分析示例参数
-        if context.metadata and hasattr(context.metadata, 'example_params'):
+        if context.metadata and context.metadata.example_params:
             example = context.metadata.example_params
             if field in example:
                 analyzed_format = self._analyze_format(example[field])

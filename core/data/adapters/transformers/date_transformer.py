@@ -71,7 +71,7 @@ class DateTransformer(BaseTransformer):
     
     def _detect_target_format(self, context: TransformContext, field: str) -> str:
         """检测目标格式"""
-        if context.metadata and hasattr(context.metadata, 'example_params'):
+        if context.metadata and context.metadata.example_params:
             example = context.metadata.example_params
             if field in example:
                 analyzed_format = self._analyze_format(example[field])
@@ -81,7 +81,7 @@ class DateTransformer(BaseTransformer):
         if field in ["start_year", "end_year"]:
             return "year"
         
-        if context.metadata and hasattr(context.metadata, 'example_params'):
+        if context.metadata and context.metadata.example_params:
             example = context.metadata.example_params
             for key, value in example.items():
                 if isinstance(value, str) and re.fullmatch(r"\d{8}", value.strip()):

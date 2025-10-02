@@ -25,7 +25,7 @@ class BaseTransformer(ParameterTransformer):
     
     def _detect_target_format(self, context: TransformContext, field: str) -> str:
         """检测目标格式"""
-        if context.metadata and hasattr(context.metadata, 'example_params'):
+        if context.metadata and context.metadata.example_params:
             example = context.metadata.example_params
             if field in example:
                 return self._analyze_format(example[field])

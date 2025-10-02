@@ -16,13 +16,13 @@ class RequiredValidator(BaseValidator):
     
     def can_validate(self, context: TransformContext) -> bool:
         """检查是否可以验证"""
-        return bool(self.required_fields) or (context.metadata and hasattr(context.metadata, 'required_params'))
+        return bool(self.required_fields) or (context.metadata and context.metadata.required_params)
     
     def validate(self, context: TransformContext) -> bool:
         """执行必填参数验证"""
         # 获取必填字段列表
         required_fields = self.required_fields
-        if context.metadata and hasattr(context.metadata, 'required_params'):
+        if context.metadata and context.metadata.required_params:
             required_fields = list(set(required_fields + context.metadata.required_params))
         
         # 检查必填字段

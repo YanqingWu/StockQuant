@@ -2,7 +2,7 @@
 适配器工具函数
 """
 
-from typing import Any, Dict, Union
+from typing import Any, Dict, Union, Callable
 from .standard_params import StandardParams
 from .akshare_adapter import AkshareStockParamAdapter
 from .transformers.symbol_transformer import SymbolTransformer
@@ -22,7 +22,7 @@ def to_standard_params(params: Union[StandardParams, Dict[str, Any]]) -> Standar
     src: Dict[str, Any] = dict(params or {})
     adapter = AkshareStockParamAdapter()
 
-    def as_list_or_single(value: Any, convert_one):
+    def as_list_or_single(value: Any, convert_one: Callable[[Any], Any]) -> Any:
         if isinstance(value, list):
             return [convert_one(v) for v in value]
         if isinstance(value, str) and "," in value:
@@ -134,7 +134,7 @@ def to_standard_params(params: Union[StandardParams, Dict[str, Any]]) -> Standar
     # 若只有 symbol 推断出 market/exchange
     if market_norm is None and symbol_norm is not None:
         sample = symbol_norm[0] if isinstance(symbol_norm, list) and symbol_norm else symbol_norm
-        if hasattr(sample, 'market') and sample.market:
+        if sample.market:
             market_norm = sample.market
             from .stock_symbol import StockSymbol
             exchange_norm = StockSymbol.MARKET_TO_EXCHANGE.get(sample.market, sample.market)
@@ -204,7 +204,7 @@ def adapt_params_for_interface(interface_name: str, params: Union[StandardParams
     return adapter.adapt(interface_name, raw)
 
 
-def pick_from_aliases(src: Dict[str, Any], aliases: list) -> Any:
+def pick_from_aliases(src: Dict[str, Any], aliases: list[str]) -> Any:
     """从别名中选取值"""
     for k in aliases:
         if k in src:
@@ -212,7 +212,7 @@ def pick_from_aliases(src: Dict[str, Any], aliases: list) -> Any:
     return None
 
 
-def apply_to_value(value: Any, fn) -> Any:
+def apply_to_value(value: Any, fn: Callable[[Any], Any]) -> Any:
     """支持列表与逗号分隔字符串的转换"""
     if isinstance(value, list):
         return [fn(v) for v in value]
