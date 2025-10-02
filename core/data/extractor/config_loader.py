@@ -118,10 +118,32 @@ class ExtractionConfig:
         return None
     
     def get_standard_fields(self, category: str, data_type: str) -> List[str]:
-        """获取标准字段列表"""
-        if category in self.standard_fields and data_type in self.standard_fields[category]:
-            return self.standard_fields[category][data_type]
-        return []
+        """获取标准字段列表，支持嵌套的数据类型路径"""
+        if category not in self.standard_fields:
+            return []
+        
+        # 处理嵌套的数据类型路径（如 daily_market.fund_flow）
+        if '.' in data_type:
+            # 对于嵌套结构，需要递归查找
+            parts = data_type.split('.')
+            current = self.standard_fields[category]
+            
+            for part in parts:
+                if isinstance(current, dict) and part in current:
+                    current = current[part]
+                else:
+                    return []
+            
+            # 如果最终找到的是列表，返回它
+            if isinstance(current, list):
+                return current
+            else:
+                return []
+        else:
+            # 对于简单结构，直接查找
+            if data_type in self.standard_fields[category]:
+                return self.standard_fields[category][data_type]
+            return []
     
     def get_field_mapping(self, field_name: str) -> str:
         """获取字段映射"""

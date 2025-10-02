@@ -1748,6 +1748,7 @@ field_mappings:
   "交易日期": "date"
   "时间": "datetime"
   "交易时间": "datetime"
+  "成交时间": "datetime"
   "时间戳": "datetime"
   "上榜日期": "date"
   "报告期": "report_date"
@@ -1792,6 +1793,7 @@ field_mappings:
   "成交金额": "amount"
   "成交额": "amount"
   "成交价": "trade_price"
+  "成交价格": "trade_price"
   "成交笔数": "trade_count"
   "成交总量": "trade_volume"
   "成交总额": "trade_amount"
@@ -1835,6 +1837,11 @@ field_mappings:
   "是否跌停": "is_limit_down"
   "停牌": "suspended"
   "复权因子": "adjust_factor"
+  
+  # 大单交易相关
+  "大单性质": "order_type"
+  "大单类型": "order_type"
+  "订单类型": "order_type"
 
   # 龙虎榜
   "净买额": "net_buy_amount"
