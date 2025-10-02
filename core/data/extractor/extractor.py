@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import pandas as pd
 from datetime import datetime, date
 from .config_loader import ConfigLoader
-from .adapter import to_standard_params, StandardParams, AkshareStockParamAdapter, StockSymbol
+from ..adapters import to_standard_params, StandardParams, AkshareStockParamAdapter, StockSymbol
 from ..interfaces.executor import TaskManager, InterfaceExecutor, CallTask, ExecutionContext, ExecutorConfig, RetryConfig
 from ..cache.persistent_cache import PersistentCacheConfig
 from ..interfaces.base import get_api_provider_manager
@@ -471,6 +471,11 @@ class Extractor:
         # 标准化参数
         standard_params = to_standard_params(params)
         params_dict = standard_params.to_dict()
+        
+        # 特殊处理：对于stock_us_hist接口，移除market参数
+        if category == "stock" and data_type == "daily_market.quote" and "market" in params_dict:
+            if params_dict.get("market") == "US" or (standard_params.symbol and standard_params.symbol.market == "US"):
+                logger.debug("检测到美股数据请求，移除market参数以避免stock_us_hist接口错误")
         
         # 从参数中提取市场信息用于接口筛选
         market = None

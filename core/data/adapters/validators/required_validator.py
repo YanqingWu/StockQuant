@@ -1,0 +1,37 @@
+"""
+必填参数验证器
+"""
+
+from typing import Any, Dict, Optional
+from .base import BaseValidator
+from ..base import TransformContext
+
+
+class RequiredValidator(BaseValidator):
+    """必填参数验证器"""
+    
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
+        super().__init__(config)
+        self.required_fields = self._get_config_value('required_fields', [])
+    
+    def can_validate(self, context: TransformContext) -> bool:
+        """检查是否可以验证"""
+        return bool(self.required_fields) or (context.metadata and hasattr(context.metadata, 'required_params'))
+    
+    def validate(self, context: TransformContext) -> bool:
+        """执行必填参数验证"""
+        # 获取必填字段列表
+        required_fields = self.required_fields
+        if context.metadata and hasattr(context.metadata, 'required_params'):
+            required_fields = list(set(required_fields + context.metadata.required_params))
+        
+        # 检查必填字段
+        missing_fields = []
+        for field in required_fields:
+            if field not in context.target_params or self._is_empty_value(context.target_params.get(field)):
+                missing_fields.append(field)
+        
+        if missing_fields:
+            raise ValueError(f"缺少必填参数: {', '.join(missing_fields)}")
+        
+        return True
