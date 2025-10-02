@@ -35,41 +35,36 @@ class AkshareStockParamAdapter:
         else:
             self.parameter_mapper = ParameterMapper()
         
-        # 预初始化所有transformer，避免延迟导入
-        self._init_transformers()
+        # 初始化所有transformer实例
+        self._value_mapper = ValueMapper()
+        self._symbol_transformer = SymbolTransformer()
+        self._date_transformer = DateTransformer()
+        self._time_transformer = TimeTransformer()
+        self._period_transformer = PeriodTransformer()
+        self._adjust_transformer = AdjustTransformer()
+        self._market_transformer = MarketTransformer()
+        self._keyword_transformer = KeywordTransformer()
+        self._special_handler = SpecialHandler()
         
-        # 初始化转换链和验证链
-        self._init_transform_chain()
-        self._init_validation_chain()
-    
-    def _init_transform_chain(self) -> None:
-        """初始化转换链"""
+        # 初始化转换链
         self.transform_chain = TransformChain([
-            ValueMapper(),
-            SymbolTransformer(),
-            DateTransformer(),
-            TimeTransformer(),
-            PeriodTransformer(),
-            AdjustTransformer(),
-            MarketTransformer(),
-            KeywordTransformer(),
-            SpecialHandler(),
+            self._value_mapper,
+            self._symbol_transformer,
+            self._date_transformer,
+            self._time_transformer,
+            self._period_transformer,
+            self._adjust_transformer,
+            self._market_transformer,
+            self._keyword_transformer,
+            self._special_handler,
         ])
-    
-    def _init_validation_chain(self) -> None:
-        """初始化验证链"""
+        
+        # 初始化验证链
         self.validation_chain = ValidationChain([
             RequiredValidator(),
             FormatValidator(),
             RangeValidator(),
         ])
-    
-    def _init_transformers(self) -> None:
-        """预初始化所有transformer实例"""
-        self._market_transformer = MarketTransformer()
-        self._date_transformer = DateTransformer()
-        self._time_transformer = TimeTransformer()
-        self._symbol_transformer = SymbolTransformer()
     
     def adapt(self, interface_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
         """适配参数（保持对外接口不变）"""
