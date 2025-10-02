@@ -16,6 +16,21 @@ from core.logging import get_logger
 logger = get_logger(__name__)
 
 
+class ParameterMappingError(Exception):
+    """参数映射错误"""
+    pass
+
+
+class ParameterValidationError(ParameterMappingError):
+    """参数验证错误"""
+    pass
+
+
+class InterfaceMappingError(ParameterMappingError):
+    """接口映射错误"""
+    pass
+
+
 class StockSymbol:
     """
     统一的股票标的表达。
@@ -292,6 +307,7 @@ class StandardParams:
         page_size: Optional[int] = None,
         offset: Optional[int] = None,
         limit: Optional[int] = None,
+        ranking_type: Optional[str] = None,
         extra: Optional[Dict[str, Any]] = None,
     ) -> None:
         self.symbol = symbol
@@ -309,6 +325,7 @@ class StandardParams:
         self.page_size = page_size
         self.offset = offset
         self.limit = limit
+        self.ranking_type = ranking_type
         self.extra = dict(extra) if extra else {}
 
     @staticmethod
@@ -997,6 +1014,134 @@ def adapt_params_for_interface(interface_name: str, params: Dict[str, Any]) -> D
     return adapter.adapt(interface_name, raw)
 
 
+class ParameterMapper:
+    """参数映射器"""
+    
+    def __init__(self, config_loader):
+        self.config_loader = config_loader
+        self.mappings = self._load_mappings()
+    
+    def map_parameters(self, interface_name: str, params: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
+        """
+        映射参数到目标接口
+        
+        Args:
+            interface_name: 接口名称，如 "stock_fund_flow_individual"
+            params: 无歧义参数
+        
+        Returns:
+            Tuple[目标接口名, 映射后的参数]
+        """
+        mapping_config = self.mappings.get(interface_name)
+        if not mapping_config:
+            raise InterfaceMappingError(f"未找到接口映射配置: {interface_name}")
+        
+        # 新的配置格式：直接使用接口名作为目标接口
+        target_interface = interface_name
+        parameter_mapping = mapping_config["parameter_mapping"]
+        validation = mapping_config.get("validation", {})
+        
+        # 1. 验证参数
+        self._validate_parameters(params, validation)
+        
+        # 2. 映射参数
+        mapped_params = {}
+        for source_param, target_param in parameter_mapping.items():
+            if source_param in params:
+                mapped_params[target_param] = params[source_param]
+        
+        # 3. 应用默认值
+        self._apply_default_values(mapped_params, validation)
+        
+        return target_interface, mapped_params
+    
+    def _validate_parameters(self, params: Dict[str, Any], validation: Dict[str, Any]) -> None:
+        """验证参数"""
+        for param_name, param_config in validation.items():
+            if param_name not in params:
+                continue
+            
+            value = params[param_name]
+            
+            # 检查必需参数
+            if param_config.get("required", False) and value is None:
+                raise ParameterValidationError(f"参数 {param_name} 是必需的")
+            
+            # 检查有效值
+            valid_values = param_config.get("valid_values", [])
+            if valid_values and value not in valid_values:
+                raise ParameterValidationError(f"参数 {param_name} 的值 {value} 不在有效范围内: {valid_values}")
+            
+            # 检查类型
+            expected_type = param_config.get("type")
+            if expected_type == "stock_code":
+                is_valid = self._is_stock_code(value)
+                if not is_valid:
+                    raise ParameterValidationError(f"参数 {param_name} 必须是有效的股票代码格式，当前值: {value}, 类型: {type(value)}")
+    
+    def _apply_default_values(self, params: Dict[str, Any], validation: Dict[str, Any]) -> None:
+        """应用默认值"""
+        for param_name, param_config in validation.items():
+            if param_name not in params and "default_value" in param_config:
+                params[param_name] = param_config["default_value"]
+    
+    def _is_stock_code(self, value: Any) -> bool:
+        """检查是否为股票代码格式"""
+        if isinstance(value, StockSymbol):
+            return True
+        if not isinstance(value, str):
+            return False
+        # 支持6位数字格式和带后缀的格式（如601727.SH）
+        return re.match(r'^\d{6}(\.\w+)?$', value) is not None
+    
+    def _load_mappings(self) -> Dict[str, Dict[str, Any]]:
+        """加载映射配置"""
+        return self.config_loader.get_parameter_mappings()
+
+
+class MappingAwareAdapter(ParamAdapter):
+    """支持参数映射的适配器"""
+    
+    def __init__(self, config_loader):
+        self.mapper = ParameterMapper(config_loader)
+        self.base_adapter = AkshareStockParamAdapter()
+    
+    def adapt(self, interface_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
+        # 1. 检查是否为映射接口
+        if self._is_mapping_interface(interface_name):
+            return self._handle_mapping_interface(interface_name, params)
+        
+        # 2. 使用基础适配器处理
+        return self.base_adapter.adapt(interface_name, params)
+    
+    def _is_mapping_interface(self, interface_name: str) -> bool:
+        """检查是否为映射接口"""
+        return interface_name in self.mapper.mappings
+    
+    def _handle_mapping_interface(self, interface_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
+        """处理映射接口"""
+        try:
+            # 映射到目标接口
+            target_interface, mapped_params = self.mapper.map_parameters(interface_name, params)
+            logger.debug(f"映射接口 {interface_name} -> {target_interface}, 映射后参数: {mapped_params}")
+            
+            # 使用基础适配器处理映射后的参数
+            return self.base_adapter.adapt(target_interface, mapped_params)
+        
+        except ParameterValidationError as e:
+            logger.error(f"参数验证失败: {interface_name}, 错误: {e}")
+            raise
+        
+        except InterfaceMappingError as e:
+            logger.error(f"接口映射失败: {interface_name}, 错误: {e}")
+            raise
+        
+        except Exception as e:
+            logger.error(f"参数适配失败: {interface_name}, 错误: {e}")
+            # 回退到原始参数
+            return params
+
+
 __all__ = [
     "StockSymbol",
     "StandardParams",
@@ -1004,4 +1149,9 @@ __all__ = [
     "AkshareStockParamAdapter",
     "adapt_params_for_interface",
     "to_standard_params",
+    "ParameterMapper",
+    "MappingAwareAdapter",
+    "ParameterMappingError",
+    "ParameterValidationError",
+    "InterfaceMappingError",
 ]

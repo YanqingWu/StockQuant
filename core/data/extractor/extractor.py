@@ -7,7 +7,7 @@ from pathlib import Path
 from dataclasses import dataclass
 import pandas as pd
 from .config_loader import ConfigLoader
-from .adapter import to_standard_params, StandardParams, AkshareStockParamAdapter, StockSymbol
+from .adapter import to_standard_params, StandardParams, AkshareStockParamAdapter, StockSymbol, MappingAwareAdapter
 from ..interfaces.executor import TaskManager, InterfaceExecutor, CallTask, ExecutionContext, ExecutorConfig, RetryConfig
 from ..cache.persistent_cache import PersistentCacheConfig
 from ..interfaces.base import get_api_provider_manager
@@ -49,6 +49,9 @@ class Extractor:
             config_path = current_dir / "extraction_config.yaml"
         
         self.config = self.config_loader.load_config()
+        
+        # 初始化参数适配器
+        self.param_adapter = MappingAwareAdapter(self.config_loader)
         
         # 初始化task manager和executor
         self.provider_manager = get_api_provider_manager()
@@ -298,6 +301,7 @@ class Extractor:
             # 转换symbol字段为统一格式
             try:
                 if 'symbol' in df.columns:
+                    logger.info(f"开始转换symbol字段，原始类型: {type(df['symbol'].iloc[0])}, 原始值: {df['symbol'].iloc[0]}")
                     def convert_symbol_to_unified_format(symbol_value):
                         """将symbol字段转换为统一的StockSymbol格式"""
                         if pd.isna(symbol_value) or symbol_value is None:
@@ -329,9 +333,11 @@ class Extractor:
                     
                     # 应用转换函数到symbol列
                     df['symbol'] = df['symbol'].apply(convert_symbol_to_unified_format)
-                    logger.debug(f"已将symbol字段转换为统一格式")
+                    logger.info(f"已将symbol字段转换为统一格式，转换后类型: {type(df['symbol'].iloc[0])}, 转换后值: {df['symbol'].iloc[0]}")
+                else:
+                    logger.info(f"DataFrame中没有symbol列，当前列名: {list(df.columns)}")
             except Exception as _e:
-                logger.debug(f"symbol字段转换失败，保持原格式: {_e}")
+                logger.error(f"symbol字段转换失败，保持原格式: {_e}")
 
             # 若无数据（空 DataFrame），则判定失败；仅列不匹配不视为失败
             if df is None or df.empty:
@@ -394,8 +400,8 @@ class Extractor:
                 error=f"未找到启用的接口: {category}.{data_type}{market_info}"
             )
         
-        # 初始化参数适配器
-        param_adapter = AkshareStockParamAdapter()
+        # 使用全局参数适配器
+        param_adapter = self.param_adapter
         
         # 构造执行上下文
         context = ExecutionContext(
@@ -409,7 +415,16 @@ class Extractor:
             try:
                 logger.info(f"准备加入批量任务: {interface.name}")
                 try:
-                    adapted_params = param_adapter.adapt(interface.name, params_dict)
+                    # 检查是否需要接口映射
+                    logger.debug(f"检查接口映射: {interface.name}, 是否为映射接口: {self.param_adapter._is_mapping_interface(interface.name)}")
+                    if self.param_adapter._is_mapping_interface(interface.name):
+                        # 使用映射接口进行参数适配
+                        logger.debug(f"使用映射接口进行参数适配: {interface.name}")
+                        adapted_params = self.param_adapter._handle_mapping_interface(interface.name, params_dict)
+                    else:
+                        # 使用普通适配器
+                        logger.debug(f"使用普通适配器: {interface.name}")
+                        adapted_params = param_adapter.adapt(interface.name, params_dict)
                 except Exception as _e:
                     logger.debug(f"参数适配失败，回退原始参数: {interface.name}, err={_e}")
                     adapted_params = params_dict

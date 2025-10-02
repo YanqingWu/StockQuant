@@ -84,6 +84,7 @@ class ExtractionConfig:
     standard_fields: Dict[str, Dict[str, List[str]]] = field(default_factory=dict)
     interfaces_config: Dict[str, CategoryConfig] = field(default_factory=dict)  # 重命名
     field_mappings: Dict[str, str] = field(default_factory=dict)
+    parameter_mappings: Dict[str, Dict[str, Any]] = field(default_factory=dict)  # 新增：参数映射配置
     
     def get_category_config(self, category: str) -> Optional[CategoryConfig]:
         """获取数据分类配置"""
@@ -148,6 +149,10 @@ class ExtractionConfig:
     def get_field_mapping(self, field_name: str) -> str:
         """获取字段映射"""
         return self.field_mappings.get(field_name, field_name)
+    
+    def get_parameter_mappings(self) -> Dict[str, Dict[str, Any]]:
+        """获取参数映射配置"""
+        return self.parameter_mappings.get("interface_mappings", {})
     
     def has_field_mapping(self, field_name: str) -> bool:
         """检查是否存在字段映射"""
@@ -238,6 +243,12 @@ class ConfigLoader:
         if not self._config_path:
             raise ValueError("没有配置文件路径，无法重新加载")
         return self.load_from_file(str(self._config_path))
+    
+    def get_parameter_mappings(self) -> Dict[str, Dict[str, Any]]:
+        """获取参数映射配置"""
+        if self._config is None:
+            self.load_config()
+        return self._config.get_parameter_mappings()
     
     def save_to_file(self, config_path: str, config: Optional[ExtractionConfig] = None) -> None:
         """保存配置到文件"""
@@ -335,13 +346,17 @@ class ConfigLoader:
         # 解析字段映射
         field_mappings = config_data.get('field_mappings', {})
         
+        # 解析参数映射
+        parameter_mappings = config_data.get('parameter_mappings', {})
+        
         return ExtractionConfig(
             version=config_data.get('version', '1.0'),
             description=config_data.get('description', ''),
             global_config=global_config,
             standard_fields=standard_fields,
             interfaces_config=interfaces_config,  # 使用新的字段名
-            field_mappings=field_mappings
+            field_mappings=field_mappings,
+            parameter_mappings=parameter_mappings  # 新增：参数映射配置
         )
     
     def _validate_config(self, config: ExtractionConfig) -> None:
@@ -460,5 +475,6 @@ class ConfigLoader:
             },
             'standard_fields': config.standard_fields,
             'interfaces_config': interfaces_config,  # 使用新的字段名
-            'field_mappings': config.field_mappings
+            'field_mappings': config.field_mappings,
+            'parameter_mappings': config.parameter_mappings  # 新增：参数映射配置
         }
