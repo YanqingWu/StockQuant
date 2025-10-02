@@ -4,7 +4,6 @@
 """
 
 from typing import Any, Dict, List, Optional, Union, Callable
-from .standard_params import StandardParams
 from .stock_symbol import StockSymbol
 from .conversion_rules import ConversionRules
 from .transformers import (
@@ -176,7 +175,7 @@ class ParamNormalizer:
         
         return apply_to_value(value, to_time)
     
-    def _as_list_or_single(self, value: Any, convert_one: Callable[[Any], Any]) -> Any:
+    def _as_list_or_single(self, value: Any, convert_one: Callable[[Any], Any]) -> Union[Any, List[Any]]:
         """支持列表与逗号分隔字符串的转换"""
         if isinstance(value, list):
             return [convert_one(v) for v in value]

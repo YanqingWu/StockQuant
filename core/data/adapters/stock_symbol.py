@@ -4,7 +4,7 @@
 """
 
 import re
-from typing import Any, Dict, Optional, List, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 
 class StockSymbol:
