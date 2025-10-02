@@ -762,36 +762,12 @@ interfaces_config:
             priority: 1
             markets: ["SH", "SZ", "BJ"]
             description: "个股资金流向数据"
-          
-          - name: "stock_fund_flow_big_deal"
+
+          - name: "stock_individual_fund_flow"
             enabled: true
-            priority: 2
+            priority: 1
             markets: ["SH", "SZ", "BJ"]
-            description: "大单资金流向数据"
-          
-          - name: "stock_fund_flow_concept"
-            enabled: true
-            priority: 3
-            markets: ["SH", "SZ", "BJ"]
-            description: "概念板块资金流向"
-          
-          - name: "stock_fund_flow_industry"
-            enabled: true
-            priority: 4
-            markets: ["SH", "SZ", "BJ"]
-            description: "行业板块资金流向"
-          
-          - name: "stock_main_fund_flow"
-            enabled: true
-            priority: 5
-            markets: ["SH", "SZ", "BJ"]
-            description: "主力资金流向数据"
-          
-          - name: "stock_retail_fund_flow"
-            enabled: true
-            priority: 6
-            markets: ["SH", "SZ", "BJ"]
-            description: "散户资金流向数据"
+            description: "个股资金流向数据"
 
       dragon_tiger:
         description: "龙虎榜数据"
