@@ -24,7 +24,7 @@ class AkshareStockParamAdapter:
     Akshare 参数适配器
     """
     
-    def __init__(self, config_loader: Optional['ConfigLoader'] = None) -> None:
+    def __init__(self, config_loader: Optional[ConfigLoader] = None) -> None:
         """初始化适配器，可选传入配置加载器"""
         self.config_loader = config_loader
         

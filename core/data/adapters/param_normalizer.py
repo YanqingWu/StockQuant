@@ -12,6 +12,7 @@ from .transformers import (
     PeriodTransformer, AdjustTransformer, MarketTransformer, 
     KeywordTransformer
 )
+from .akshare_adapter import AkshareStockParamAdapter
 
 
 class ParamNormalizer:
@@ -20,7 +21,7 @@ class ParamNormalizer:
     def __init__(self):
         self.conversion_rules = ConversionRules()
     
-    def normalize_symbols(self, src: Dict[str, Any], adapter) -> Optional[Union[StockSymbol, List[StockSymbol]]]:
+    def normalize_symbols(self, src: Dict[str, Any], adapter: AkshareStockParamAdapter) -> Optional[Union[StockSymbol, List[StockSymbol]]]:
         """标准化股票代码参数"""
         from .utils import pick_from_aliases
         hint = adapter._market_transformer._get_market_hint(src, example={})
@@ -36,7 +37,7 @@ class ParamNormalizer:
         
         return self._as_list_or_single(symbol_val, sym_to_obj)
     
-    def normalize_dates(self, src: Dict[str, Any], adapter) -> Dict[str, Any]:
+    def normalize_dates(self, src: Dict[str, Any], adapter: AkshareStockParamAdapter) -> Dict[str, Any]:
         """标准化日期参数"""
         result = {}
         
@@ -59,7 +60,7 @@ class ParamNormalizer:
         
         return result
     
-    def normalize_times(self, src: Dict[str, Any], adapter) -> Dict[str, Any]:
+    def normalize_times(self, src: Dict[str, Any], adapter: AkshareStockParamAdapter) -> Dict[str, Any]:
         """标准化时间参数"""
         result = {}
         
@@ -77,7 +78,7 @@ class ParamNormalizer:
         
         return result
     
-    def normalize_periods(self, src: Dict[str, Any], adapter) -> Optional[Any]:
+    def normalize_periods(self, src: Dict[str, Any], adapter: AkshareStockParamAdapter) -> Optional[Any]:
         """标准化周期参数"""
         from .utils import pick_from_aliases, apply_to_value
         
@@ -90,7 +91,7 @@ class ParamNormalizer:
         
         return apply_to_value(period_val, to_period)
     
-    def normalize_adjusts(self, src: Dict[str, Any], adapter) -> Optional[Any]:
+    def normalize_adjusts(self, src: Dict[str, Any], adapter: AkshareStockParamAdapter) -> Optional[Any]:
         """标准化复权参数"""
         from .utils import pick_from_aliases, apply_to_value
         
@@ -103,7 +104,7 @@ class ParamNormalizer:
         
         return apply_to_value(adjust_val, to_adjust)
     
-    def normalize_markets(self, src: Dict[str, Any], adapter) -> tuple[Optional[str], Optional[str]]:
+    def normalize_markets(self, src: Dict[str, Any], adapter: AkshareStockParamAdapter) -> tuple[Optional[str], Optional[str]]:
         """标准化市场和交易所参数"""
         market_norm = None
         exchange_norm = None
@@ -150,12 +151,12 @@ class ParamNormalizer:
             'limit': to_int(src.get("limit"))
         }
     
-    def normalize_keywords(self, src: Dict[str, Any], adapter) -> Optional[str]:
+    def normalize_keywords(self, src: Dict[str, Any], adapter: AkshareStockParamAdapter) -> Optional[str]:
         """标准化关键词参数"""
         from .utils import pick_from_aliases
         return pick_from_aliases(src, KeywordTransformer.KEYWORD_KEYS)
     
-    def _normalize_date_value(self, value: Any, adapter) -> Any:
+    def _normalize_date_value(self, value: Any, adapter: AkshareStockParamAdapter) -> Any:
         """标准化单个日期值"""
         from .utils import apply_to_value
         
@@ -165,7 +166,7 @@ class ParamNormalizer:
         
         return apply_to_value(value, to_date)
     
-    def _normalize_time_value(self, value: Any, adapter) -> Any:
+    def _normalize_time_value(self, value: Any, adapter: AkshareStockParamAdapter) -> Any:
         """标准化单个时间值"""
         from .utils import apply_to_value
         
