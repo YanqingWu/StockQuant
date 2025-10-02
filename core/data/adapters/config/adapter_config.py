@@ -59,25 +59,11 @@ class AdapterConfig:
         """获取默认配置"""
         return cls(
             version="2.0",
-            default_transformers=["name_mapper", "value_mapper", "symbol", "date", "time", "period", "adjust", "market", "keyword", "special"],
-            default_mappers=["name_mapper", "value_mapper"],
+            default_transformers=["value_mapper", "symbol", "date", "time", "period", "adjust", "market", "keyword", "special"],
+            default_mappers=["value_mapper"],
             default_validators=["required", "format", "range"],
             interface_configs={},
             global_rules={
-                'name_mappings': {
-                    'stock': 'symbol',
-                    'code': 'symbol',
-                    'ts_code': 'symbol',
-                    'trade_date': 'date',
-                    'from_date': 'start_date',
-                    'begin_date': 'start_date',
-                    'to_date': 'end_date',
-                    'freq': 'period',
-                    'frequency': 'period',
-                    'fq': 'adjust',
-                    'adj': 'adjust',
-                    'name': 'keyword',
-                },
                 'value_mappings': {
                     'adjust': {
                         'none': '',

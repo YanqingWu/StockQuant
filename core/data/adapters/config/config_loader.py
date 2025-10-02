@@ -29,7 +29,6 @@ class AdapterConfigLoader:
         else:
             # 返回默认配置
             return {
-                'name_mappings': self.config.global_rules.get('name_mappings', {}),
                 'value_mappings': self.config.global_rules.get('value_mappings', {}),
                 'symbol_config': self.config.global_rules.get('symbol_config', {}),
                 'date_config': self.config.global_rules.get('date_config', {}),
@@ -43,11 +42,6 @@ class AdapterConfigLoader:
                 'range_rules': self.config.global_rules.get('range_rules', {}),
             }
     
-    def get_name_mapping_config(self) -> Dict[str, Any]:
-        """获取参数名映射配置"""
-        return {
-            'name_mappings': self.config.global_rules.get('name_mappings', {})
-        }
     
     def get_value_mapping_config(self) -> Dict[str, Any]:
         """获取参数值映射配置"""

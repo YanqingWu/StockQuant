@@ -8,8 +8,8 @@ from core.logging import get_logger
 logger = get_logger(__name__)
 
 
-class InterfaceMapper:
-    """接口映射器"""
+class ParameterMapper:
+    """参数映射器"""
     
     def __init__(self, mappings: Optional[Dict[str, Any]] = None):
         self.mappings = mappings or {}

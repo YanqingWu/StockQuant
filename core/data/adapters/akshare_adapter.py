@@ -6,13 +6,13 @@ Akshare适配器实现
 from typing import Any, Dict, Optional
 from .base import TransformContext, TransformChain, ValidationChain
 from .transformers import (
-    NameMapper, ValueMapper, SymbolTransformer, DateTransformer, 
+    ValueMapper, SymbolTransformer, DateTransformer, 
     TimeTransformer, PeriodTransformer, AdjustTransformer, 
     MarketTransformer, KeywordTransformer, SpecialHandler
 )
 from .validators import RequiredValidator, FormatValidator, RangeValidator
 from .config import AdapterConfigLoader
-from .mappers import InterfaceMapper
+from .transformers import ParameterMapper
 from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -28,7 +28,13 @@ class AkshareStockParamAdapter:
         """初始化适配器，可选传入配置加载器"""
         self.config_loader = config_loader
         self.config_loader_adapter = AdapterConfigLoader()
-        self.interface_mapper = InterfaceMapper()
+        
+        # 初始化参数映射器
+        if config_loader and hasattr(config_loader, 'get_parameter_mappings'):
+            interface_mappings = config_loader.get_parameter_mappings()
+            self.parameter_mapper = ParameterMapper(interface_mappings)
+        else:
+            self.parameter_mapper = ParameterMapper()
         
         # 初始化转换链和验证链
         self._init_transform_chain()
@@ -40,7 +46,6 @@ class AkshareStockParamAdapter:
     def _init_transform_chain(self):
         """初始化转换链"""
         self.transform_chain = TransformChain([
-            NameMapper(self.config_loader_adapter.get_name_mapping_config()),
             ValueMapper(self.config_loader_adapter.get_value_mapping_config()),
             SymbolTransformer(self.config_loader_adapter.get_symbol_config()),
             DateTransformer(self.config_loader_adapter.get_date_config()),
@@ -70,7 +75,7 @@ class AkshareStockParamAdapter:
     def adapt(self, interface_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
         """适配参数（保持对外接口不变）"""
         # 1. 检查是否为映射接口
-        if self.config_loader and self.interface_mapper.is_mapping_interface(interface_name):
+        if self.config_loader and self.parameter_mapper.is_mapping_interface(interface_name):
             return self._handle_mapping_interface(interface_name, params)
         
         # 2. 使用基础适配逻辑处理
@@ -80,7 +85,7 @@ class AkshareStockParamAdapter:
         """处理映射接口"""
         try:
             # 映射到目标接口
-            target_interface, mapped_params = self.interface_mapper.map_parameters(interface_name, params)
+            target_interface, mapped_params = self.parameter_mapper.map_parameters(interface_name, params)
             logger.debug(f"映射接口 {interface_name} -> {target_interface}, 映射后参数: {mapped_params}")
             
             # 使用基础适配器处理映射后的参数

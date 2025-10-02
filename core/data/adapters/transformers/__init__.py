@@ -3,8 +3,8 @@
 """
 
 from .base import ParameterTransformer
-from .name_mapper import NameMapper
 from .value_mapper import ValueMapper
+from .parameter_mapper import ParameterMapper
 from .symbol_transformer import SymbolTransformer
 from .date_transformer import DateTransformer
 from .time_transformer import TimeTransformer
@@ -16,8 +16,8 @@ from .special_handler import SpecialHandler
 
 __all__ = [
     'ParameterTransformer',
-    'NameMapper',
-    'ValueMapper', 
+    'ValueMapper',
+    'ParameterMapper',
     'SymbolTransformer',
     'DateTransformer',
     'TimeTransformer',
