@@ -31,6 +31,10 @@ class DataTypeConfig:
     """数据类型配置"""
     description: str = ""
     interfaces: List[InterfaceConfig] = field(default_factory=list)
+    # 合并策略配置
+    merge_strategy: Optional[str] = None
+    date_column: Optional[str] = None
+    group_by: List[str] = field(default_factory=list)
     
     def get_enabled_interfaces(self, market: Optional[str] = None) -> List[InterfaceConfig]:
         """获取启用的接口，按优先级排序，可按市场过滤"""
@@ -56,6 +60,10 @@ class CategoryConfig:
     description: str = ""
     retry_strategy: str = "standard"
     data_types: Dict[str, DataTypeConfig] = field(default_factory=dict)
+    # 分类级别的合并策略配置
+    merge_strategy: Optional[str] = None
+    date_column: Optional[str] = None
+    group_by: List[str] = field(default_factory=list)
     
     def get_enabled_data_types(self) -> Dict[str, DataTypeConfig]:
         """获取启用的数据类型"""
@@ -157,6 +165,44 @@ class ExtractionConfig:
     def has_field_mapping(self, field_name: str) -> bool:
         """检查是否存在字段映射"""
         return field_name in self.field_mappings
+    
+    def get_merge_strategy(self, category: str, data_type: str) -> Dict[str, Any]:
+        """获取合并策略配置"""
+        category_config = self.get_category_config(category)
+        if not category_config:
+            return {
+                "strategy": "symbol_based_merge",
+                "date_column": "date",
+                "group_by": ["symbol"],
+                "description": "默认按股票合并"
+            }
+        
+        # 首先尝试从数据类型获取合并策略
+        data_type_config = self.get_data_type_config(category, data_type)
+        if data_type_config and data_type_config.merge_strategy:
+            return {
+                "strategy": data_type_config.merge_strategy,
+                "date_column": data_type_config.date_column or "date",
+                "group_by": data_type_config.group_by or ["symbol"],
+                "description": data_type_config.description
+            }
+        
+        # 如果数据类型没有配置，使用分类级别的配置
+        if category_config.merge_strategy:
+            return {
+                "strategy": category_config.merge_strategy,
+                "date_column": category_config.date_column or "date",
+                "group_by": category_config.group_by or ["symbol"],
+                "description": category_config.description
+            }
+        
+        # 默认策略
+        return {
+            "strategy": "symbol_based_merge",
+            "date_column": "date",
+            "group_by": ["symbol"],
+            "description": "默认按股票合并"
+        }
 
 
 class ConfigLoader:
@@ -250,6 +296,12 @@ class ConfigLoader:
             self.load_config()
         return self._config.get_parameter_mappings()
     
+    def get_merge_strategy(self, category: str, data_type: str) -> Dict[str, Any]:
+        """获取合并策略配置"""
+        if self._config is None:
+            self.load_config()
+        return self._config.get_merge_strategy(category, data_type)
+    
     def save_to_file(self, config_path: str, config: Optional[ExtractionConfig] = None) -> None:
         """保存配置到文件"""
         if config is None:
@@ -309,7 +361,7 @@ class ConfigLoader:
             
             for key, value in data.items():
                 # 跳过分类级别的配置字段
-                if key in ['description', 'retry_strategy']:
+                if key in ['description', 'retry_strategy', 'merge_strategy', 'date_column', 'group_by']:
                     continue
                 
                 if isinstance(value, dict):
@@ -319,7 +371,10 @@ class ConfigLoader:
                         interfaces = parse_interfaces_recursive(value)
                         data_type = DataTypeConfig(
                             description=value.get('description', ''),
-                            interfaces=interfaces
+                            interfaces=interfaces,
+                            merge_strategy=value.get('merge_strategy'),
+                            date_column=value.get('date_column'),
+                            group_by=value.get('group_by', [])
                         )
                         data_types[key] = data_type
                     else:
@@ -339,7 +394,10 @@ class ConfigLoader:
             category = CategoryConfig(
                 description=category_data.get('description', ''),
                 retry_strategy=category_data.get('retry_strategy', 'standard'),
-                data_types=data_types
+                data_types=data_types,
+                merge_strategy=category_data.get('merge_strategy'),
+                date_column=category_data.get('date_column'),
+                group_by=category_data.get('group_by', [])
             )
             interfaces_config[category_name] = category
         

@@ -98,9 +98,18 @@ standard_fields:
         - close                              # 最新价
         - pct_change                         # 涨跌幅
         - turnover_rate                      # 换手率
+        - main_net_inflow                    # 主力净流入净额
+        - main_net_inflow_ratio              # 主力净流入净占比
+        - super_large_net_inflow             # 超大单净流入净额
+        - super_large_net_inflow_ratio       # 超大单净流入净占比
+        - large_order_net_inflow             # 大单净流入净额
+        - large_order_net_inflow_ratio       # 大单净流入净占比
+        - medium_order_net_inflow            # 中单净流入净额
+        - medium_order_net_inflow_ratio      # 中单净流入净占比
+        - small_order_net_inflow             # 小单净流入净额
+        - small_order_net_inflow_ratio       # 小单净流入净占比
         - main_inflow                        # 主力资金流入
         - main_outflow                       # 主力资金流出
-        - main_net_inflow                    # 主力资金净流入
         - retail_inflow                      # 散户资金流入
         - retail_outflow                     # 散户资金流出
         - retail_net_inflow                  # 散户资金净流入
@@ -632,6 +641,9 @@ interfaces_config:
   stock:
     profile:
       description: "股票基础信息"
+      # 基础信息：按股票合并
+      merge_strategy: "symbol_based_merge"
+      group_by: ["symbol"]
       interfaces:
         - name: "stock_info_sh_name_code"
           enabled: true
@@ -665,6 +677,12 @@ interfaces_config:
           markets: ["SH", "SZ", "BJ"]
   
     daily_market:
+      # 日行情数据：按日期合并
+      merge_strategy: "date_based_merge"
+      date_column: "date"
+      group_by: ["symbol", "date"]
+      description: "日行情数据按日期合并"
+      
       quote:
         description: "日行情数据"
         interfaces:
@@ -756,13 +774,11 @@ interfaces_config:
 
       fund_flow:
         description: "资金流向数据"
+        # 资金流向数据：按日期合并
+        merge_strategy: "date_based_merge"
+        date_column: "date"
+        group_by: ["symbol", "date"]
         interfaces:
-          - name: "stock_fund_flow_individual"
-            enabled: true
-            priority: 1
-            markets: ["SH", "SZ", "BJ"]
-            description: "个股资金流向数据"
-
           - name: "stock_individual_fund_flow"
             enabled: true
             priority: 1
@@ -857,6 +873,11 @@ interfaces_config:
             markets: ["SH", "SZ", "BJ"]
 
     financials:
+      # 财务数据：按股票和报告期合并
+      merge_strategy: "symbol_report_merge"
+      group_by: ["symbol", "report_date"]
+      description: "财务数据按股票和报告期合并"
+      
       balance_sheet:
         description: "资产负债表"
         interfaces:
@@ -2055,6 +2076,18 @@ field_mappings:
   # 资金流向补充
   "净额": "net_amount"
   "今日主力净流入-净额": "net_amount"
+  
+  # 个股资金流向字段映射
+  "主力净流入-净额": "main_net_inflow"
+  "主力净流入-净占比": "main_net_inflow_ratio"
+  "超大单净流入-净额": "super_large_net_inflow"
+  "超大单净流入-净占比": "super_large_net_inflow_ratio"
+  "大单净流入-净额": "large_order_net_inflow"
+  "大单净流入-净占比": "large_order_net_inflow_ratio"
+  "中单净流入-净额": "medium_order_net_inflow"
+  "中单净流入-净占比": "medium_order_net_inflow_ratio"
+  "小单净流入-净额": "small_order_net_inflow"
+  "小单净流入-净占比": "small_order_net_inflow_ratio"
 
   # 涨跌幅补充
   "今天涨跌幅": "pct_change"

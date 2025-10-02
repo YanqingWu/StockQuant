@@ -723,6 +723,7 @@ class AkshareStockParamAdapter(ParamAdapter):
         self._maybe_fill_market_fields(out, example, converted)
 
     def _detect_target_key_style_case(self, example: Dict[str, Any], accepted: set) -> Optional[Tuple[str, str, str]]:
+        # 首先检查 symbol 相关字段
         for k in self.SYMBOL_KEYS:
             if k in accepted:
                 v = example.get(k)
@@ -730,6 +731,16 @@ class AkshareStockParamAdapter(ParamAdapter):
                 if s:
                     case = self._detect_market_case(v)
                     return k, s, case
+        
+        # 然后检查 market 相关字段
+        for k in self.MARKET_KEYS:
+            if k in accepted:
+                v = example.get(k)
+                if v is not None:
+                    case = self._detect_market_case(v)
+                    return k, "market", case
+        
+        # 最后回退到 symbol 字段
         for k in self.SYMBOL_KEYS:
             if k in accepted:
                 return k, "unknown", "upper"
@@ -746,6 +757,11 @@ class AkshareStockParamAdapter(ParamAdapter):
         if re.search(r"\b[a-z]{2}\d{6}$", v):
             return "lower"
         if re.search(r"\b[A-Z]{2}\d{6}$", v):
+            return "upper"
+        # 检查纯市场代码（如 'sh', 'sz', 'bj'）
+        if re.match(r"^[a-z]{2}$", v):
+            return "lower"
+        if re.match(r"^[A-Z]{2}$", v):
             return "upper"
         return "upper"
 
@@ -803,11 +819,29 @@ class AkshareStockParamAdapter(ParamAdapter):
         if not sym:
             return
         market_short = sym.market
+        
+        # 检测市场代码的大小写格式
+        market_case = "upper"  # 默认大写
+        for k in ["market", "exchange"]:
+            if k in example:
+                v = example.get(k)
+                if v is not None:
+                    market_case = AkshareStockParamAdapter._detect_market_case(v)
+                    break
+        
+        def apply_case(value: str) -> str:
+            if market_case == "lower":
+                return value.lower()
+            elif market_case == "upper":
+                return value.upper()
+            return value
+        
         if "market" in example and "market" not in params_out:
-            params_out["market"] = market_short
+            params_out["market"] = apply_case(market_short)
         if "exchange" in example and "exchange" not in params_out:
             mapping = {"SZ": "SZSE", "SH": "SSE", "BJ": "BSE"}
-            params_out["exchange"] = mapping.get(market_short, market_short)
+            exchange_val = mapping.get(market_short, market_short)
+            params_out["exchange"] = apply_case(exchange_val)
 
     # ---- 日期/时间 ----
     def _adapt_date_like(self, out: Dict[str, Any], src: Dict[str, Any], example: Dict[str, Any], accepted: set) -> None:
@@ -958,10 +992,27 @@ class AkshareStockParamAdapter(ParamAdapter):
         # 这里再做一次别名映射：如果接口需要 exchange 而输入给了 market（或反之）
         market_val = self._pick_from_aliases(src, self.MARKET_KEYS)
         exchange_val = self._pick_from_aliases(src, self.EXCHANGE_KEYS)
+        
+        # 检测市场代码的大小写格式
+        market_case = "upper"  # 默认大写
+        for k in self.MARKET_KEYS:
+            if k in accepted:
+                v = example.get(k)
+                if v is not None:
+                    market_case = self._detect_market_case(v)
+                    break
+        
+        def apply_case(value: str) -> str:
+            if market_case == "lower":
+                return value.lower()
+            elif market_case == "upper":
+                return value.upper()
+            return value
+        
         if self._pick_target_key(accepted, self.MARKET_KEYS) and market_val is not None and "market" not in out:
-            out["market"] = market_val
+            out["market"] = apply_case(market_val)
         if self._pick_target_key(accepted, self.EXCHANGE_KEYS) and exchange_val is not None and "exchange" not in out:
-            out["exchange"] = exchange_val
+            out["exchange"] = apply_case(exchange_val)
 
     # ---- 通用别名拷贝 ----
     def _map_synonym_family(self, out: Dict[str, Any], src: Dict[str, Any], aliases: List[str], accepted: set) -> None:

@@ -305,6 +305,9 @@ class Extractor:
                     def convert_symbol_to_unified_format(symbol_value):
                         """将symbol字段转换为统一的StockSymbol格式"""
                         if pd.isna(symbol_value) or symbol_value is None:
+                            # 对于个股历史数据接口，如果symbol为None，尝试从参数中获取
+                            if hasattr(self, '_current_params') and self._current_params and hasattr(self._current_params, 'symbol'):
+                                return self._current_params.symbol.to_dot()
                             return symbol_value
                         
                         # 如果已经是StockSymbol对象，直接转换为dot格式
@@ -403,6 +406,9 @@ class Extractor:
         # 使用全局参数适配器
         param_adapter = self.param_adapter
         
+        # 设置当前参数，用于symbol字段转换
+        self._current_params = params
+        
         # 构造执行上下文
         context = ExecutionContext(
             cache_enabled=bool(self.config.global_config.enable_cache),
@@ -466,9 +472,23 @@ class Extractor:
                 error=f"所有接口执行失败: {category}.{data_type}"
             )
         
-        # 如果只有一个成功结果，直接返回
+        # 如果只有一个成功结果，应用日期过滤后直接返回
         if len(successful_results) == 1:
-            return successful_results[0][1]
+            single_result = successful_results[0][1]
+            # 应用日期过滤
+            if single_result.data is not None and not single_result.data.empty:
+                merge_config = self._get_merge_strategy(category, data_type)
+                filtered_data = self._apply_date_filter(single_result.data, standard_params, merge_config)
+                if not filtered_data.empty:
+                    single_result.data = filtered_data
+                else:
+                    return ExtractionResult(
+                        success=False,
+                        data=None,
+                        error="日期过滤后没有数据",
+                        interface_name=single_result.interface_name
+                    )
+            return single_result
         
         # 多个成功结果，进行数据合并
         logger.info(f"开始合并 {len(successful_results)} 个接口的数据")
@@ -479,7 +499,7 @@ class Extractor:
     def _merge_interface_results(self, successful_results: List[Tuple[Any, ExtractionResult]], 
                                 standard_params: StandardParams, category: str, data_type: str) -> ExtractionResult:
         """
-        合并多个接口的数据结果
+        基于配置的智能合并策略
         
         Args:
             successful_results: 成功的接口结果列表，每个元素为(interface, extraction_result)
@@ -501,63 +521,19 @@ class Extractor:
                     source_interface=None
                 )
             
-            # 获取目标股票symbol
-            target_symbol = standard_params.symbol
-            if not target_symbol:
-                # 如果没有指定symbol，返回第一个成功结果
-                return successful_results[0][1]
+            # 获取合并策略配置
+            merge_config = self._get_merge_strategy(category, data_type)
             
-            # 按接口优先级排序
-            successful_results.sort(key=lambda x: x[0].priority)
-            
-            # 初始化合并后的数据
-            merged_data = None
-            merged_interface_names = []
-            
-            for interface, extraction_result in successful_results:
-                interface_data = extraction_result.data
-                merged_interface_names.append(interface.name)
-                
-                if interface_data is None or interface_data.empty:
-                    continue
-                
-                # 查找目标股票数据
-                target_row = self._find_target_stock_data(interface_data, target_symbol)
-                
-                if target_row is not None:
-                    if merged_data is None:
-                        # 第一个有效数据作为基础
-                        merged_data = target_row.copy()
-                        logger.info(f"使用接口 {interface.name} 作为基础数据")
-                    else:
-                        # 合并数据，优先保留已有数据，补充缺失字段
-                        merged_data = self._merge_stock_data(merged_data, target_row, interface.name)
-                else:
-                    logger.warning(f"接口 {interface.name} 中未找到目标股票 {target_symbol} 的数据")
-            
-            if merged_data is None:
-                return ExtractionResult(
-                    success=False,
-                    data=None,
-                    interface_name=None,
-                    error=f"所有接口中都未找到目标股票 {target_symbol} 的数据"
-                )
-            
-            # 将合并后的单行数据转换为DataFrame
-            if isinstance(merged_data, pd.Series):
-                merged_df = pd.DataFrame([merged_data])
+            # 根据策略执行合并
+            if merge_config["strategy"] == "date_based_merge":
+                return self._merge_by_date(successful_results, standard_params, merge_config)
+            elif merge_config["strategy"] == "symbol_based_merge":
+                return self._merge_by_symbol(successful_results, standard_params, merge_config)
+            elif merge_config["strategy"] == "symbol_report_merge":
+                return self._merge_by_symbol_report(successful_results, standard_params, merge_config)
             else:
-                merged_df = merged_data
-            
-            logger.info(f"数据合并完成，使用了接口: {', '.join(merged_interface_names)}")
-            
-            return ExtractionResult(
-                success=True,
-                data=merged_df,
-                interface_name=f"merged({', '.join(merged_interface_names)})",
-                error=None
-            )
-            
+                return self._merge_default(successful_results, standard_params)
+                
         except Exception as e:
             logger.error(f"数据合并过程中发生错误: {e}")
             # 合并失败时返回优先级最高的结果
@@ -571,6 +547,283 @@ class Extractor:
                     interface_name=None,
                     source_interface=None
                 )
+
+    def _get_merge_strategy(self, category: str, data_type: str) -> Dict[str, Any]:
+        """
+        根据接口位置获取合并策略配置
+        
+        Args:
+            category: 数据分类
+            data_type: 数据类型
+            
+        Returns:
+            合并策略配置字典
+        """
+        return self.config_loader.get_merge_strategy(category, data_type)
+
+    def _merge_by_date(self, successful_results: List[Tuple[Any, ExtractionResult]], 
+                      standard_params: StandardParams, merge_config: Dict[str, Any]) -> ExtractionResult:
+        """
+        按日期合并数据（用于日行情等时间序列数据）
+        
+        Args:
+            successful_results: 成功的接口结果列表
+            standard_params: 标准化参数
+            merge_config: 合并策略配置
+            
+        Returns:
+            合并后的提取结果
+        """
+        # 1. 收集所有接口的数据
+        all_data = []
+        interface_names = []
+        
+        for interface, result in successful_results:
+            if result.data is not None and not result.data.empty:
+                # 注意：日期过滤已经在单个结果处理时完成，这里直接使用数据
+                all_data.append(result.data)
+                interface_names.append(interface.name)
+        
+        if not all_data:
+            return ExtractionResult(success=False, data=None, error="没有有效的数据可供合并")
+        
+        # 2. 合并所有数据
+        merged_data = pd.concat(all_data, ignore_index=True)
+        
+        # 3. 按配置的字段分组去重
+        group_by = merge_config.get("group_by", ["symbol", "date"])
+        if group_by and all(col in merged_data.columns for col in group_by):
+            # 按分组字段去重，保留最后一个（优先级最高的）
+            merged_data = merged_data.drop_duplicates(subset=group_by, keep='last')
+        
+        # 4. 按日期排序
+        if "date" in merged_data.columns:
+            merged_data = merged_data.sort_values("date")
+        
+        return ExtractionResult(
+            success=True,
+            data=merged_data,
+            interface_name=f"merged({', '.join(interface_names)})",
+            error=None
+        )
+
+    def _merge_by_symbol(self, successful_results: List[Tuple[Any, ExtractionResult]], 
+                        standard_params: StandardParams, merge_config: Dict[str, Any]) -> ExtractionResult:
+        """
+        按股票合并数据（用于基础信息等非时间序列数据）
+        
+        Args:
+            successful_results: 成功的接口结果列表
+            standard_params: 标准化参数
+            merge_config: 合并策略配置
+            
+        Returns:
+            合并后的提取结果
+        """
+        target_symbol = standard_params.symbol
+        if not target_symbol:
+            return successful_results[0][1]
+        
+        # 1. 提取目标股票的单行数据
+        merged_data = None
+        interface_names = []
+        
+        for interface, result in successful_results:
+            if result.data is not None and not result.data.empty:
+                target_row = self._find_target_stock_data(result.data, target_symbol)
+                if target_row is not None:
+                    if merged_data is None:
+                        merged_data = target_row.copy()
+                        interface_names.append(interface.name)
+                    else:
+                        merged_data = self._merge_stock_data(merged_data, target_row, interface.name)
+                        interface_names.append(interface.name)
+        
+        if merged_data is None:
+            return ExtractionResult(success=False, data=None, error=f"未找到目标股票 {target_symbol} 的数据")
+        
+        return ExtractionResult(
+            success=True,
+            data=pd.DataFrame([merged_data]),
+            interface_name=f"merged({', '.join(interface_names)})",
+            error=None
+        )
+
+    def _merge_by_symbol_report(self, successful_results: List[Tuple[Any, ExtractionResult]], 
+                               standard_params: StandardParams, merge_config: Dict[str, Any]) -> ExtractionResult:
+        """
+        按股票和报告期合并数据（用于财务数据）
+        
+        Args:
+            successful_results: 成功的接口结果列表
+            standard_params: 标准化参数
+            merge_config: 合并策略配置
+            
+        Returns:
+            合并后的提取结果
+        """
+        target_symbol = standard_params.symbol
+        if not target_symbol:
+            return successful_results[0][1]
+        
+        # 1. 收集所有接口的数据
+        all_data = []
+        interface_names = []
+        
+        for interface, result in successful_results:
+            if result.data is not None and not result.data.empty:
+                # 过滤目标股票的数据
+                if 'symbol' in result.data.columns:
+                    target_data = result.data[result.data['symbol'] == target_symbol.to_dot()]
+                else:
+                    target_data = result.data
+                
+                if not target_data.empty:
+                    all_data.append(target_data)
+                    interface_names.append(interface.name)
+        
+        if not all_data:
+            return ExtractionResult(success=False, data=None, error=f"未找到目标股票 {target_symbol} 的数据")
+        
+        # 2. 合并所有数据
+        merged_data = pd.concat(all_data, ignore_index=True)
+        
+        # 3. 按股票和报告期去重
+        group_by = merge_config.get("group_by", ["symbol", "report_date"])
+        if group_by and all(col in merged_data.columns for col in group_by):
+            merged_data = merged_data.drop_duplicates(subset=group_by, keep='last')
+        
+        # 4. 按报告期排序
+        if "report_date" in merged_data.columns:
+            merged_data = merged_data.sort_values("report_date")
+        
+        return ExtractionResult(
+            success=True,
+            data=merged_data,
+            interface_name=f"merged({', '.join(interface_names)})",
+            error=None
+        )
+
+    def _merge_default(self, successful_results: List[Tuple[Any, ExtractionResult]], 
+                      standard_params: StandardParams) -> ExtractionResult:
+        """
+        默认合并策略（向后兼容）
+        
+        Args:
+            successful_results: 成功的接口结果列表
+            standard_params: 标准化参数
+            
+        Returns:
+            合并后的提取结果
+        """
+        # 使用原来的合并逻辑作为默认策略
+        target_symbol = standard_params.symbol
+        if not target_symbol:
+            return successful_results[0][1]
+        
+        # 设置当前参数，用于日期过滤
+        self._current_params = standard_params
+        
+        # 按接口优先级排序
+        successful_results.sort(key=lambda x: x[0].priority)
+        
+        # 初始化合并后的数据
+        merged_data = None
+        merged_interface_names = []
+        
+        for interface, extraction_result in successful_results:
+            interface_data = extraction_result.data
+            merged_interface_names.append(interface.name)
+            
+            if interface_data is None or interface_data.empty:
+                continue
+            
+            # 查找目标股票数据
+            target_row = self._find_target_stock_data(interface_data, target_symbol)
+            
+            if target_row is not None:
+                if merged_data is None:
+                    # 第一个有效数据作为基础
+                    merged_data = target_row.copy()
+                    logger.info(f"使用接口 {interface.name} 作为基础数据")
+                else:
+                    # 合并数据，优先保留已有数据，补充缺失字段
+                    merged_data = self._merge_stock_data(merged_data, target_row, interface.name)
+            else:
+                logger.warning(f"接口 {interface.name} 中未找到目标股票 {target_symbol} 的数据")
+        
+        if merged_data is None:
+            return ExtractionResult(
+                success=False,
+                data=None,
+                interface_name=None,
+                error=f"所有接口中都未找到目标股票 {target_symbol} 的数据"
+            )
+        
+        # 将合并后的单行数据转换为DataFrame
+        if isinstance(merged_data, pd.Series):
+            merged_df = pd.DataFrame([merged_data])
+        else:
+            merged_df = merged_data
+        
+        logger.info(f"数据合并完成，使用了接口: {', '.join(merged_interface_names)}")
+        
+        return ExtractionResult(
+            success=True,
+            data=merged_df,
+            interface_name=f"merged({', '.join(merged_interface_names)})",
+            error=None
+        )
+
+    def _apply_date_filter(self, data: pd.DataFrame, standard_params: StandardParams, 
+                          merge_config: Dict[str, Any]) -> pd.DataFrame:
+        """
+        应用日期过滤
+        
+        Args:
+            data: 数据DataFrame
+            standard_params: 标准化参数
+            merge_config: 合并策略配置
+            
+        Returns:
+            过滤后的DataFrame
+        """
+        if not standard_params.start_date and not standard_params.end_date:
+            return data
+        
+        date_column = merge_config.get("date_column", "date")
+        if date_column not in data.columns:
+            return data
+        
+        try:
+            from datetime import datetime
+            
+            start_date = None
+            end_date = None
+            
+            if standard_params.start_date:
+                start_date = datetime.strptime(standard_params.start_date, '%Y-%m-%d').date()
+            
+            if standard_params.end_date:
+                end_date = datetime.strptime(standard_params.end_date, '%Y-%m-%d').date()
+            
+            # 过滤数据
+            mask = pd.Series([True] * len(data), index=data.index)
+            
+            if start_date is not None:
+                mask &= (data[date_column] >= start_date)
+            
+            if end_date is not None:
+                mask &= (data[date_column] <= end_date)
+            
+            filtered_data = data[mask]
+            logger.debug(f"日期过滤: 原始 {len(data)} 行 -> 过滤后 {len(filtered_data)} 行")
+            
+            return filtered_data
+            
+        except Exception as e:
+            logger.warning(f"日期过滤失败: {e}，返回原数据")
+            return data
 
     def _find_target_stock_data(self, data: pd.DataFrame, target_symbol: StockSymbol) -> Optional[pd.Series]:
         """
@@ -591,18 +844,101 @@ class Extractor:
         
         # 检查标准的symbol列
         if 'symbol' in data.columns:
-            matched_rows = data[data['symbol'].astype(str) == target_symbol_str]
-            if not matched_rows.empty:
-                logger.debug(f"在symbol列中找到匹配的股票 {target_symbol_str}")
-                return matched_rows.iloc[0]
+            # 检查symbol列是否全为None（个股历史数据接口的情况）
+            if data['symbol'].isna().all():
+                logger.debug(f"symbol列全为None，可能是个股历史数据接口")
+                # 进行日期过滤
+                if 'date' in data.columns and hasattr(self, '_current_params') and self._current_params:
+                    filtered_data = self._filter_data_by_date(data, self._current_params)
+                    if not filtered_data.empty:
+                        logger.debug(f"根据日期范围过滤后找到 {len(filtered_data)} 行数据")
+                        return filtered_data.iloc[0]  # 返回第一行（最新的数据）
+                    else:
+                        logger.debug(f"日期范围内没有数据，返回最新的一行")
+                        return data.iloc[0]  # 如果没有匹配的日期，返回第一行
+                else:
+                    logger.debug(f"没有日期列或参数，返回第一行作为代表")
+                    return data.iloc[0]
+            else:
+                # 正常的symbol列匹配
+                matched_rows = data[data['symbol'].astype(str) == target_symbol_str]
+                if not matched_rows.empty:
+                    logger.debug(f"在symbol列中找到匹配的股票 {target_symbol_str}")
+                    return matched_rows.iloc[0]
         
         # 如果DataFrame只有一行数据，可能是单股票查询结果
         if len(data) == 1:
             logger.debug(f"DataFrame只有一行数据，假设为目标股票数据")
             return data.iloc[0]
         
+        # 如果没有symbol列且有多行数据，可能是个股历史数据接口
+        if 'symbol' not in data.columns and len(data) > 1:
+            logger.debug(f"没有symbol列且有多行数据，可能是个股历史数据")
+            
+            # 检查是否有日期列，如果有则进行日期过滤
+            if 'date' in data.columns and hasattr(self, '_current_params') and self._current_params:
+                filtered_data = self._filter_data_by_date(data, self._current_params)
+                if not filtered_data.empty:
+                    logger.debug(f"根据日期范围过滤后找到 {len(filtered_data)} 行数据")
+                    return filtered_data.iloc[0]  # 返回第一行（最新的数据）
+                else:
+                    logger.debug(f"日期范围内没有数据，返回最新的一行")
+                    return data.iloc[0]  # 如果没有匹配的日期，返回第一行
+            else:
+                logger.debug(f"没有日期列或参数，返回第一行作为代表")
+                return data.iloc[0]
+        
         logger.warning(f"未找到目标股票 {target_symbol_str} 的数据")
         return None
+    
+    def _filter_data_by_date(self, data: pd.DataFrame, params) -> pd.DataFrame:
+        """
+        根据参数中的日期范围过滤数据
+        
+        Args:
+            data: 数据DataFrame
+            params: 参数对象，包含start_date和end_date
+            
+        Returns:
+            过滤后的DataFrame
+        """
+        if 'date' not in data.columns:
+            return data
+        
+        try:
+            from datetime import datetime
+            
+            # 获取日期范围
+            start_date = None
+            end_date = None
+            
+            if hasattr(params, 'start_date') and params.start_date:
+                start_date = datetime.strptime(params.start_date, '%Y-%m-%d').date()
+            
+            if hasattr(params, 'end_date') and params.end_date:
+                end_date = datetime.strptime(params.end_date, '%Y-%m-%d').date()
+            
+            # 如果没有指定日期范围，返回原数据
+            if start_date is None and end_date is None:
+                return data
+            
+            # 过滤数据
+            mask = pd.Series([True] * len(data), index=data.index)
+            
+            if start_date is not None:
+                mask &= (data['date'] >= start_date)
+            
+            if end_date is not None:
+                mask &= (data['date'] <= end_date)
+            
+            filtered_data = data[mask]
+            logger.debug(f"日期过滤: 原始 {len(data)} 行 -> 过滤后 {len(filtered_data)} 行")
+            
+            return filtered_data
+            
+        except Exception as e:
+            logger.warning(f"日期过滤失败: {e}，返回原数据")
+            return data
     
     def _merge_stock_data(self, base_data: pd.Series, new_data: pd.Series, interface_name: str) -> pd.Series:
         """
