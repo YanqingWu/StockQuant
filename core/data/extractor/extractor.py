@@ -1061,11 +1061,14 @@ class Extractor:
             # 过滤数据
             mask = pd.Series([True] * len(data), index=data.index)
             
+            # 将DataFrame中的日期列转换为date类型以便比较
+            date_series = pd.to_datetime(data['date']).dt.date
+            
             if start_date is not None:
-                mask &= (data['date'] >= start_date)
+                mask &= (date_series >= start_date)
             
             if end_date is not None:
-                mask &= (data['date'] <= end_date)
+                mask &= (date_series <= end_date)
             
             filtered_data = data[mask]
             logger.debug(f"日期过滤: 原始 {len(data)} 行 -> 过滤后 {len(filtered_data)} 行")

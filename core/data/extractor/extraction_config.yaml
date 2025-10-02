@@ -728,7 +728,7 @@ interfaces_config:
           - name: "stock_zh_ah_daily"
             enabled: false  # 禁用：akshare库内部有BUG，A股股票无法使用
             priority: 7
-            markets: ["HK"]
+            markets: ["SZ", "SH"]  # 原始配置，但接口已禁用
           
           - name: "stock_hk_daily"
             enabled: true
