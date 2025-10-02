@@ -775,11 +775,14 @@ class AkshareStockParamAdapter(ParamAdapter):
     def _detect_symbol_style(v: Any) -> Optional[str]:
         if not isinstance(v, str):
             return None
-        s = v.strip().upper()
+        s = v.strip()
+        s_upper = s.upper()
+        s_lower = s.lower()
+        
         # A股格式：6位数字
-        if re.fullmatch(r"\d{6}\.(SZ|SH|BJ)", s):
+        if re.fullmatch(r"\d{6}\.(SZ|SH|BJ)", s_upper):
             return "dot"
-        if re.fullmatch(r"(SZ|SH|BJ)\d{6}", s):
+        if re.fullmatch(r"(SZ|SH|BJ)\d{6}", s_upper):
             return "prefix"
         if re.fullmatch(r"\d{6}", s):
             return "code"
@@ -787,13 +790,13 @@ class AkshareStockParamAdapter(ParamAdapter):
         if re.fullmatch(r"\d{5,6}", s):
             return "code"
         # 美股格式：纯字母代码（如AAPL, FB）
-        if re.fullmatch(r"[A-Z]{1,5}", s):
+        if re.fullmatch(r"[A-Z]{1,5}", s_upper):
             return "code"
         # 美股历史格式：数字.字母（如105.MSFT）
-        if re.fullmatch(r"\d+\.[A-Z]{1,5}", s):
+        if re.fullmatch(r"\d+\.[A-Z]{1,5}", s_upper):
             return "code"
         # B股格式：小写市场前缀+代码（如sh900901）
-        if re.fullmatch(r"(sh|sz)\d{6}", s.lower()):
+        if re.fullmatch(r"(sh|sz)\d{6}", s_lower):
             return "prefix"
         return None
 
@@ -1149,6 +1152,25 @@ class ParameterMapper:
                 # 如果只提供了end_year，移除它以避免接口调用失败
                 logger.warning(f"stock_zh_ah_daily接口需要同时提供start_year和end_year，移除end_year参数")
                 del mapped_params["end_year"]
+        
+        # 处理股票代码格式转换
+        if "symbol" in mapped_params:
+            symbol_value = mapped_params["symbol"]
+            if isinstance(symbol_value, StockSymbol):
+                # 根据接口类型转换股票代码格式
+                if interface_name in ["stock_zh_a_daily", "stock_zh_a_hist_tx", "stock_zh_b_daily", "stock_zh_a_cdr_daily", "stock_zh_kcb_daily"]:
+                    # 需要小写前缀格式：sh601727, sz000001
+                    market_lower = symbol_value.market.lower()
+                    mapped_params["symbol"] = f"{market_lower}{symbol_value.code}"
+                    logger.debug(f"{interface_name}: 转换股票代码为小写前缀格式: {mapped_params['symbol']}")
+                elif interface_name == "stock_zh_a_hist":
+                    # 需要纯代码格式：000001
+                    mapped_params["symbol"] = symbol_value.code
+                    logger.debug(f"{interface_name}: 转换股票代码为纯代码格式: {mapped_params['symbol']}")
+                else:
+                    # 其他接口保持原格式
+                    mapped_params["symbol"] = symbol_value.to_dot()
+                    logger.debug(f"{interface_name}: 保持股票代码为点格式: {mapped_params['symbol']}")
     
     def _validate_parameters(self, params: Dict[str, Any], validation: Dict[str, Any]) -> None:
         """验证参数"""
