@@ -674,7 +674,65 @@ class AkshareStockParamAdapter(ParamAdapter):
             if k in accepted_keys and k not in new_params:
                 new_params[k] = v
 
+        # 8) 应用特殊处理逻辑
+        self._apply_special_handling(interface_name, new_params)
+
         return new_params
+    
+    def _apply_special_handling(self, interface_name: str, params: Dict[str, Any]) -> None:
+        """应用特殊处理逻辑"""
+        if interface_name == "stock_zh_ah_daily":
+            # 特殊处理：如果提供了start_year，必须同时提供end_year
+            if "start_year" in params and "end_year" not in params:
+                # 如果只提供了start_year，移除它以避免接口调用失败
+                logger.warning(f"stock_zh_ah_daily接口需要同时提供start_year和end_year，移除start_year参数")
+                del params["start_year"]
+            elif "end_year" in params and "start_year" not in params:
+                # 如果只提供了end_year，移除它以避免接口调用失败
+                logger.warning(f"stock_zh_ah_daily接口需要同时提供start_year和end_year，移除end_year参数")
+                del params["end_year"]
+        
+        # 处理股票代码格式转换
+        if "symbol" in params:
+            symbol_value = params["symbol"]
+            if isinstance(symbol_value, StockSymbol):
+                # 根据接口类型转换股票代码格式
+                if interface_name in ["stock_zh_a_daily", "stock_zh_a_hist_tx", "stock_zh_b_daily", "stock_zh_a_cdr_daily", "stock_zh_kcb_daily"]:
+                    # 需要小写前缀格式：sh601727, sz000001
+                    market_lower = symbol_value.market.lower()
+                    params["symbol"] = f"{market_lower}{symbol_value.code}"
+                    logger.debug(f"{interface_name}: 转换股票代码为小写前缀格式: {params['symbol']}")
+                elif interface_name == "stock_zh_a_hist":
+                    # 需要纯代码格式：000001
+                    params["symbol"] = symbol_value.code
+                    logger.debug(f"{interface_name}: 转换股票代码为纯代码格式: {params['symbol']}")
+                elif interface_name == "stock_us_hist":
+                    # 需要105.前缀格式：105.AAPL
+                    params["symbol"] = f"105.{symbol_value.code}"
+                    logger.debug(f"{interface_name}: 转换股票代码为105.前缀格式: {params['symbol']}")
+                else:
+                    # 其他接口保持原格式
+                    params["symbol"] = symbol_value.to_dot()
+                    logger.debug(f"{interface_name}: 保持股票代码为点格式: {params['symbol']}")
+            elif isinstance(symbol_value, str):
+                # 处理字符串格式的股票代码
+                if interface_name == "stock_us_hist":
+                    # 美股历史接口需要105.前缀格式：105.AAPL
+                    if not symbol_value.startswith("105."):
+                        params["symbol"] = f"105.{symbol_value}"
+                        logger.debug(f"{interface_name}: 转换股票代码为105.前缀格式: {params['symbol']}")
+        
+        # 处理日期格式转换
+        if interface_name == "stock_us_hist":
+            # 美股历史接口需要紧凑日期格式：20250901
+            for date_key in ["start_date", "end_date"]:
+                if date_key in params:
+                    date_value = params[date_key]
+                    if date_value:
+                        # 转换为紧凑格式
+                        converted_date = self._convert_date(date_value, "compact")
+                        params[date_key] = converted_date
+                        logger.debug(f"{interface_name}: 转换{date_key}为紧凑格式: {converted_date}")
 
     # ---- symbol ----
     def _adapt_symbol_family(
@@ -936,6 +994,8 @@ class AkshareStockParamAdapter(ParamAdapter):
             return y
         if target_style == "y-m-d":
             return f"{y}-{m}-{d}"
+        if target_style == "compact":
+            return f"{y}{m}{d}"
         return f"{y}{m}{d}"
 
     @staticmethod
@@ -1038,7 +1098,7 @@ class AkshareStockParamAdapter(ParamAdapter):
             return value
         
         target_market_key = self._pick_target_key(accepted, self.MARKET_KEYS)
-        if target_market_key and market_val is not None and target_market_key not in out and target_market_key in accepted:
+        if target_market_key and market_val is not None and target_market_key not in out:
             out[target_market_key] = apply_case(market_val)
         if self._pick_target_key(accepted, self.EXCHANGE_KEYS) and exchange_val is not None and "exchange" not in out and "exchange" in accepted:
             out["exchange"] = apply_case(exchange_val)
@@ -1167,10 +1227,26 @@ class ParameterMapper:
                     # 需要纯代码格式：000001
                     mapped_params["symbol"] = symbol_value.code
                     logger.debug(f"{interface_name}: 转换股票代码为纯代码格式: {mapped_params['symbol']}")
+                elif interface_name == "stock_us_hist":
+                    # 需要105.前缀格式：105.AAPL
+                    mapped_params["symbol"] = f"105.{symbol_value.code}"
+                    logger.debug(f"{interface_name}: 转换股票代码为105.前缀格式: {mapped_params['symbol']}")
                 else:
                     # 其他接口保持原格式
                     mapped_params["symbol"] = symbol_value.to_dot()
                     logger.debug(f"{interface_name}: 保持股票代码为点格式: {mapped_params['symbol']}")
+        
+        # 处理日期格式转换
+        if interface_name == "stock_us_hist":
+            # 美股历史接口需要紧凑日期格式：20250901
+            for date_key in ["start_date", "end_date"]:
+                if date_key in mapped_params:
+                    date_value = mapped_params[date_key]
+                    if date_value:
+                        # 转换为紧凑格式
+                        converted_date = self._convert_date(date_value, "compact")
+                        mapped_params[date_key] = converted_date
+                        logger.debug(f"{interface_name}: 转换{date_key}为紧凑格式: {converted_date}")
     
     def _validate_parameters(self, params: Dict[str, Any], validation: Dict[str, Any]) -> None:
         """验证参数"""
