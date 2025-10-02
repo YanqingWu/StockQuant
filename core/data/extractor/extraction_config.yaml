@@ -1792,6 +1792,11 @@ field_mappings:
   "涨跌幅": "pct_change"
   "涨跌额": "change"
   "换手率": "turnover_rate"
+  "turnover": "turnover_rate"
+  "prevclose": "pre_close"
+  "outstanding_share": "outstanding"
+  "after_volume": "volume"
+  "after_amount": "amount"
 
   # 行情价格（OHLC、昨收、均价等）
   "今开": "open"
