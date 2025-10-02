@@ -204,3 +204,22 @@ def adapt_params_for_interface(interface_name: str, params: Union[StandardParams
     except Exception:
         raw = params
     return adapter.adapt(interface_name, raw)
+
+
+def pick_from_aliases(src: Dict[str, Any], aliases: list) -> Any:
+    """从别名中选取值"""
+    for k in aliases:
+        if k in src:
+            return src[k]
+    return None
+
+
+def apply_to_value(value: Any, fn) -> Any:
+    """支持列表与逗号分隔字符串的转换"""
+    if isinstance(value, list):
+        return [fn(v) for v in value]
+    if isinstance(value, str) and "," in value:
+        parts = [p.strip() for p in value.split(",")]
+        if all(p for p in parts):
+            return ",".join(str(fn(p)) for p in parts)
+    return fn(value)

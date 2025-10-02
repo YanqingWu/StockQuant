@@ -119,3 +119,31 @@ class SymbolTransformer(BaseTransformer):
             return "lowercase_prefix"
         
         return "unknown"
+    
+    def _detect_symbol_style(self, s: str) -> str:
+        """检测股票代码风格"""
+        if not isinstance(s, str):
+            return "unknown"
+        
+        s = s.strip()
+        if "." in s:
+            return "dot"
+        elif s.startswith(("SH", "SZ", "BJ", "HK", "US")):
+            return "prefix"
+        elif s.isdigit():
+            return "code"
+        else:
+            return "unknown"
+    
+    def _detect_target_key_style_case(self, example: Dict[str, Any], accepted: set) -> tuple:
+        """检测目标键的风格"""
+        # 查找symbol相关的键
+        symbol_keys = ["symbol", "stock", "code", "ts_code"]
+        for key in symbol_keys:
+            if key in accepted and key in example:
+                value = example[key]
+                if isinstance(value, str):
+                    style = self._detect_symbol_style(value)
+                    if style != "unknown":
+                        return (key, style, "upper" if value.isupper() else "lower")
+        return None

@@ -74,3 +74,22 @@ class MarketTransformer(BaseTransformer):
             return canon_exchange
         
         return str(value) if value is not None else ""
+    
+    def _get_market_hint(self, params: Dict[str, Any], example: Dict[str, Any]) -> str:
+        """获取市场提示"""
+        # 1) 显式字段 market / exchange
+        allowed_markets = {"SH", "SZ", "BJ", "HK", "US"}
+        for key in ("market", "exchange"):
+            if key in params and isinstance(params[key], str):
+                v = params[key].strip()
+                if v:
+                    canon = StockSymbol._canon_market(v)
+                    if canon in allowed_markets:
+                        return canon
+            if key in example and isinstance(example[key], str):
+                v = example[key].strip()
+                if v:
+                    canon = StockSymbol._canon_market(v)
+                    if canon in allowed_markets:
+                        return canon
+        return ""

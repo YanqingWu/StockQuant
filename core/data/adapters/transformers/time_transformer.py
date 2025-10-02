@@ -58,6 +58,16 @@ class TimeTransformer(BaseTransformer):
         
         return self._apply_to_value(value, convert_one)
     
+    def _apply_to_value(self, value: Any, fn) -> Any:
+        """支持列表与逗号分隔字符串的转换"""
+        if isinstance(value, list):
+            return [fn(v) for v in value]
+        if isinstance(value, str) and "," in value:
+            parts = [p.strip() for p in value.split(",")]
+            if all(p for p in parts):
+                return ",".join(str(fn(p)) for p in parts)
+        return fn(value)
+    
     def _detect_target_format(self, context: TransformContext, field: str) -> str:
         """检测目标格式"""
         if context.metadata and hasattr(context.metadata, 'example_params'):
