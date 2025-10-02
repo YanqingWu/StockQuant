@@ -9,42 +9,22 @@ from typing import Any, Dict, Optional, List, Tuple, Union
 
 class StockSymbol:
     """
-    统一的股票标的表达。
-    - 内部统一为 (market, code)，如 ("SZ", "000001")
-    - 支持解析以下输入：
-      - "000001.SZ" / "600000.SH"（点后缀）
-      - "SZ000001" / "SH600000"（前缀）
-      - "000001"（纯代码，可结合 hint_market 或按简单规则推断）
-    - 提供多种格式化输出：dot、prefix、code-only
+    股票代码统一表达类
+    
+    支持格式：
+    - "000001.SZ" (点后缀)
+    - "SZ000001" (前缀)
+    - "000001" (纯代码)
     """
 
-    # 统一市场代码映射，同时包含市场代码和交易所代码的映射
     MARKET_ALIASES = {
-        # 市场代码映射
-        "sz": "SZ",
-        "sh": "SH",
-        "bj": "BJ",
-        "hk": "HK",
-        "us": "US",
-        # 交易所代码映射
-        "szse": "SZ",
-        "sse": "SH",
-        "bse": "BJ",
-        "hkex": "HK",
-        "nasdaq": "US",
-        "nyse": "US",
-        # 中文名称映射
-        "港股": "HK",
-        "美股": "US",
+        "sz": "SZ", "sh": "SH", "bj": "BJ", "hk": "HK", "us": "US",
+        "szse": "SZ", "sse": "SH", "bse": "BJ", "hkex": "HK",
+        "nasdaq": "US", "nyse": "US", "港股": "HK", "美股": "US",
     }
     
-    # 市场代码到交易所代码的映射
     MARKET_TO_EXCHANGE = {
-        "SZ": "SZSE", 
-        "SH": "SSE", 
-        "BJ": "BSE",
-        "HK": "HKEX",
-        "US": "US"
+        "SZ": "SZSE", "SH": "SSE", "BJ": "BSE", "HK": "HKEX", "US": "US"
     }
 
     DOT_RE = re.compile(r"^(?P<code>\d{5,6}|[A-Z]{1,5})\.(?P<mkt>[A-Za-z]{2})$")

@@ -5,17 +5,11 @@
 from typing import Any, Dict, Union
 from .standard_params import StandardParams
 from .akshare_adapter import AkshareStockParamAdapter
+from .constants import SYMBOL_KEYS
 
 
 def to_standard_params(params: Union[StandardParams, Dict[str, Any]]) -> StandardParams:
-    """
-    将宽松/多风格输入规范化为严格格式的 StandardParams。
-    - 若传入 StandardParams，视为已规范化，直接返回（不做二次转换）。
-    - 若传入 dict，执行以下收敛：
-      symbol -> StockSymbol 对象（内部统一表示）；date/time -> YYYY-MM-DD / HH:MM:SS；
-      period -> {daily,1min,5min,15min,30min,60min}；adjust -> {none,qfq,hfq}；
-      market/exchange -> {SZ,SH,BJ}/{SZSE,SSE,BSE}；支持常见别名与逗号分隔/列表输入。
-    """
+    """将输入参数规范化为 StandardParams 格式"""
     if isinstance(params, StandardParams):
         return params
 
@@ -23,7 +17,6 @@ def to_standard_params(params: Union[StandardParams, Dict[str, Any]]) -> Standar
     adapter = AkshareStockParamAdapter()
 
     def as_list_or_single(value: Any, convert_one):
-        # 允许列表或逗号分隔字符串，输出保持为单个对象或对象列表
         if isinstance(value, list):
             return [convert_one(v) for v in value]
         if isinstance(value, str) and "," in value:
@@ -32,11 +25,8 @@ def to_standard_params(params: Union[StandardParams, Dict[str, Any]]) -> Standar
             return result
         return convert_one(value)
 
-    # market hint
     hint = adapter._get_market_hint(src, example={})
-
-    # symbol -> StockSymbol
-    symbol_val = adapter._pick_from_aliases(src, adapter.SYMBOL_KEYS)
+    symbol_val = adapter._pick_from_aliases(src, SYMBOL_KEYS)
 
     def sym_to_obj(v: Any) -> Any:
         if v is None:

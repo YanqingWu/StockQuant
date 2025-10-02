@@ -7,13 +7,11 @@ from typing import Any, Dict, Optional
 from .base import BaseTransformer
 from ..base import TransformContext
 from ..stock_symbol import StockSymbol
+from ..constants import SYMBOL_KEYS
 
 
 class SymbolTransformer(BaseTransformer):
     """股票代码转换器"""
-    
-    # 符号键名列表
-    SYMBOL_KEYS = ["symbol", "stock", "code", "ts_code", "index_code"]
     
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)
@@ -21,11 +19,11 @@ class SymbolTransformer(BaseTransformer):
     
     def can_transform(self, context: TransformContext) -> bool:
         """检查是否有股票代码需要转换"""
-        return any(key in context.source_params for key in self.SYMBOL_KEYS)
+        return any(key in context.source_params for key in SYMBOL_KEYS)
     
     def transform(self, context: TransformContext) -> TransformContext:
         """执行股票代码转换"""
-        for key in self.SYMBOL_KEYS:
+        for key in SYMBOL_KEYS:
             if context.has_source_key(key):
                 value = context.source_params[key]
                 if value is not None:
@@ -40,7 +38,6 @@ class SymbolTransformer(BaseTransformer):
         def convert_one(v: Any) -> Any:
             sym = StockSymbol.parse(v)
             if not sym:
-                # 兼容如 "000001.沪深京" 等非标准市场后缀；若目标为 code，则尽量抽取 6 位代码
                 if isinstance(v, str) and target_format == "code":
                     m = re.search(r"(\d{6})", v)
                     if m:
@@ -49,7 +46,6 @@ class SymbolTransformer(BaseTransformer):
             
             if target_format == "dot":
                 m = sym.market.upper() if sym.market else ""
-                # 仅当市场为 2 位字母时输出 dot 风格，否则仅输出代码
                 return f"{sym.code}.{m}" if re.fullmatch(r"[A-Za-z]{2}", m or "") else sym.code
             elif target_format == "prefix":
                 m = sym.market.upper() if sym.market else ""

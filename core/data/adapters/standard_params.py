@@ -10,22 +10,16 @@ from .stock_symbol import StockSymbol
 
 class StandardParams:
     """
-    统一的标准参数类（严格格式）。外部模块应仅通过该类设置/传递参数。
-
-    严格格式定义（必须满足，不做多种风格）：
-    - symbol: StockSymbol 或 List[StockSymbol]；统一用对象表示股票标的，禁止混入字符串；
-      仅在序列化（to_dict）时输出为 6 位代码 + 点 + 2 位大写市场后缀（例如 "000001.SZ"、"600000.SH"）。
-    - date/start_date/end_date: str；格式严格为 "YYYY-MM-DD"（例如 "2024-01-31"）。
-    - start_time/end_time: str；格式严格为 "HH:MM:SS"（例如 "09:30:00"）。
-    - period: str；取值集合之一：{"daily", "1min", "5min", "15min", "30min", "60min"}。
-    - adjust: str；取值集合之一：{"none", "qfq", "hfq"}。
-    - market: str；取值集合之一：{"SZ", "SH", "BJ"}。
-    - exchange: str；取值集合之一：{"SZSE", "SSE", "BSE"}。
-    - keyword: str；任意关键词/名称（UTF-8）。
-    - page: int >= 1；page_size: int >= 1；offset: int >= 0；limit: int >= 1。
-
-    说明：严格格式由本模块的适配器工具负责转换收敛（如 to_standard_params），
-    StandardParams 仅承载已经规范化后的值，不再接受多种输入风格的自动转换。
+    标准参数类，统一参数格式
+    
+    参数格式：
+    - symbol: StockSymbol 对象
+    - date: "YYYY-MM-DD" 格式
+    - time: "HH:MM:SS" 格式
+    - period: daily/1min/5min/15min/30min/60min
+    - adjust: none/qfq/hfq
+    - market: SZ/SH/BJ
+    - exchange: SZSE/SSE/BSE
     """
 
     def __init__(

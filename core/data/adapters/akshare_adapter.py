@@ -33,6 +33,9 @@ class AkshareStockParamAdapter:
         # 初始化转换链和验证链
         self._init_transform_chain()
         self._init_validation_chain()
+        
+        # 初始化委托用的transformer实例（避免重复创建）
+        self._init_delegate_transformers()
     
     def _init_transform_chain(self):
         """初始化转换链"""
@@ -56,6 +59,13 @@ class AkshareStockParamAdapter:
             FormatValidator(self.config_loader_adapter.get_format_config()),
             RangeValidator(self.config_loader_adapter.get_range_config()),
         ])
+    
+    def _init_delegate_transformers(self):
+        """初始化委托用的transformer实例"""
+        self._market_transformer = None
+        self._date_transformer = None
+        self._time_transformer = None
+        self._symbol_transformer = None
     
     def adapt(self, interface_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
         """适配参数（保持对外接口不变）"""
@@ -108,43 +118,47 @@ class AkshareStockParamAdapter:
         
         return context.target_params
     
-    # 为了兼容utils.py中的调用，添加一些方法
     def _get_market_hint(self, params: Dict[str, Any], example: Dict[str, Any]) -> str:
-        """获取市场提示 - 委托给MarketTransformer"""
-        from .transformers.market_transformer import MarketTransformer
-        transformer = MarketTransformer()
-        return transformer._get_market_hint(params, example)
+        """获取市场提示"""
+        if self._market_transformer is None:
+            from .transformers.market_transformer import MarketTransformer
+            self._market_transformer = MarketTransformer()
+        return self._market_transformer._get_market_hint(params, example)
     
     def _pick_from_aliases(self, src: Dict[str, Any], aliases: list) -> Any:
-        """从别名中选取值 - 委托给utils"""
+        """从别名中选取值"""
         from .utils import pick_from_aliases
         return pick_from_aliases(src, aliases)
     
     def _apply_to_value(self, value: Any, fn) -> Any:
-        """支持列表与逗号分隔字符串的转换 - 委托给utils"""
+        """支持列表与逗号分隔字符串的转换"""
         from .utils import apply_to_value
         return apply_to_value(value, fn)
     
     def _convert_date(self, v: str, target_style: str) -> str:
-        """转换日期格式 - 委托给DateTransformer"""
-        from .transformers.date_transformer import DateTransformer
-        transformer = DateTransformer()
-        return transformer._convert_date(v, target_style)
+        """转换日期格式"""
+        if self._date_transformer is None:
+            from .transformers.date_transformer import DateTransformer
+            self._date_transformer = DateTransformer()
+        return self._date_transformer._convert_date(v, target_style)
     
     def _convert_time(self, v: str, target_style: str) -> str:
-        """转换时间格式 - 委托给TimeTransformer"""
-        from .transformers.time_transformer import TimeTransformer
-        transformer = TimeTransformer()
-        return transformer._convert_time(v, target_style)
+        """转换时间格式"""
+        if self._time_transformer is None:
+            from .transformers.time_transformer import TimeTransformer
+            self._time_transformer = TimeTransformer()
+        return self._time_transformer._convert_time(v, target_style)
     
     def _detect_symbol_style(self, s: str) -> str:
-        """检测股票代码风格 - 委托给SymbolTransformer"""
-        from .transformers.symbol_transformer import SymbolTransformer
-        transformer = SymbolTransformer()
-        return transformer._detect_symbol_style(s)
+        """检测股票代码风格"""
+        if self._symbol_transformer is None:
+            from .transformers.symbol_transformer import SymbolTransformer
+            self._symbol_transformer = SymbolTransformer()
+        return self._symbol_transformer._detect_symbol_style(s)
     
     def _detect_target_key_style_case(self, example: Dict[str, Any], accepted: set) -> tuple:
-        """检测目标键的风格 - 委托给SymbolTransformer"""
-        from .transformers.symbol_transformer import SymbolTransformer
-        transformer = SymbolTransformer()
-        return transformer._detect_target_key_style_case(example, accepted)
+        """检测目标键的风格"""
+        if self._symbol_transformer is None:
+            from .transformers.symbol_transformer import SymbolTransformer
+            self._symbol_transformer = SymbolTransformer()
+        return self._symbol_transformer._detect_target_key_style_case(example, accepted)
