@@ -385,6 +385,8 @@ class StandardParams:
             d["offset"] = self.offset
         if self.limit is not None:
             d["limit"] = self.limit
+        if self.ranking_type is not None:
+            d["ranking_type"] = self._maybe_strip(self.ranking_type)
 
         # 透传额外键（不覆盖标准键）
         for k, v in self.extra.items():

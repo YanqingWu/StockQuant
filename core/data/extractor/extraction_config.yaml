@@ -2137,8 +2137,12 @@ parameter_mappings:
   # 无歧义接口 -> 实际akshare接口的映射
   interface_mappings:
     stock_fund_flow_individual:
-      parameter_mapping: {}  # 不映射任何参数，使用默认值
-      validation: {}
+      parameter_mapping:
+        ranking_type: "symbol"  # 将 ranking_type 映射为 symbol
+      validation:
+        ranking_type:
+          valid_values: ["即时", "3日排行", "5日排行", "10日排行", "20日排行"]
+          default_value: "即时"
     
     stock_fund_flow_big_deal:
       parameter_mapping: {}  # 不映射任何参数，使用默认值
