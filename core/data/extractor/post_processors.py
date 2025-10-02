@@ -4,7 +4,6 @@
 """
 
 import pandas as pd
-import logging
 from typing import Any
 from core.logging import get_logger
 

@@ -6,6 +6,7 @@ from typing import Dict, List, Any, Optional, Union, Tuple
 from pathlib import Path
 from dataclasses import dataclass
 import pandas as pd
+from datetime import datetime, date
 from .config_loader import ConfigLoader
 from .adapter import to_standard_params, StandardParams, AkshareStockParamAdapter, StockSymbol, MappingAwareAdapter
 from ..interfaces.executor import TaskManager, InterfaceExecutor, CallTask, ExecutionContext, ExecutorConfig, RetryConfig
@@ -341,6 +342,67 @@ class Extractor:
                     logger.info(f"DataFrame中没有symbol列，当前列名: {list(df.columns)}")
             except Exception as _e:
                 logger.error(f"symbol字段转换失败，保持原格式: {_e}")
+
+            # 转换date字段为统一格式
+            try:
+                if 'date' in df.columns:
+                    logger.info(f"开始转换date字段，原始类型: {type(df['date'].iloc[0])}, 原始值: {df['date'].iloc[0]}")
+                    
+                    def convert_date_to_unified_format(date_value):
+                        """将date字段转换为统一的datetime.date格式"""
+                        if pd.isna(date_value) or date_value is None:
+                            return date_value
+                        
+                        # 如果已经是date对象，直接返回
+                        if isinstance(date_value, date):
+                            return date_value
+                        
+                        # 如果已经是datetime对象，转换为date
+                        if isinstance(date_value, datetime):
+                            return date_value.date()
+                        
+                        # 如果是字符串，尝试解析
+                        if isinstance(date_value, str):
+                            date_str = str(date_value).strip()
+                            
+                            # 处理各种日期格式
+                            if len(date_str) == 8 and date_str.isdigit():  # 20230922 格式
+                                try:
+                                    return datetime.strptime(date_str, '%Y%m%d').date()
+                                except ValueError:
+                                    pass
+                            
+                            # 处理其他常见格式
+                            for fmt in ['%Y-%m-%d', '%Y/%m/%d', '%Y.%m.%d', '%m/%d/%Y', '%d/%m/%Y']:
+                                try:
+                                    return datetime.strptime(date_str, fmt).date()
+                                except ValueError:
+                                    continue
+                            
+                            # 尝试pandas自动解析
+                            try:
+                                parsed_date = pd.to_datetime(date_str)
+                                return parsed_date.date()
+                            except:
+                                pass
+                            
+                            # 如果都无法解析，保持原值
+                            return date_value
+                        
+                        # 其他类型，尝试转换为字符串后解析
+                        try:
+                            str_value = str(date_value).strip()
+                            return convert_date_to_unified_format(str_value)
+                        except Exception:
+                            return date_value
+                    
+                    # 应用转换函数到date列
+                    df['date'] = df['date'].apply(convert_date_to_unified_format)
+                    logger.info(f"已将date字段转换为统一格式，转换后类型: {type(df['date'].iloc[0])}, 转换后值: {df['date'].iloc[0]}")
+                else:
+                    logger.info(f"DataFrame中没有date列，当前列名: {list(df.columns)}")
+            except Exception as e:
+                logger.error(f"date字段转换失败，保持原格式: {e}")
 
             # 若无数据（空 DataFrame），则判定失败；仅列不匹配不视为失败
             if df is None or df.empty:

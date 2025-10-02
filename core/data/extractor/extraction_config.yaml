@@ -2120,7 +2120,7 @@ field_mappings:
   "龙头股": "leader_stock_name"
 
   # 融资融券
-  "信用交易日期": "margin_date"
+  "信用交易日期": "date"
   "标的证券代码": "underlying_symbol"
   "标的证券简称": "underlying_name"
   "融资余额": "margin_balance"
@@ -2161,6 +2161,17 @@ field_mappings:
   "联系电话": "phone"
   "经营范围": "business_scope"
   "入选指数": "index_codes"
+
+  # 成本分布相关
+  "获利比例": "profit_ratio"
+  "套牢比例": "loss_ratio"
+  "平均成本": "avg_cost"
+  "90成本-低": "cost_90_low"
+  "90成本-高": "cost_90_high"
+  "90集中度": "concentration_90"
+  "70成本-低": "cost_70_low"
+  "70成本-高": "cost_70_high"
+  "70集中度": "concentration_70"
 
 # 参数映射配置
 parameter_mappings:
