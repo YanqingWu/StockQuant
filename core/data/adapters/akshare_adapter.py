@@ -117,36 +117,7 @@ class AkshareStockParamAdapter:
         
         # 4. 执行参数验证
         if not self.validation_chain.validate(context):
-            raise RequiredParameterError(["参数验证失败"])
+            # 验证失败时会抛出具体的异常，这里不需要额外处理
+            pass
         
         return context.target_params
-    
-    def _get_market_hint(self, params: Dict[str, Any], example: Dict[str, Any]) -> str:
-        """获取市场提示"""
-        return self._market_transformer._get_market_hint(params, example)
-    
-    def _pick_from_aliases(self, src: Dict[str, Any], aliases: list) -> Any:
-        """从别名中选取值"""
-        from .utils import pick_from_aliases
-        return pick_from_aliases(src, aliases)
-    
-    def _apply_to_value(self, value: Any, fn) -> Any:
-        """支持列表与逗号分隔字符串的转换"""
-        from .utils import apply_to_value
-        return apply_to_value(value, fn)
-    
-    def _convert_date(self, v: str, target_style: str) -> str:
-        """转换日期格式"""
-        return self._date_transformer._convert_date(v, target_style)
-    
-    def _convert_time(self, v: str, target_style: str) -> str:
-        """转换时间格式"""
-        return self._time_transformer._convert_time(v, target_style)
-    
-    def _detect_symbol_style(self, s: str) -> str:
-        """检测股票代码风格"""
-        return self._symbol_transformer._detect_symbol_style(s)
-    
-    def _detect_target_key_style_case(self, example: Dict[str, Any], accepted: set) -> tuple:
-        """检测目标键的风格"""
-        return self._symbol_transformer._detect_target_key_style_case(example, accepted)

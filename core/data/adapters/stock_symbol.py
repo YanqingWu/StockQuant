@@ -1,6 +1,6 @@
 """
 股票代码统一表达类
-从原adapter.py中提取
+支持多种股票代码格式的解析和转换
 """
 
 import re
@@ -17,15 +17,7 @@ class StockSymbol:
     - "000001" (纯代码)
     """
 
-    MARKET_ALIASES = {
-        "sz": "SZ", "sh": "SH", "bj": "BJ", "hk": "HK", "us": "US",
-        "szse": "SZ", "sse": "SH", "bse": "BJ", "hkex": "HK",
-        "nasdaq": "US", "nyse": "US", "港股": "HK", "美股": "US",
-    }
-    
-    MARKET_TO_EXCHANGE = {
-        "SZ": "SZSE", "SH": "SSE", "BJ": "BSE", "HK": "HKEX", "US": "US"
-    }
+    # 市场映射已移至ConversionRules中统一管理
 
     DOT_RE = re.compile(r"^(?P<code>\d{5,6}|[A-Z]{1,5})\.(?P<mkt>[A-Za-z]{2})$")
     PREFIX_RE = re.compile(r"^(?P<mkt>[A-Za-z]{2})(?P<code>\d{5,6}|[A-Z]{1,5})$")
@@ -108,10 +100,9 @@ class StockSymbol:
 
     @classmethod
     def _canon_market(cls, market: Optional[str]) -> str:
-        if not market:
-            return ""
-        key = str(market).strip().lower()
-        return cls.MARKET_ALIASES.get(key, key.upper())
+        """标准化市场代码 - 委托给ConversionRules"""
+        from .conversion_rules import ConversionRules
+        return ConversionRules.canon_market(market)
 
     @classmethod
     def parse(
