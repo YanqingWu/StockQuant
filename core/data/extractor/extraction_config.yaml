@@ -691,6 +691,9 @@ interfaces_config:
       
       quote:
         description: "日行情数据"
+        merge_options:
+          data_quality_priority: "most_complete"  # highest, latest, most_complete
+          handle_date_gaps: "keep_all"  # keep_all, fill_gaps, latest_only
         interfaces:
           - name: "stock_zh_a_hist"
             enabled: true
@@ -749,6 +752,9 @@ interfaces_config:
       
       financing:
         description: "融资融券数据"
+        merge_options:
+          data_quality_priority: "most_complete"  # highest, latest, most_complete
+          handle_date_gaps: "keep_all"  # keep_all, fill_gaps, latest_only
         interfaces:
           - name: "stock_margin_szse"
             enabled: true
@@ -772,6 +778,9 @@ interfaces_config:
 
       cost_distribution:
         description: "成本分布数据"
+        merge_options:
+          data_quality_priority: "most_complete"  # highest, latest, most_complete
+          handle_date_gaps: "keep_all"  # keep_all, fill_gaps, latest_only
         interfaces:
           - name: "stock_cyq_em"
             enabled: true

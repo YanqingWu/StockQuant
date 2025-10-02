@@ -191,21 +191,36 @@ class ExtractionConfig:
         
         # 首先尝试从数据类型获取合并策略
         data_type_config = self.get_data_type_config(category, data_type)
-        if data_type_config and data_type_config.merge_strategy:
-            merge_options = data_type_config.merge_options
-            if not merge_options and category_config.merge_options:
-                merge_options = category_config.merge_options
-            
-            return {
-                "strategy": data_type_config.merge_strategy,
-                "date_column": data_type_config.date_column or "date",
-                "group_by": data_type_config.group_by or ["symbol"],
-                "description": data_type_config.description,
-                "merge_options": {
-                    "data_quality_priority": merge_options.data_quality_priority if merge_options else "highest",
-                    "handle_date_gaps": merge_options.handle_date_gaps if merge_options else "keep_all"
+        if data_type_config:
+            # 如果有合并策略配置，使用它
+            if data_type_config.merge_strategy:
+                merge_options = data_type_config.merge_options
+                if not merge_options and category_config.merge_options:
+                    merge_options = category_config.merge_options
+                
+                return {
+                    "strategy": data_type_config.merge_strategy,
+                    "date_column": data_type_config.date_column or "date",
+                    "group_by": data_type_config.group_by or ["symbol"],
+                    "description": data_type_config.description,
+                    "merge_options": {
+                        "data_quality_priority": merge_options.data_quality_priority if merge_options else "highest",
+                        "handle_date_gaps": merge_options.handle_date_gaps if merge_options else "keep_all"
+                    }
                 }
-            }
+            # 如果没有合并策略但有合并选项，使用分类级别的策略配置
+            elif data_type_config.merge_options:
+                merge_options = data_type_config.merge_options
+                return {
+                    "strategy": category_config.merge_strategy or "symbol_based_merge",
+                    "date_column": category_config.date_column or "date",
+                    "group_by": category_config.group_by or ["symbol"],
+                    "description": data_type_config.description,
+                    "merge_options": {
+                        "data_quality_priority": merge_options.data_quality_priority,
+                        "handle_date_gaps": merge_options.handle_date_gaps
+                    }
+                }
         
         # 如果数据类型没有配置，使用分类级别的配置
         if category_config.merge_strategy:
