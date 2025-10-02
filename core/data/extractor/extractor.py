@@ -590,11 +590,10 @@ class Extractor:
         # 2. 合并所有数据
         merged_data = pd.concat(all_data, ignore_index=True)
         
-        # 3. 按配置的字段分组去重
+        # 3. 按配置的字段分组去重，使用数据质量优先级
         group_by = merge_config.get("group_by", ["symbol", "date"])
         if group_by and all(col in merged_data.columns for col in group_by):
-            # 按分组字段去重，保留最后一个（优先级最高的）
-            merged_data = merged_data.drop_duplicates(subset=group_by, keep='last')
+            merged_data = self._apply_quality_priority_dedup(merged_data, group_by, merge_config)
         
         # 4. 按日期排序
         if "date" in merged_data.columns:
@@ -606,6 +605,81 @@ class Extractor:
             interface_name=f"merged({', '.join(interface_names)})",
             error=None
         )
+
+    def _apply_quality_priority_dedup(self, data: pd.DataFrame, group_by: List[str], 
+                                    merge_config: Dict[str, Any]) -> pd.DataFrame:
+        """
+        应用数据质量优先级去重
+        
+        Args:
+            data: 要去重的数据
+            group_by: 分组字段
+            merge_config: 合并配置
+            
+        Returns:
+            去重后的数据
+        """
+        merge_options = merge_config.get("merge_options", {})
+        quality_priority = merge_options.get("data_quality_priority", "highest")
+        
+        if quality_priority == "highest":
+            # 按接口优先级去重（保留最后一个，即优先级最高的）
+            return data.drop_duplicates(subset=group_by, keep='last')
+        
+        elif quality_priority == "latest":
+            # 按数据时间去重（需要数据中包含时间戳字段）
+            if 'timestamp' in data.columns:
+                return data.sort_values('timestamp').drop_duplicates(subset=group_by, keep='last')
+            else:
+                # 如果没有时间戳字段，回退到接口优先级
+                logger.info("数据中没有timestamp字段，回退到接口优先级去重")
+                return data.drop_duplicates(subset=group_by, keep='last')
+        
+        elif quality_priority == "most_complete":
+            # 按数据完整性去重
+            return self._dedup_by_completeness(data, group_by)
+        
+        else:
+            # 未知策略，回退到接口优先级
+            logger.info(f"未知的数据质量优先级策略: {quality_priority}，回退到接口优先级")
+            return data.drop_duplicates(subset=group_by, keep='last')
+
+    def _dedup_by_completeness(self, data: pd.DataFrame, group_by: List[str]) -> pd.DataFrame:
+        """
+        按数据完整性去重
+        
+        Args:
+            data: 要去重的数据
+            group_by: 分组字段
+            
+        Returns:
+            去重后的数据
+        """
+        def calculate_completeness(row):
+            """计算单行数据的完整性（排除元数据字段）"""
+            # 排除元数据字段，只计算业务字段的完整性
+            metadata_fields = {'source', '_completeness_score', 'timestamp'}
+            business_fields = [col for col in row.index if col not in metadata_fields]
+            
+            if not business_fields:
+                return 0
+                
+            non_null_count = sum(1 for col in business_fields if pd.notna(row[col]))
+            total_count = len(business_fields)
+            return non_null_count / total_count if total_count > 0 else 0
+        
+        # 为每行数据添加完整性得分
+        data_with_score = data.copy()
+        data_with_score['_completeness_score'] = data_with_score.apply(calculate_completeness, axis=1)
+        
+        # 按分组字段和完整性得分排序，保留完整性最高的
+        data_sorted = data_with_score.sort_values(['_completeness_score'], ascending=False)
+        result = data_sorted.drop_duplicates(subset=group_by, keep='first')
+        
+        # 移除临时列
+        result = result.drop('_completeness_score', axis=1)
+        
+        return result
 
     def _merge_by_symbol(self, successful_results: List[Tuple[Any, ExtractionResult]], 
                         standard_params: StandardParams, merge_config: Dict[str, Any]) -> ExtractionResult:
@@ -688,10 +762,10 @@ class Extractor:
         # 2. 合并所有数据
         merged_data = pd.concat(all_data, ignore_index=True)
         
-        # 3. 按股票和报告期去重
+        # 3. 按股票和报告期去重，使用数据质量优先级
         group_by = merge_config.get("group_by", ["symbol", "report_date"])
         if group_by and all(col in merged_data.columns for col in group_by):
-            merged_data = merged_data.drop_duplicates(subset=group_by, keep='last')
+            merged_data = self._apply_quality_priority_dedup(merged_data, group_by, merge_config)
         
         # 4. 按报告期排序
         if "report_date" in merged_data.columns:

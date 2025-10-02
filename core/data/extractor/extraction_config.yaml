@@ -644,6 +644,9 @@ interfaces_config:
       # 基础信息：按股票合并
       merge_strategy: "symbol_based_merge"
       group_by: ["symbol"]
+      merge_options:
+        data_quality_priority: "most_complete"  # highest, latest, most_complete
+        handle_date_gaps: "keep_all"  # keep_all, fill_gaps, latest_only
       interfaces:
         - name: "stock_info_sh_name_code"
           enabled: true
@@ -682,6 +685,9 @@ interfaces_config:
       date_column: "date"
       group_by: ["symbol", "date"]
       description: "日行情数据按日期合并"
+      merge_options:
+        data_quality_priority: "most_complete"  # highest, latest, most_complete
+        handle_date_gaps: "keep_all"  # keep_all, fill_gaps, latest_only
       
       quote:
         description: "日行情数据"
@@ -778,6 +784,9 @@ interfaces_config:
         merge_strategy: "date_based_merge"
         date_column: "date"
         group_by: ["symbol", "date"]
+        merge_options:
+          data_quality_priority: "most_complete"  # highest, latest, most_complete
+          handle_date_gaps: "keep_all"  # keep_all, fill_gaps, latest_only
         interfaces:
           - name: "stock_individual_fund_flow"
             enabled: true
@@ -877,6 +886,9 @@ interfaces_config:
       merge_strategy: "symbol_report_merge"
       group_by: ["symbol", "report_date"]
       description: "财务数据按股票和报告期合并"
+      merge_options:
+        data_quality_priority: "most_complete"  # highest, latest, most_complete
+        handle_date_gaps: "keep_all"  # keep_all, fill_gaps, latest_only
       
       balance_sheet:
         description: "资产负债表"

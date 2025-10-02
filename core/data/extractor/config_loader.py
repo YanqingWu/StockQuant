@@ -27,6 +27,12 @@ class InterfaceConfig:
 
 
 @dataclass
+class MergeOptions:
+    """合并选项配置"""
+    data_quality_priority: str = "most_complete"  # highest, latest, most_complete
+    handle_date_gaps: str = "keep_all"  # keep_all, fill_gaps, latest_only
+
+@dataclass
 class DataTypeConfig:
     """数据类型配置"""
     description: str = ""
@@ -35,6 +41,7 @@ class DataTypeConfig:
     merge_strategy: Optional[str] = None
     date_column: Optional[str] = None
     group_by: List[str] = field(default_factory=list)
+    merge_options: Optional[MergeOptions] = None
     
     def get_enabled_interfaces(self, market: Optional[str] = None) -> List[InterfaceConfig]:
         """获取启用的接口，按优先级排序，可按市场过滤"""
@@ -64,6 +71,7 @@ class CategoryConfig:
     merge_strategy: Optional[str] = None
     date_column: Optional[str] = None
     group_by: List[str] = field(default_factory=list)
+    merge_options: Optional[MergeOptions] = None
     
     def get_enabled_data_types(self) -> Dict[str, DataTypeConfig]:
         """获取启用的数据类型"""
@@ -174,26 +182,43 @@ class ExtractionConfig:
                 "strategy": "symbol_based_merge",
                 "date_column": "date",
                 "group_by": ["symbol"],
-                "description": "默认按股票合并"
+                "description": "默认按股票合并",
+                "merge_options": {
+                    "data_quality_priority": "highest",
+                    "handle_date_gaps": "keep_all"
+                }
             }
         
         # 首先尝试从数据类型获取合并策略
         data_type_config = self.get_data_type_config(category, data_type)
         if data_type_config and data_type_config.merge_strategy:
+            merge_options = data_type_config.merge_options
+            if not merge_options and category_config.merge_options:
+                merge_options = category_config.merge_options
+            
             return {
                 "strategy": data_type_config.merge_strategy,
                 "date_column": data_type_config.date_column or "date",
                 "group_by": data_type_config.group_by or ["symbol"],
-                "description": data_type_config.description
+                "description": data_type_config.description,
+                "merge_options": {
+                    "data_quality_priority": merge_options.data_quality_priority if merge_options else "highest",
+                    "handle_date_gaps": merge_options.handle_date_gaps if merge_options else "keep_all"
+                }
             }
         
         # 如果数据类型没有配置，使用分类级别的配置
         if category_config.merge_strategy:
+            merge_options = category_config.merge_options
             return {
                 "strategy": category_config.merge_strategy,
                 "date_column": category_config.date_column or "date",
                 "group_by": category_config.group_by or ["symbol"],
-                "description": category_config.description
+                "description": category_config.description,
+                "merge_options": {
+                    "data_quality_priority": merge_options.data_quality_priority if merge_options else "highest",
+                    "handle_date_gaps": merge_options.handle_date_gaps if merge_options else "keep_all"
+                }
             }
         
         # 默认策略
@@ -201,7 +226,11 @@ class ExtractionConfig:
             "strategy": "symbol_based_merge",
             "date_column": "date",
             "group_by": ["symbol"],
-            "description": "默认按股票合并"
+            "description": "默认按股票合并",
+            "merge_options": {
+                "data_quality_priority": "highest",
+                "handle_date_gaps": "keep_all"
+            }
         }
 
 
@@ -361,7 +390,7 @@ class ConfigLoader:
             
             for key, value in data.items():
                 # 跳过分类级别的配置字段
-                if key in ['description', 'retry_strategy', 'merge_strategy', 'date_column', 'group_by']:
+                if key in ['description', 'retry_strategy', 'merge_strategy', 'date_column', 'group_by', 'merge_options']:
                     continue
                 
                 if isinstance(value, dict):
@@ -369,12 +398,23 @@ class ConfigLoader:
                     if 'interfaces' in value:
                         # 直接包含接口的数据类型
                         interfaces = parse_interfaces_recursive(value)
+                        
+                        # 解析合并选项
+                        merge_options_data = value.get('merge_options', {})
+                        merge_options = None
+                        if merge_options_data:
+                            merge_options = MergeOptions(
+                                data_quality_priority=merge_options_data.get('data_quality_priority', 'highest'),
+                                handle_date_gaps=merge_options_data.get('handle_date_gaps', 'keep_all')
+                            )
+                        
                         data_type = DataTypeConfig(
                             description=value.get('description', ''),
                             interfaces=interfaces,
                             merge_strategy=value.get('merge_strategy'),
                             date_column=value.get('date_column'),
-                            group_by=value.get('group_by', [])
+                            group_by=value.get('group_by', []),
+                            merge_options=merge_options
                         )
                         data_types[key] = data_type
                     else:
@@ -391,13 +431,23 @@ class ConfigLoader:
             # 递归解析数据类型配置
             data_types = parse_data_type_recursive(category_data)
             
+            # 解析分类级别的合并选项
+            merge_options_data = category_data.get('merge_options', {})
+            merge_options = None
+            if merge_options_data:
+                merge_options = MergeOptions(
+                    data_quality_priority=merge_options_data.get('data_quality_priority', 'highest'),
+                    handle_date_gaps=merge_options_data.get('handle_date_gaps', 'keep_all')
+                )
+            
             category = CategoryConfig(
                 description=category_data.get('description', ''),
                 retry_strategy=category_data.get('retry_strategy', 'standard'),
                 data_types=data_types,
                 merge_strategy=category_data.get('merge_strategy'),
                 date_column=category_data.get('date_column'),
-                group_by=category_data.get('group_by', [])
+                group_by=category_data.get('group_by', []),
+                merge_options=merge_options
             )
             interfaces_config[category_name] = category
         
