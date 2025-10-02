@@ -1795,7 +1795,7 @@ field_mappings:
   "turnover": "turnover_rate"
   "prevclose": "pre_close"
   "outstanding_share": "outstanding"
-  "after_volume": "volume"
+  "after_volume": "after_volume"
   "after_amount": "amount"
 
   # 行情价格（OHLC、昨收、均价等）
@@ -1830,7 +1830,7 @@ field_mappings:
   "成交额": "amount"
   "成交价": "trade_price"
   "成交笔数": "trade_count"
-  "成交总量": "trade_volume"
+  "成交总量": "total_volume"
   "成交总额": "trade_amount"
   "成交额占比": "amount_ratio"
   "成交总额(龙虎榜)": "total_amount"

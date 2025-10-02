@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import pandas as pd
 from datetime import datetime, date
 from .config_loader import ConfigLoader
-from .adapter import to_standard_params, StandardParams, AkshareStockParamAdapter, StockSymbol, MappingAwareAdapter
+from .adapter import to_standard_params, StandardParams, AkshareStockParamAdapter, StockSymbol
 from ..interfaces.executor import TaskManager, InterfaceExecutor, CallTask, ExecutionContext, ExecutorConfig, RetryConfig
 from ..cache.persistent_cache import PersistentCacheConfig
 from ..interfaces.base import get_api_provider_manager
@@ -52,7 +52,7 @@ class Extractor:
         self.config = self.config_loader.load_config()
         
         # 初始化参数适配器
-        self.param_adapter = MappingAwareAdapter(self.config_loader)
+        self.param_adapter = AkshareStockParamAdapter(self.config_loader)
         
         # 初始化task manager和executor
         self.provider_manager = get_api_provider_manager()
@@ -271,6 +271,30 @@ class Extractor:
             try:
                 col_mapping = {col: self.config.get_field_mapping(col) for col in df.columns}
                 df = df.rename(columns=col_mapping)
+                
+                # 检查并处理重复列名
+                if len(df.columns) != len(set(df.columns)):
+                    duplicate_cols = [col for col in df.columns if list(df.columns).count(col) > 1]
+                    logger.warning(f"检测到重复列名: {duplicate_cols}")
+                    
+                    # 合并重复列的数据，优先保留非空值
+                    for dup_col in set(duplicate_cols):
+                        # 获取所有同名列的索引
+                        dup_indices = [i for i, col in enumerate(df.columns) if col == dup_col]
+                        if len(dup_indices) > 1:
+                            # 合并这些列的数据
+                            merged_series = df.iloc[:, dup_indices[0]].copy()
+                            for idx in dup_indices[1:]:
+                                # 用非空值填充
+                                mask = merged_series.isna() | (merged_series == '') | (merged_series == 0)
+                                merged_series = merged_series.where(~mask, df.iloc[:, idx])
+                            
+                            # 删除重复列，保留第一列并更新其数据
+                            df = df.drop(df.columns[dup_indices[1:]], axis=1)
+                            df.iloc[:, dup_indices[0]] = merged_series
+                            
+                            logger.info(f"已合并重复列 '{dup_col}'，保留 {len(dup_indices)} 列中的最佳数据")
+                            
             except Exception as _e:
                 logger.debug(f"列名映射失败，继续使用原列名: {_e}")
 
@@ -483,16 +507,9 @@ class Extractor:
             try:
                 logger.info(f"准备加入批量任务: {interface.name}")
                 try:
-                    # 检查是否需要接口映射
-                    logger.debug(f"检查接口映射: {interface.name}, 是否为映射接口: {self.param_adapter._is_mapping_interface(interface.name)}")
-                    if self.param_adapter._is_mapping_interface(interface.name):
-                        # 使用映射接口进行参数适配
-                        logger.debug(f"使用映射接口进行参数适配: {interface.name}")
-                        adapted_params = self.param_adapter._handle_mapping_interface(interface.name, params_dict)
-                    else:
-                        # 使用普通适配器
-                        logger.debug(f"使用普通适配器: {interface.name}")
-                        adapted_params = param_adapter.adapt(interface.name, params_dict)
+                    # 统一通过适配器执行参数适配，隐藏具体映射细节
+                    logger.debug(f"进行参数适配: {interface.name}")
+                    adapted_params = param_adapter.adapt(interface.name, params_dict)
                 except Exception as _e:
                     logger.debug(f"参数适配失败，回退原始参数: {interface.name}, err={_e}")
                     adapted_params = params_dict
@@ -932,25 +949,24 @@ class Extractor:
             return data
         
         try:
+            import pandas as pd
             from datetime import datetime
             
-            start_date = None
-            end_date = None
+            # 确保日期列是datetime类型
+            if not pd.api.types.is_datetime64_any_dtype(data[date_column]):
+                data = data.copy()  # 创建副本避免修改原数据
+                data[date_column] = pd.to_datetime(data[date_column])
             
-            if standard_params.start_date:
-                start_date = datetime.strptime(standard_params.start_date, '%Y-%m-%d').date()
-            
-            if standard_params.end_date:
-                end_date = datetime.strptime(standard_params.end_date, '%Y-%m-%d').date()
-            
-            # 过滤数据
+            # 过滤数据 - 直接使用字符串日期进行比较
             mask = pd.Series([True] * len(data), index=data.index)
             
-            if start_date is not None:
-                mask &= (data[date_column] >= start_date)
+            if standard_params.start_date:
+                start_timestamp = pd.Timestamp(standard_params.start_date)
+                mask &= (data[date_column] >= start_timestamp)
             
-            if end_date is not None:
-                mask &= (data[date_column] <= end_date)
+            if standard_params.end_date:
+                end_timestamp = pd.Timestamp(standard_params.end_date)
+                mask &= (data[date_column] <= end_timestamp)
             
             filtered_data = data[mask]
             logger.debug(f"日期过滤: 原始 {len(data)} 行 -> 过滤后 {len(filtered_data)} 行")

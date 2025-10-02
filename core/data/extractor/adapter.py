@@ -60,7 +60,6 @@ class StockSymbol:
 
     DOT_RE = re.compile(r"^(?P<code>\d{5,6}|[A-Z]{1,5})\.(?P<mkt>[A-Za-z]{2})$")
     PREFIX_RE = re.compile(r"^(?P<mkt>[A-Za-z]{2})(?P<code>\d{5,6}|[A-Z]{1,5})$")
-    HK_CODE_RE = re.compile(r"^(?P<code>\d{5,6})$")  # 港股5-6位数字代码（支持00700格式）
     US_CODE_RE = re.compile(r"^(?P<code>[A-Z]{1,5})$")  # 美股字母代码
 
     def __init__(self, market: str, code: str) -> None:
@@ -137,6 +136,9 @@ class StockSymbol:
             
             # 进一步校验代码前缀与市场的匹配
             inferred_market = cls._infer_market_by_code(code)
+            # 指数代码特殊情况：上证指数等以 000 开头，但市场以前缀确定（如 sh000001）
+            if market == "SH" and re.fullmatch(r"000\d{3}", code):
+                return
             if inferred_market and inferred_market != market:
                 raise ValueError(
                     f"股票代码 {code} 的格式表明它属于 {inferred_market} 市场，"
@@ -199,22 +201,24 @@ class StockSymbol:
             return cls(m.group("mkt"), m.group("code"))
         
         # 纯代码优先匹配（避免被前缀模式误匹配）
-        # 港股6位数字代码（优先检查，如00700）
-        if re.fullmatch(r"\d{6}", s2) and s2.startswith("00"):
-            # 6位数字且以00开头，很可能是港股代码（如00700）
-            mkt = cls._canon_market(hint_market) or "HK"
+        # 港股5位数字代码（如 00700）
+        if re.fullmatch(r"\d{5}", s2):
+            # 明确以代码前缀为准，若显式 market 与代码推断不一致，则以代码推断覆盖
+            inferred = "HK"
+            canon_hint = cls._canon_market(hint_market)
+            mkt = inferred if canon_hint and canon_hint != inferred else (canon_hint or inferred)
             return cls(mkt, s2)
         
         # A股6位数字代码
         if re.fullmatch(r"\d{6}", s2):
-            mkt = cls._canon_market(hint_market) or cls._infer_market_by_code(s2)
+            inferred = cls._infer_market_by_code(s2)
+            canon_hint = cls._canon_market(hint_market)
+            # 如果显式提示是A股市场但与代码推断不一致，则使用代码推断，以避免后续一致性报错
+            if canon_hint in {"SH", "SZ", "BJ"} and canon_hint != inferred:
+                mkt = inferred
+            else:
+                mkt = canon_hint or inferred
             return cls(mkt, s2)
-        
-        # 港股5位数字代码
-        m = cls.HK_CODE_RE.match(s2)
-        if m:
-            mkt = cls._canon_market(hint_market) or "HK"
-            return cls(mkt, m.group("code"))
         
         # 美股字母代码
         m = cls.US_CODE_RE.match(s2)
@@ -620,6 +624,7 @@ class AkshareStockParamAdapter(ParamAdapter):
     - 将输入中的股票代码统一解析后，按目标风格回写到参数中
     - 日期/时间/周期/复权参数做格式适配
     - 参数名按接口元数据收敛，过滤未知参数，避免向底层函数传递未定义的 kwargs
+    - 支持接口映射：通过配置将标准接口映射到实际接口，并进行参数转换
     - 尽量不改动与上述无关的参数；转换失败回退原值
     """
 
@@ -634,16 +639,95 @@ class AkshareStockParamAdapter(ParamAdapter):
     MARKET_KEYS = ["market"]
     EXCHANGE_KEYS = ["exchange"]
     KEYWORD_KEYS = ["keyword", "name"]
+    
+    def __init__(self, config_loader=None):
+        """初始化适配器，可选传入配置加载器"""
+        self.config_loader = config_loader
+        self.mappings = {}
+        if config_loader:
+            try:
+                # 从配置加载器中加载映射配置
+                config = config_loader.load_config()
+                self.mappings = config.parameter_mappings
+            except Exception as e:
+                logger.warning(f"加载参数映射配置失败: {e}")
 
     def adapt(self, interface_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
+        # 1. 检查是否为映射接口
+        if self.config_loader and self._is_mapping_interface(interface_name):
+            return self._handle_mapping_interface(interface_name, params)
+        
+        # 2. 使用基础适配逻辑处理
+        return self._adapt_base(interface_name, params)
+    
+    def _is_mapping_interface(self, interface_name: str) -> bool:
+        """检查是否为映射接口"""
+        return interface_name in self.mappings
+    
+    def _handle_mapping_interface(self, interface_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
+        """处理映射接口"""
+        try:
+            # 映射到目标接口
+            target_interface, mapped_params = self._map_parameters(interface_name, params)
+            logger.debug(f"映射接口 {interface_name} -> {target_interface}, 映射后参数: {mapped_params}")
+            
+            # 使用基础适配器处理映射后的参数
+            return self._adapt_base(target_interface, mapped_params)
+        
+        except ParameterValidationError as e:
+            logger.error(f"参数验证失败: {interface_name}, 错误: {e}")
+            raise
+        
+        except InterfaceMappingError as e:
+            logger.error(f"接口映射失败: {interface_name}, 错误: {e}")
+            raise
+    
+    def _map_parameters(self, interface_name: str, params: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
+        """映射参数到目标接口"""
+        if interface_name not in self.mappings:
+            raise InterfaceMappingError(f"接口 {interface_name} 没有映射配置")
+        
+        mapping_config = self.mappings[interface_name]
+        if not mapping_config:
+            raise InterfaceMappingError(f"接口 {interface_name} 的映射配置为空")
+        
+        target_interface = interface_name
+        parameter_mapping = mapping_config["parameter_mapping"]
+        validation = mapping_config.get("validation", {})
+        
+        # 1. 验证参数
+        self._validate_parameters(params, validation)
+        
+        # 2. 映射参数
+        mapped_params = {}
+        for source_param, target_param in parameter_mapping.items():
+            if source_param in params:
+                mapped_params[target_param] = params[source_param]
+        
+        # 3. 应用默认值
+        self._apply_default_values(mapped_params, validation)
+        
+        # 4. 特殊处理逻辑
+        self._apply_special_handling(interface_name, mapped_params, params)
+        
+        return target_interface, mapped_params
+
+    def _adapt_base(self, interface_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
+        """基础适配逻辑"""
         metadata = get_interface_metadata(interface_name)
         if not metadata:
             return params
         example = metadata.example_params or {}
         accepted_keys = set((metadata.required_params or []) + (metadata.optional_params or []))
 
-        # 原始拷贝，用于从别名读取
-        source_params = dict(params)
+        # 0) 映射阶段：先进行键名与枚举值映射（接口级覆盖，默认兜底）
+        try:
+            params = self._apply_mapping(interface_name, params, accepted_keys)
+        except Exception as e:
+            logger.debug(f"{interface_name}: 参数映射阶段失败，回退原始参数: {e}")
+
+        # 原始拷贝，用于从别名读取（早期白名单过滤：仅保留目标接口接受的键与适配器可识别的别名键）
+        source_params = self._early_filter_source(dict(params), accepted_keys)
         new_params: Dict[str, Any] = {}
 
         # 如果接口不接受任何参数，直接返回空字典
@@ -674,13 +758,89 @@ class AkshareStockParamAdapter(ParamAdapter):
             if k in accepted_keys and k not in new_params:
                 new_params[k] = v
         
-        # 8) 严格过滤：移除接口不接受的参数
+        # 8) 严格过滤：移除接口不接受的参数（确保无多余参数）
         self._strict_filter_params(new_params, accepted_keys)
 
         # 9) 应用特殊处理逻辑
         self._apply_special_handling(interface_name, new_params)
 
+        # 10) 完整性校验：必填参数必须具备（确保无缺失参数）
+        self._validate_required_params(interface_name, new_params, accepted_keys, metadata.required_params or [])
+
         return new_params
+
+    # ---- 映射阶段：name_map/value_map ----
+    def _apply_mapping(self, interface_name: str, params: Dict[str, Any], accepted_keys: set) -> Dict[str, Any]:
+        """
+        根据配置进行键名与枚举值映射：
+        - 先取接口级映射，再取默认映射（default），后者仅在前者缺失时生效
+        - 仅允许映射到 `accepted_keys`，否则忽略并记录
+        - 冲突处理：若源中已存在规范键，规范键优先，映射键忽略
+        配置来源：ConfigLoader.parameter_mappings.interface_mappings
+        结构示例：
+        {
+          "default": {"name_map": {...}, "value_map": {...}},
+          "stock_zh_a_hist": {"name_map": {...}, "value_map": {...}}
+        }
+        """
+        try:
+            from .config_loader import ConfigLoader  # 本地加载器
+            loader = ConfigLoader()
+            mappings = loader.get_parameter_mappings() or {}
+        except Exception:
+            mappings = {}
+
+        iface_cfg = mappings.get(interface_name, {}) or {}
+        default_cfg = mappings.get("default", {}) or {}
+        name_map = {}
+        value_map = {}
+        # 合并策略：接口级覆盖默认
+        name_map.update(default_cfg.get("name_map", {}) or {})
+        name_map.update(iface_cfg.get("name_map", {}) or {})
+        value_map.update(default_cfg.get("value_map", {}) or {})
+        value_map.update(iface_cfg.get("value_map", {}) or {})
+
+        if not name_map and not value_map:
+            return params
+
+        # 先处理键名映射
+        out: Dict[str, Any] = dict(params)
+        for src_key, tgt_key in list(name_map.items()):
+            if src_key not in out:
+                continue
+            # 仅允许映射到已接受的键
+            if tgt_key not in accepted_keys:
+                logger.debug(f"{interface_name}: 映射目标键不被接受，忽略映射 {src_key}->{tgt_key}")
+                continue
+            # 冲突：若已存在规范键，规范键优先
+            if tgt_key in out and src_key in out:
+                logger.debug(f"{interface_name}: 发现键冲突，保留规范键 {tgt_key}，忽略映射源键 {src_key}")
+                del out[src_key]
+                continue
+            out[tgt_key] = out.pop(src_key)
+
+        # 再处理值枚举映射：仅对存在的键应用
+        for key, enum_map in (value_map or {}).items():
+            if key not in out:
+                continue
+            val = out[key]
+            def apply_one(v: Any) -> Any:
+                if isinstance(v, str):
+                    s = v.strip()
+                    # 枚举映射按大小写不敏感匹配
+                    lower_map = {str(k).lower(): enum_map[k] for k in enum_map}
+                    return lower_map.get(s.lower(), v)
+                return v
+            # 支持列表/逗号分隔
+            if isinstance(val, list):
+                out[key] = [apply_one(v) for v in val]
+            elif isinstance(val, str) and "," in val:
+                parts = [p.strip() for p in val.split(",")]
+                out[key] = ",".join(str(apply_one(p)) for p in parts)
+            else:
+                out[key] = apply_one(val)
+
+        return out
     
     def _strict_filter_params(self, params: Dict[str, Any], accepted_keys: set) -> None:
         """
@@ -695,6 +855,62 @@ class AkshareStockParamAdapter(ParamAdapter):
         
         for key in keys_to_remove:
             del params[key]
+
+    def _early_filter_source(self, src: Dict[str, Any], accepted_keys: set) -> Dict[str, Any]:
+        """
+        早期白名单过滤：输入源只保留接口接受的键以及适配器识别的别名键，避免噪音参数干扰后续收敛。
+        保留的别名集合包括：symbol/date/time/period/adjust/market/exchange/keyword 家族。
+        """
+        alias_sets = [
+            set(self.SYMBOL_KEYS), set(self.DATE_KEYS), set(self.START_DATE_KEYS), set(self.END_DATE_KEYS),
+            set(self.START_TIME_KEYS), set(self.END_TIME_KEYS), set(self.PERIOD_KEYS), set(self.ADJUST_KEYS),
+            set(self.MARKET_KEYS), set(self.EXCHANGE_KEYS), set(self.KEYWORD_KEYS),
+        ]
+        known_aliases = set().union(*alias_sets)
+        filtered: Dict[str, Any] = {}
+        for k, v in src.items():
+            if k in accepted_keys or k in known_aliases:
+                filtered[k] = v
+            else:
+                logger.debug(f"早期过滤掉未识别/不接受的参数: {k}")
+        return filtered
+
+    def _validate_required_params(
+        self,
+        interface_name: str,
+        params: Dict[str, Any],
+        accepted_keys: set,
+        required_keys: List[str],
+    ) -> None:
+        """
+        完整性校验：确保所有必填参数存在且非空；否则抛出 ParameterValidationError。
+        只校验接口声明的必填参数（metadata.required_params）。
+        """
+        missing: List[str] = []
+        for rk in required_keys:
+            if rk not in accepted_keys:
+                # 元数据异常：必填却不在接受列表，记录并忽略此键的缺失判定
+                logger.warning(f"接口 {interface_name} 的元数据不一致：必填参数 {rk} 不在接受集合中")
+                continue
+            if rk not in params:
+                missing.append(rk)
+                continue
+            val = params.get(rk)
+            if val is None:
+                missing.append(rk)
+                continue
+            if isinstance(val, str) and val.strip() == "":
+                missing.append(rk)
+                continue
+            # 列表类型允许空列表被视为缺失
+            if isinstance(val, list) and len(val) == 0:
+                missing.append(rk)
+
+        if missing:
+            # 不尝试从 example_params 自动补齐必填（避免误导），直接抛错，保障“不少”原则
+            raise ParameterValidationError(
+                f"接口 {interface_name} 缺少必填参数: {', '.join(missing)}"
+            )
     
     def _apply_special_handling(self, interface_name: str, params: Dict[str, Any]) -> None:
         """应用特殊处理逻辑"""
@@ -722,6 +938,10 @@ class AkshareStockParamAdapter(ParamAdapter):
                 elif interface_name == "stock_zh_a_hist":
                     # 需要纯代码格式：000001
                     params["symbol"] = symbol_value.code
+                    # 移除market参数，因为该接口不支持market参数
+                    if "market" in params:
+                        del params["market"]
+                        logger.debug(f"{interface_name}: 移除不支持的market参数")
                     logger.debug(f"{interface_name}: 转换股票代码为纯代码格式: {params['symbol']}")
                 elif interface_name == "stock_us_hist":
                     # 需要105.前缀格式：105.AAPL
@@ -861,7 +1081,7 @@ class AkshareStockParamAdapter(ParamAdapter):
             return "prefix"
         if re.fullmatch(r"\d{6}", s):
             return "code"
-        # 港股格式：5-6位数字（如00981, 00700）
+        # 纯数字代码：5-6位（A股6位，港股5位）
         if re.fullmatch(r"\d{5,6}", s):
             return "code"
         # 美股格式：纯字母代码（如AAPL, FB）
@@ -890,16 +1110,21 @@ class AkshareStockParamAdapter(ParamAdapter):
 
     @classmethod
     def _get_market_hint(cls, params: Dict[str, Any], example: Dict[str, Any]) -> Optional[str]:
-        # 1) 显式字段 market / exchange
+        # 1) 显式字段 market / exchange（仅接受支持的市场提示，忽略聚合或未知值，如“沪深京”）
+        allowed_markets = {"SH", "SZ", "BJ", "HK", "US"}
         for key in ("market", "exchange"):
             if key in params and isinstance(params[key], str):
                 v = params[key].strip()
                 if v:
-                    return StockSymbol._canon_market(v)
+                    canon = StockSymbol._canon_market(v)
+                    if canon in allowed_markets:
+                        return canon
             if key in example and isinstance(example[key], str):
                 v = example[key].strip()
                 if v:
-                    return StockSymbol._canon_market(v)
+                    canon = StockSymbol._canon_market(v)
+                    if canon in allowed_markets:
+                        return canon
         # 2) 回退：从示例中的 symbol 风格解析出市场
         for k in getattr(cls, "SYMBOL_KEYS", ["symbol", "stock", "code", "ts_code"]):
             if k in example and isinstance(example[k], str):
@@ -1243,6 +1468,7 @@ class ParameterMapper:
                 elif interface_name == "stock_zh_a_hist":
                     # 需要纯代码格式：000001
                     mapped_params["symbol"] = symbol_value.code
+
                     logger.debug(f"{interface_name}: 转换股票代码为纯代码格式: {mapped_params['symbol']}")
                 elif interface_name == "stock_us_hist":
                     # 需要105.前缀格式：105.AAPL
@@ -1309,49 +1535,6 @@ class ParameterMapper:
         return self.config_loader.get_parameter_mappings()
 
 
-class MappingAwareAdapter(ParamAdapter):
-    """支持参数映射的适配器"""
-    
-    def __init__(self, config_loader):
-        self.mapper = ParameterMapper(config_loader)
-        self.base_adapter = AkshareStockParamAdapter()
-    
-    def adapt(self, interface_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
-        # 1. 检查是否为映射接口
-        if self._is_mapping_interface(interface_name):
-            return self._handle_mapping_interface(interface_name, params)
-        
-        # 2. 使用基础适配器处理
-        return self.base_adapter.adapt(interface_name, params)
-    
-    def _is_mapping_interface(self, interface_name: str) -> bool:
-        """检查是否为映射接口"""
-        return interface_name in self.mapper.mappings
-    
-    def _handle_mapping_interface(self, interface_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
-        """处理映射接口"""
-        try:
-            # 映射到目标接口
-            target_interface, mapped_params = self.mapper.map_parameters(interface_name, params)
-            logger.debug(f"映射接口 {interface_name} -> {target_interface}, 映射后参数: {mapped_params}")
-            
-            # 使用基础适配器处理映射后的参数
-            return self.base_adapter.adapt(target_interface, mapped_params)
-        
-        except ParameterValidationError as e:
-            logger.error(f"参数验证失败: {interface_name}, 错误: {e}")
-            raise
-        
-        except InterfaceMappingError as e:
-            logger.error(f"接口映射失败: {interface_name}, 错误: {e}")
-            raise
-        
-        except Exception as e:
-            logger.error(f"参数适配失败: {interface_name}, 错误: {e}")
-            # 回退到原始参数
-            return params
-
-
 __all__ = [
     "StockSymbol",
     "StandardParams",
@@ -1359,8 +1542,6 @@ __all__ = [
     "AkshareStockParamAdapter",
     "adapt_params_for_interface",
     "to_standard_params",
-    "ParameterMapper",
-    "MappingAwareAdapter",
     "ParameterMappingError",
     "ParameterValidationError",
     "InterfaceMappingError",
