@@ -57,6 +57,9 @@ class SymbolTransformer(BaseTransformer):
                 return f"{m}{sym.code}" if re.fullmatch(r"[A-Za-z]{2}", m or "") else sym.code
             elif target_format == "us_prefix":
                 return f"105.{sym.code}"
+            elif target_format == "us_code":
+                # 美股纯字母格式，如AAPL, FB等
+                return sym.code
             else:
                 return v
         
@@ -81,6 +84,9 @@ class SymbolTransformer(BaseTransformer):
                         return "code"
                     elif re.fullmatch(r'\d+\.\w+', example_val):
                         return "us_prefix"
+                    elif re.fullmatch(r'^[A-Z]{1,5}$', example_val):
+                        # 纯字母格式，如FB, AAPL等，用于stock_us_daily
+                        return "us_code"
                 
                 return analyzed_format
         

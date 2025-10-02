@@ -53,6 +53,12 @@ class ConversionRules:
         "lowercase_prefix": re.compile(r"^(sh|sz|bj|hk|us)\d{5,6}$"),
     }
     
+    # 时间格式检测规则
+    TIME_FORMAT_PATTERNS = {
+        "hms": re.compile(r"^\d{6}$"),
+        "h:m:s": re.compile(r"^\d{2}:\d{2}:\d{2}$"),
+    }
+    
     @classmethod
     def convert_period(cls, value: Any) -> Any:
         """转换周期参数"""
@@ -120,3 +126,66 @@ class ConversionRules:
     def get_exchange_from_market(cls, market: str) -> str:
         """从市场代码获取交易所代码"""
         return cls.MARKET_TO_EXCHANGE.get(market, market)
+    
+    @classmethod
+    def convert_symbol_format(cls, value: Any, target_format: str) -> Any:
+        """转换股票代码格式"""
+        if not isinstance(value, str):
+            return value
+        
+        # 对于美股，需要特殊处理
+        if target_format == "us_code":
+            # 如果是105.XXX格式，提取XXX部分
+            if value.startswith("105."):
+                return value[4:]  # 去掉"105."前缀
+            # 如果是其他格式，直接返回
+            return value
+        elif target_format == "us_prefix":
+            # 转换为105.XXX格式
+            if not value.startswith("105."):
+                return f"105.{value}"
+            return value
+        
+        # 其他格式暂时返回原值，让原有逻辑处理
+        return value
+    
+    @classmethod
+    def detect_time_format(cls, value: str) -> str:
+        """检测时间格式"""
+        if not isinstance(value, str):
+            return "unknown"
+        
+        s = value.strip()
+        for format_name, pattern in cls.TIME_FORMAT_PATTERNS.items():
+            if pattern.match(s):
+                return format_name
+        
+        return "unknown"
+    
+    @classmethod
+    def convert_time(cls, value: Any, target_format: str) -> Any:
+        """转换时间格式"""
+        if not isinstance(value, str):
+            return value
+        
+        s = value.strip()
+        if not s:
+            return value
+        
+        # 检测当前格式
+        current_format = cls.detect_time_format(s)
+        if current_format == "unknown":
+            return value
+        
+        # 如果已经是目标格式，直接返回
+        if current_format == target_format:
+            return value
+        
+        # 转换格式
+        if current_format == "h:m:s" and target_format == "hms":
+            return s.replace(":", "")
+        elif current_format == "hms" and target_format == "h:m:s":
+            if len(s) == 6:
+                return f"{s[0:2]}:{s[2:4]}:{s[4:6]}"
+        
+        return value

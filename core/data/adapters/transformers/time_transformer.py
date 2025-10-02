@@ -6,6 +6,7 @@ import re
 from typing import Any, Dict, Optional
 from .base import BaseTransformer
 from ..base import TransformContext
+from ..conversion_rules import ConversionRules
 
 
 class TimeTransformer(BaseTransformer):
@@ -37,6 +38,12 @@ class TimeTransformer(BaseTransformer):
     def _convert_time(self, value: Any, target_format: str) -> Any:
         """转换时间格式"""
         def convert_one(v: Any) -> Any:
+            # 使用ConversionRules统一转换
+            converted = ConversionRules.convert_time(v, target_format)
+            if converted != v:  # 如果转换成功
+                return converted
+            
+            # 如果ConversionRules无法处理，使用原有逻辑作为后备
             if not isinstance(v, str):
                 return v
             
@@ -69,13 +76,4 @@ class TimeTransformer(BaseTransformer):
     
     def _analyze_format(self, example_time: str) -> str:
         """分析示例时间的格式"""
-        if not isinstance(example_time, str):
-            return "unknown"
-        
-        s = example_time.strip()
-        if re.fullmatch(r"\d{2}:\d{2}:\d{2}", s):
-            return "h:m:s"
-        if re.fullmatch(r"\d{6}", s):
-            return "hms"
-        
-        return "unknown"
+        return ConversionRules.detect_time_format(example_time)
