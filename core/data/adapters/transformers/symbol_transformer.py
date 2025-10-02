@@ -14,9 +14,8 @@ class SymbolTransformer(BaseTransformer):
     
     SYMBOL_KEYS = ["symbol", "stock", "code", "ts_code", "index_code"]
     
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
-        super().__init__(config)
-        self.supported_formats = self._get_config_value('supported_formats', ['dot', 'prefix', 'code'])
+    def __init__(self):
+        super().__init__()
     
     def can_transform(self, context: TransformContext) -> bool:
         """检查是否有股票代码需要转换"""

@@ -16,7 +16,6 @@ class TransformContext:
     target_params: Dict[str, Any]
     accepted_keys: set
     metadata: Optional[Any] = None
-    config: Optional[Dict[str, Any]] = None
     
     def get_source_value(self, key: str, default: Any = None) -> Any:
         """获取源参数值"""

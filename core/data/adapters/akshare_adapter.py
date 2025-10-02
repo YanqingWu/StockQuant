@@ -11,7 +11,6 @@ from .transformers import (
     MarketTransformer, KeywordTransformer, SpecialHandler
 )
 from .validators import RequiredValidator, FormatValidator, RangeValidator
-from .config import AdapterConfigLoader
 from .transformers import ParameterMapper
 from core.logging import get_logger
 
@@ -27,7 +26,6 @@ class AkshareStockParamAdapter:
     def __init__(self, config_loader=None):
         """初始化适配器，可选传入配置加载器"""
         self.config_loader = config_loader
-        self.config_loader_adapter = AdapterConfigLoader()
         
         # 初始化参数映射器
         if config_loader and hasattr(config_loader, 'get_parameter_mappings'):
@@ -46,23 +44,23 @@ class AkshareStockParamAdapter:
     def _init_transform_chain(self):
         """初始化转换链"""
         self.transform_chain = TransformChain([
-            ValueMapper(self.config_loader_adapter.get_value_mapping_config()),
-            SymbolTransformer(self.config_loader_adapter.get_symbol_config()),
-            DateTransformer(self.config_loader_adapter.get_date_config()),
-            TimeTransformer(self.config_loader_adapter.get_time_config()),
-            PeriodTransformer(self.config_loader_adapter.get_period_config()),
-            AdjustTransformer(self.config_loader_adapter.get_adjust_config()),
-            MarketTransformer(self.config_loader_adapter.get_market_config()),
-            KeywordTransformer(self.config_loader_adapter.get_keyword_config()),
-            SpecialHandler(self.config_loader_adapter.get_special_config()),
+            ValueMapper(),
+            SymbolTransformer(),
+            DateTransformer(),
+            TimeTransformer(),
+            PeriodTransformer(),
+            AdjustTransformer(),
+            MarketTransformer(),
+            KeywordTransformer(),
+            SpecialHandler(),
         ])
     
     def _init_validation_chain(self):
         """初始化验证链"""
         self.validation_chain = ValidationChain([
-            RequiredValidator(self.config_loader_adapter.get_required_config()),
-            FormatValidator(self.config_loader_adapter.get_format_config()),
-            RangeValidator(self.config_loader_adapter.get_range_config()),
+            RequiredValidator(),
+            FormatValidator(),
+            RangeValidator(),
         ])
     
     def _init_delegate_transformers(self):
@@ -110,8 +108,7 @@ class AkshareStockParamAdapter:
             source_params=params,
             target_params={},
             accepted_keys=set((metadata.required_params or []) + (metadata.optional_params or [])),
-            metadata=metadata,
-            config=self.config_loader_adapter.get_interface_config(interface_name)
+            metadata=metadata
         )
         
         # 3. 执行参数转换

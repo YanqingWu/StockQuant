@@ -15,16 +15,16 @@ class MarketTransformer(BaseTransformer):
     MARKET_ONLY_KEYS = ["market"]
     EXCHANGE_KEYS = ["exchange"]
     
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
-        super().__init__(config)
-        self.supported_markets = self._get_config_value('supported_markets', ['SH', 'SZ', 'BJ', 'HK', 'US'])
-        self.market_to_exchange = self._get_config_value('market_to_exchange', {
+    def __init__(self):
+        super().__init__()
+        self.supported_markets = ['SH', 'SZ', 'BJ', 'HK', 'US']
+        self.market_to_exchange = {
             "SZ": "SZSE", 
             "SH": "SSE", 
             "BJ": "BSE",
             "HK": "HKEX",
             "US": "US"
-        })
+        }
     
     def can_transform(self, context: TransformContext) -> bool:
         """检查是否有市场需要转换"""

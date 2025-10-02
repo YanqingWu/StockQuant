@@ -10,12 +10,8 @@ from ..base import TransformContext, ParameterTransformer
 class BaseTransformer(ParameterTransformer):
     """转换器基类，提供通用功能"""
     
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
-        self.config = config or {}
-    
-    def _get_config_value(self, key: str, default: Any = None) -> Any:
-        """获取配置值"""
-        return self.config.get(key, default)
+    def __init__(self):
+        pass
     
     def _apply_to_value(self, value: Any, fn) -> Any:
         """支持列表与逗号分隔字符串的转换"""
@@ -33,7 +29,7 @@ class BaseTransformer(ParameterTransformer):
             example = context.metadata.example_params
             if field in example:
                 return self._analyze_format(example[field])
-        return self._get_config_value('default_format', 'dot')
+        return 'dot'  # 默认格式
     
     def _analyze_format(self, example_value: str) -> str:
         """分析示例值的格式"""

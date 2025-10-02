@@ -10,9 +10,9 @@ from ..base import TransformContext
 class ValueMapper(BaseTransformer):
     """参数值映射转换器"""
     
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
-        super().__init__(config)
-        self.value_mappings = self._get_config_value('value_mappings', {})
+    def __init__(self):
+        super().__init__()
+        self.value_mappings = {}
     
     def can_transform(self, context: TransformContext) -> bool:
         """检查是否有需要映射的参数值"""

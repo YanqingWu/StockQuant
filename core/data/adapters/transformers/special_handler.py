@@ -10,9 +10,9 @@ from ..base import TransformContext
 class SpecialHandler(BaseTransformer):
     """特殊处理转换器"""
     
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
-        super().__init__(config)
-        self.special_rules = self._get_config_value('special_rules', {})
+    def __init__(self):
+        super().__init__()
+        self.special_rules = {}
     
     def can_transform(self, context: TransformContext) -> bool:
         """检查是否需要特殊处理"""

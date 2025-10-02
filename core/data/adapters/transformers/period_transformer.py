@@ -13,10 +13,9 @@ class PeriodTransformer(BaseTransformer):
     
     PERIOD_KEYS = ["period", "freq", "frequency"]
     
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
-        super().__init__(config)
-        self.supported_periods = self._get_config_value('supported_periods', 
-                                                       ['daily', '1min', '5min', '15min', '30min', '60min'])
+    def __init__(self):
+        super().__init__()
+        self.supported_periods = ['daily', '1min', '5min', '15min', '30min', '60min']
     
     def can_transform(self, context: TransformContext) -> bool:
         """检查是否有周期需要转换"""

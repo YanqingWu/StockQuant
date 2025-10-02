@@ -20,9 +20,8 @@ class DateTransformer(BaseTransformer):
     START_DATE_KEYS = ["start_date", "from_date", "begin_date", "start_year"]
     END_DATE_KEYS = ["end_date", "to_date", "end_year"]
     
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
-        super().__init__(config)
-        self.supported_formats = self._get_config_value('supported_formats', ['y-m-d', 'ymd', 'year'])
+    def __init__(self):
+        super().__init__()
     
     def can_transform(self, context: TransformContext) -> bool:
         """检查是否有日期需要转换"""

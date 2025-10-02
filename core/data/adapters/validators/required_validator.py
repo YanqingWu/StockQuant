@@ -10,9 +10,9 @@ from ..base import TransformContext
 class RequiredValidator(BaseValidator):
     """必填参数验证器"""
     
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
-        super().__init__(config)
-        self.required_fields = self._get_config_value('required_fields', [])
+    def __init__(self):
+        super().__init__()
+        self.required_fields = []
     
     def can_validate(self, context: TransformContext) -> bool:
         """检查是否可以验证"""

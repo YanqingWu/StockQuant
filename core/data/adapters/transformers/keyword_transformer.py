@@ -12,10 +12,10 @@ class KeywordTransformer(BaseTransformer):
     
     KEYWORD_KEYS = ["keyword", "name"]
     
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
-        super().__init__(config)
-        self.max_length = self._get_config_value('max_length', 100)
-        self.strip_whitespace = self._get_config_value('strip_whitespace', True)
+    def __init__(self):
+        super().__init__()
+        self.max_length = 100
+        self.strip_whitespace = True
     
     def can_transform(self, context: TransformContext) -> bool:
         """检查有关键词需要转换"""

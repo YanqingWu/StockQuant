@@ -12,10 +12,10 @@ class AdjustTransformer(BaseTransformer):
     
     ADJUST_KEYS = ["adjust", "fq", "adj"]
     
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
-        super().__init__(config)
-        self.supported_values = self._get_config_value('supported_values', ['none', 'qfq', 'hfq'])
-        self.default_value = self._get_config_value('default_value', '')
+    def __init__(self):
+        super().__init__()
+        self.supported_values = ['none', 'qfq', 'hfq']
+        self.default_value = ''
     
     def can_transform(self, context: TransformContext) -> bool:
         """检查是否有复权需要转换"""

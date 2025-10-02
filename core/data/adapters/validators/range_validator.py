@@ -10,9 +10,9 @@ from ..base import TransformContext
 class RangeValidator(BaseValidator):
     """范围验证器"""
     
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
-        super().__init__(config)
-        self.range_rules = self._get_config_value('range_rules', {})
+    def __init__(self):
+        super().__init__()
+        self.range_rules = {}
     
     def can_validate(self, context: TransformContext) -> bool:
         """检查是否可以验证"""

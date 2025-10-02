@@ -15,9 +15,8 @@ class TimeTransformer(BaseTransformer):
     START_TIME_KEYS = ["start_time"]
     END_TIME_KEYS = ["end_time"]
     
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
-        super().__init__(config)
-        self.supported_formats = self._get_config_value('supported_formats', ['h:m:s', 'hms'])
+    def __init__(self):
+        super().__init__()
     
     def can_transform(self, context: TransformContext) -> bool:
         """检查是否有时间需要转换"""

@@ -11,9 +11,9 @@ from ..base import TransformContext
 class FormatValidator(BaseValidator):
     """格式验证器"""
     
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
-        super().__init__(config)
-        self.format_rules = self._get_config_value('format_rules', {})
+    def __init__(self):
+        super().__init__()
+        self.format_rules = {}
     
     def can_validate(self, context: TransformContext) -> bool:
         """检查是否可以验证"""
