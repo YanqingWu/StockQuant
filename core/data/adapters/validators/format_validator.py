@@ -6,6 +6,7 @@ import re
 from typing import Any, Dict, Optional, List
 from .base import BaseValidator
 from ..base import TransformContext
+from ..exceptions import ParameterValidationError
 
 
 class FormatValidator(BaseValidator):
@@ -31,7 +32,7 @@ class FormatValidator(BaseValidator):
                     if field in ['date', 'trade_date', 'start_date', 'end_date']:
                         if self._is_valid_date_format(value):
                             continue
-                    raise ValueError(f"参数 {field} 格式不正确: {value}")
+                    raise ParameterValidationError(field, value, "格式不正确")
         
         return True
     

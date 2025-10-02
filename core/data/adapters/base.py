@@ -4,17 +4,25 @@
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, Set
 from dataclasses import dataclass
 
 
 @dataclass
 class TransformContext:
-    """转换上下文"""
+    """转换上下文
+    
+    Attributes:
+        interface_name: 接口名称
+        source_params: 源参数字典
+        target_params: 目标参数字典
+        accepted_keys: 接受的参数键集合
+        metadata: 可选的元数据
+    """
     interface_name: str
     source_params: Dict[str, Any]
     target_params: Dict[str, Any]
-    accepted_keys: set
+    accepted_keys: Set[str]
     metadata: Optional[Any] = None
     
     def get_source_value(self, key: str, default: Any = None) -> Any:

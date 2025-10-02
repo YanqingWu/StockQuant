@@ -5,6 +5,7 @@
 from typing import Any, Dict, Optional
 from .base import BaseValidator
 from ..base import TransformContext
+from ..exceptions import ParameterValidationError
 
 
 class RangeValidator(BaseValidator):
@@ -24,7 +25,7 @@ class RangeValidator(BaseValidator):
             if field in context.target_params:
                 value = context.target_params[field]
                 if not self._validate_field_range(field, value, rules):
-                    raise ValueError(f"参数 {field} 超出有效范围: {value}")
+                    raise ParameterValidationError(field, value, "超出有效范围")
         
         return True
     

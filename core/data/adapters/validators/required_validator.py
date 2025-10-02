@@ -5,6 +5,7 @@
 from typing import Any, Dict, Optional
 from .base import BaseValidator
 from ..base import TransformContext
+from ..exceptions import RequiredParameterError
 
 
 class RequiredValidator(BaseValidator):
@@ -32,6 +33,6 @@ class RequiredValidator(BaseValidator):
                 missing_fields.append(field)
         
         if missing_fields:
-            raise ValueError(f"缺少必填参数: {', '.join(missing_fields)}")
+            raise RequiredParameterError(missing_fields)
         
         return True
