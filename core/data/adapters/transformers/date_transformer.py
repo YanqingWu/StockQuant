@@ -15,6 +15,11 @@ class DateTransformer(BaseTransformer):
     DATE_KEYS = ["date", "trade_date", "start_date", "from_date", "begin_date", 
                  "end_date", "to_date", "start_year", "end_year"]
     
+    # 基础日期键
+    BASE_DATE_KEYS = ["date", "trade_date"]
+    START_DATE_KEYS = ["start_date", "from_date", "begin_date", "start_year"]
+    END_DATE_KEYS = ["end_date", "to_date", "end_year"]
+    
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)
         self.supported_formats = self._get_config_value('supported_formats', ['y-m-d', 'ymd', 'year'])
@@ -66,8 +71,7 @@ class DateTransformer(BaseTransformer):
         return self._apply_to_value(value, convert_one)
     
     def _detect_target_format(self, context: TransformContext, field: str) -> str:
-        """检测目标格式 - 基于示例参数智能检测，避免硬编码接口名称"""
-        # 优先分析示例参数
+        """检测目标格式"""
         if context.metadata and hasattr(context.metadata, 'example_params'):
             example = context.metadata.example_params
             if field in example:
@@ -75,19 +79,15 @@ class DateTransformer(BaseTransformer):
                 if analyzed_format != "unknown":
                     return analyzed_format
         
-        # 基于字段名称智能推断格式
         if field in ["start_year", "end_year"]:
             return "year"
         
-        # 基于示例参数特征智能检测日期格式
         if context.metadata and hasattr(context.metadata, 'example_params'):
             example = context.metadata.example_params
-            # 检查示例中是否有紧凑格式的日期
             for key, value in example.items():
                 if isinstance(value, str) and re.fullmatch(r"\d{8}", value.strip()):
                     return "compact"
         
-        # 默认使用标准格式
         return "y-m-d"
     
     def _analyze_format(self, example_date: str) -> str:

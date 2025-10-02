@@ -11,7 +11,6 @@ from ..base import TransformContext
 class PeriodTransformer(BaseTransformer):
     """周期转换器"""
     
-    # 周期键名列表
     PERIOD_KEYS = ["period", "freq", "frequency"]
     
     def __init__(self, config: Optional[Dict[str, Any]] = None):
@@ -43,7 +42,6 @@ class PeriodTransformer(BaseTransformer):
             
             s = str(v).strip().lower()
             
-            # 常见输入：'5m' -> '5'
             m = re.fullmatch(r"(\d+)(m|min|minute)?", s)
             if m:
                 if target_format == "numeric":
@@ -54,7 +52,6 @@ class PeriodTransformer(BaseTransformer):
             if s in {"daily", "day", "d"}:
                 return "daily" if target_format != "numeric" else s
             
-            # 检查是否在支持的周期列表中
             if s in self.supported_periods:
                 return s
             
@@ -69,7 +66,7 @@ class PeriodTransformer(BaseTransformer):
             if field in example:
                 return self._analyze_format(example[field])
         
-        return "standard"  # 默认格式
+        return "standard"
     
     def _analyze_format(self, example_period: str) -> str:
         """分析示例周期的格式"""

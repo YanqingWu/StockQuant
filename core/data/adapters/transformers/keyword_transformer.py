@@ -10,7 +10,6 @@ from ..base import TransformContext
 class KeywordTransformer(BaseTransformer):
     """关键词转换器"""
     
-    # 关键词键名列表
     KEYWORD_KEYS = ["keyword", "name"]
     
     def __init__(self, config: Optional[Dict[str, Any]] = None):
@@ -39,11 +38,9 @@ class KeywordTransformer(BaseTransformer):
             if not isinstance(v, str):
                 return v
             
-            # 去除首尾空白
             if self.strip_whitespace:
                 v = v.strip()
             
-            # 限制长度
             if len(v) > self.max_length:
                 v = v[:self.max_length]
             

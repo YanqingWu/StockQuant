@@ -10,7 +10,6 @@ from ..base import TransformContext
 class AdjustTransformer(BaseTransformer):
     """复权转换器"""
     
-    # 复权键名列表
     ADJUST_KEYS = ["adjust", "fq", "adj"]
     
     def __init__(self, config: Optional[Dict[str, Any]] = None):
@@ -31,7 +30,6 @@ class AdjustTransformer(BaseTransformer):
                     converted_value = self._convert_adjust(value)
                     context.set_target_value(key, converted_value)
             else:
-                # 如果接口需要复权参数但没有提供，使用默认值
                 if key in context.accepted_keys:
                     context.set_target_value(key, self.default_value)
         

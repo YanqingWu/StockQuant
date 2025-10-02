@@ -40,13 +40,10 @@ class SpecialHandler(BaseTransformer):
     
     def _handle_year_dependency(self, context: TransformContext) -> None:
         """处理年份参数依赖关系"""
-        # 特殊处理：如果提供了start_year，必须同时提供end_year
         if context.has_source_key("start_year") and not context.has_source_key("end_year"):
-            # 移除start_year参数
             if "start_year" in context.target_params:
                 del context.target_params["start_year"]
         elif context.has_source_key("end_year") and not context.has_source_key("start_year"):
-            # 移除end_year参数
             if "end_year" in context.target_params:
                 del context.target_params["end_year"]
     

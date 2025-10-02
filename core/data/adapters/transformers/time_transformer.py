@@ -11,8 +11,9 @@ from ..base import TransformContext
 class TimeTransformer(BaseTransformer):
     """时间转换器"""
     
-    # 时间键名列表
     TIME_KEYS = ["start_time", "end_time"]
+    START_TIME_KEYS = ["start_time"]
+    END_TIME_KEYS = ["end_time"]
     
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)
@@ -65,7 +66,7 @@ class TimeTransformer(BaseTransformer):
             if field in example:
                 return self._analyze_format(example[field])
         
-        return "h:m:s"  # 默认格式
+        return "h:m:s"
     
     def _analyze_format(self, example_time: str) -> str:
         """分析示例时间的格式"""

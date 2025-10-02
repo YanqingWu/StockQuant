@@ -7,11 +7,12 @@ from typing import Any, Dict, Optional
 from .base import BaseTransformer
 from ..base import TransformContext
 from ..stock_symbol import StockSymbol
-from ..constants import SYMBOL_KEYS
 
 
 class SymbolTransformer(BaseTransformer):
     """股票代码转换器"""
+    
+    SYMBOL_KEYS = ["symbol", "stock", "code", "ts_code", "index_code"]
     
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)
@@ -19,11 +20,11 @@ class SymbolTransformer(BaseTransformer):
     
     def can_transform(self, context: TransformContext) -> bool:
         """检查是否有股票代码需要转换"""
-        return any(key in context.source_params for key in SYMBOL_KEYS)
+        return any(key in context.source_params for key in self.SYMBOL_KEYS)
     
     def transform(self, context: TransformContext) -> TransformContext:
         """执行股票代码转换"""
-        for key in SYMBOL_KEYS:
+        for key in self.SYMBOL_KEYS:
             if context.has_source_key(key):
                 value = context.source_params[key]
                 if value is not None:

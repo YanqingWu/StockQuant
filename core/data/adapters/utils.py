@@ -5,7 +5,13 @@
 from typing import Any, Dict, Union
 from .standard_params import StandardParams
 from .akshare_adapter import AkshareStockParamAdapter
-from .constants import SYMBOL_KEYS
+from .transformers.symbol_transformer import SymbolTransformer
+from .transformers.date_transformer import DateTransformer
+from .transformers.time_transformer import TimeTransformer
+from .transformers.period_transformer import PeriodTransformer
+from .transformers.adjust_transformer import AdjustTransformer
+from .transformers.market_transformer import MarketTransformer
+from .transformers.keyword_transformer import KeywordTransformer
 
 
 def to_standard_params(params: Union[StandardParams, Dict[str, Any]]) -> StandardParams:
@@ -26,7 +32,7 @@ def to_standard_params(params: Union[StandardParams, Dict[str, Any]]) -> Standar
         return convert_one(value)
 
     hint = adapter._get_market_hint(src, example={})
-    symbol_val = adapter._pick_from_aliases(src, SYMBOL_KEYS)
+    symbol_val = adapter._pick_from_aliases(src, SymbolTransformer.SYMBOL_KEYS)
 
     def sym_to_obj(v: Any) -> Any:
         if v is None:
@@ -47,15 +53,15 @@ def to_standard_params(params: Union[StandardParams, Dict[str, Any]]) -> Standar
     start_date_norm = None
     end_date_norm = None
 
-    date_val = adapter._pick_from_aliases(src, adapter.DATE_KEYS)
+    date_val = adapter._pick_from_aliases(src, DateTransformer.BASE_DATE_KEYS)
     if date_val is not None:
         date_norm = adapter._apply_to_value(date_val, to_date)
 
-    start_date_val = adapter._pick_from_aliases(src, adapter.START_DATE_KEYS)
+    start_date_val = adapter._pick_from_aliases(src, DateTransformer.START_DATE_KEYS)
     if start_date_val is not None:
         start_date_norm = adapter._apply_to_value(start_date_val, to_date)
 
-    end_date_val = adapter._pick_from_aliases(src, adapter.END_DATE_KEYS)
+    end_date_val = adapter._pick_from_aliases(src, DateTransformer.END_DATE_KEYS)
     if end_date_val is not None:
         end_date_norm = adapter._apply_to_value(end_date_val, to_date)
 
@@ -67,17 +73,17 @@ def to_standard_params(params: Union[StandardParams, Dict[str, Any]]) -> Standar
     start_time_norm = None
     end_time_norm = None
 
-    start_time_val = adapter._pick_from_aliases(src, adapter.START_TIME_KEYS)
+    start_time_val = adapter._pick_from_aliases(src, TimeTransformer.START_TIME_KEYS)
     if start_time_val is not None:
         start_time_norm = adapter._apply_to_value(start_time_val, to_time)
 
-    end_time_val = adapter._pick_from_aliases(src, adapter.END_TIME_KEYS)
+    end_time_val = adapter._pick_from_aliases(src, TimeTransformer.END_TIME_KEYS)
     if end_time_val is not None:
         end_time_norm = adapter._apply_to_value(end_time_val, to_time)
 
     # period -> canonical set
     period_norm = None
-    period_val = adapter._pick_from_aliases(src, adapter.PERIOD_KEYS)
+    period_val = adapter._pick_from_aliases(src, PeriodTransformer.PERIOD_KEYS)
     if period_val is not None:
         def to_period(v: Any) -> Any:
             if not isinstance(v, (str, int)):
@@ -97,7 +103,7 @@ def to_standard_params(params: Union[StandardParams, Dict[str, Any]]) -> Standar
 
     # adjust -> {none,qfq,hfq}
     adjust_norm = None
-    adjust_val = adapter._pick_from_aliases(src, adapter.ADJUST_KEYS)
+    adjust_val = adapter._pick_from_aliases(src, AdjustTransformer.ADJUST_KEYS)
     if adjust_val is not None:
         def to_adjust(v: Any) -> Any:
             if not isinstance(v, str):
@@ -114,11 +120,11 @@ def to_standard_params(params: Union[StandardParams, Dict[str, Any]]) -> Standar
     market_norm = None
     exchange_norm = None
 
-    m_val = adapter._pick_from_aliases(src, adapter.MARKET_KEYS)
+    m_val = adapter._pick_from_aliases(src, MarketTransformer.MARKET_ONLY_KEYS)
     if isinstance(m_val, str) and m_val.strip():
         from .stock_symbol import StockSymbol
         market_norm = StockSymbol._canon_market(m_val)
-    e_val = adapter._pick_from_aliases(src, adapter.EXCHANGE_KEYS)
+    e_val = adapter._pick_from_aliases(src, MarketTransformer.EXCHANGE_KEYS)
     if isinstance(e_val, str) and e_val.strip():
         e_key = e_val.strip().upper()
         # 使用StockSymbol中统一的交易所映射
@@ -134,7 +140,7 @@ def to_standard_params(params: Union[StandardParams, Dict[str, Any]]) -> Standar
             exchange_norm = StockSymbol.MARKET_TO_EXCHANGE.get(sample.market, sample.market)
 
     # keyword/name
-    keyword_norm = adapter._pick_from_aliases(src, adapter.KEYWORD_KEYS)
+    keyword_norm = adapter._pick_from_aliases(src, KeywordTransformer.KEYWORD_KEYS)
 
     # pagination
     def to_int(v: Any) -> Any:
@@ -169,11 +175,13 @@ def to_standard_params(params: Union[StandardParams, Dict[str, Any]]) -> Standar
         offset=offset,
         limit=limit,
         extra={k: v for k, v in src.items() if k not in {
-            "symbol","stock","code","ts_code",
-            "date","trade_date","start_date","from_date","begin_date",
-            "end_date","to_date","start_time","end_time",
-            "period","freq","frequency","adjust","fq","adj",
-            "market","exchange","keyword","name",
+            *SymbolTransformer.SYMBOL_KEYS,
+            *DateTransformer.DATE_KEYS,
+            *TimeTransformer.TIME_KEYS,
+            *PeriodTransformer.PERIOD_KEYS,
+            *AdjustTransformer.ADJUST_KEYS,
+            *MarketTransformer.MARKET_KEYS,
+            *KeywordTransformer.KEYWORD_KEYS,
             "page","page_size","offset","limit",
         }}
     )
