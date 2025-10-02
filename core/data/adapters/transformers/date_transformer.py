@@ -6,6 +6,7 @@ import re
 from typing import Any, Dict, Optional
 from .base import BaseTransformer
 from ..base import TransformContext
+from ..conversion_rules import ConversionRules
 
 
 class DateTransformer(BaseTransformer):
@@ -91,15 +92,4 @@ class DateTransformer(BaseTransformer):
     
     def _analyze_format(self, example_date: str) -> str:
         """分析示例日期的格式"""
-        if not isinstance(example_date, str):
-            return "unknown"
-        
-        s = example_date.strip()
-        if re.fullmatch(r"\d{4}", s):
-            return "year"
-        if re.fullmatch(r"\d{8}", s):
-            return "ymd"
-        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", s):
-            return "y-m-d"
-        
-        return "unknown"
+        return ConversionRules.detect_date_format(example_date)

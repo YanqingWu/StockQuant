@@ -6,6 +6,7 @@ from typing import Any, Dict, Optional
 from .base import BaseTransformer
 from ..base import TransformContext
 from ..stock_symbol import StockSymbol
+from ..conversion_rules import ConversionRules
 
 
 class MarketTransformer(BaseTransformer):
@@ -18,13 +19,6 @@ class MarketTransformer(BaseTransformer):
     def __init__(self):
         super().__init__()
         self.supported_markets = ['SH', 'SZ', 'BJ', 'HK', 'US']
-        self.market_to_exchange = {
-            "SZ": "SZSE", 
-            "SH": "SSE", 
-            "BJ": "BSE",
-            "HK": "HKEX",
-            "US": "US"
-        }
     
     def can_transform(self, context: TransformContext) -> bool:
         """检查是否有市场需要转换"""
@@ -46,7 +40,7 @@ class MarketTransformer(BaseTransformer):
         
         if context.has_target_key("market") and not context.has_target_key("exchange") and "exchange" in context.accepted_keys:
             market = context.target_params["market"]
-            exchange = self.market_to_exchange.get(market, market)
+            exchange = ConversionRules.get_exchange_from_market(market)
             context.set_target_value("exchange", exchange)
         
         return context
@@ -54,7 +48,7 @@ class MarketTransformer(BaseTransformer):
     def _convert_market(self, value: Any, context: TransformContext) -> str:
         """转换市场代码"""
         if isinstance(value, str):
-            canon_market = StockSymbol._canon_market(value)
+            canon_market = ConversionRules.canon_market(value)
             if canon_market in self.supported_markets:
                 return canon_market
         
@@ -63,10 +57,8 @@ class MarketTransformer(BaseTransformer):
     def _convert_exchange(self, value: Any, context: TransformContext) -> str:
         """转换交易所代码"""
         if isinstance(value, str):
-            canon_exchange = StockSymbol._canon_market(value)
-            if canon_exchange in self.market_to_exchange:
-                return self.market_to_exchange[canon_exchange]
-            return canon_exchange
+            canon_exchange = ConversionRules.canon_market(value)
+            return ConversionRules.get_exchange_from_market(canon_exchange)
         
         return str(value) if value is not None else ""
     
@@ -77,13 +69,13 @@ class MarketTransformer(BaseTransformer):
             if key in params and isinstance(params[key], str):
                 v = params[key].strip()
                 if v:
-                    canon = StockSymbol._canon_market(v)
+                    canon = ConversionRules.canon_market(v)
                     if canon in allowed_markets:
                         return canon
             if key in example and isinstance(example[key], str):
                 v = example[key].strip()
                 if v:
-                    canon = StockSymbol._canon_market(v)
+                    canon = ConversionRules.canon_market(v)
                     if canon in allowed_markets:
                         return canon
         return ""

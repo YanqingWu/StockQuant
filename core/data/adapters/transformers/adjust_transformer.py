@@ -5,6 +5,7 @@
 from typing import Any, Dict, Optional
 from .base import BaseTransformer
 from ..base import TransformContext
+from ..conversion_rules import ConversionRules
 
 
 class AdjustTransformer(BaseTransformer):
@@ -41,13 +42,15 @@ class AdjustTransformer(BaseTransformer):
             if v is None or (isinstance(v, str) and v.strip() == ""):
                 return self.default_value
             
-            if isinstance(v, str):
-                s = v.strip().lower()
-                if s in {"none", "no", "na", "n", "null"}:
-                    return ""
-                if s in {"qfq", "hfq"}:
-                    return s
+            # 使用ConversionRules统一转换
+            converted = ConversionRules.convert_adjust(v)
+            if converted == v:  # 如果没有转换，返回原值
+                return v
             
-            return v
+            # 如果转换为"none"，返回空字符串
+            if converted == "none":
+                return ""
+            
+            return converted
         
         return self._apply_to_value(value, convert_one)
