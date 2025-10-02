@@ -673,11 +673,28 @@ class AkshareStockParamAdapter(ParamAdapter):
         for k, v in source_params.items():
             if k in accepted_keys and k not in new_params:
                 new_params[k] = v
+        
+        # 8) 严格过滤：移除接口不接受的参数
+        self._strict_filter_params(new_params, accepted_keys)
 
-        # 8) 应用特殊处理逻辑
+        # 9) 应用特殊处理逻辑
         self._apply_special_handling(interface_name, new_params)
 
         return new_params
+    
+    def _strict_filter_params(self, params: Dict[str, Any], accepted_keys: set) -> None:
+        """
+        严格过滤参数：移除接口不接受的参数
+        这是最后一道防线，确保不会传递接口不支持的参数
+        """
+        keys_to_remove = []
+        for key in params.keys():
+            if key not in accepted_keys:
+                keys_to_remove.append(key)
+                logger.debug(f"移除接口不接受的参数: {key}")
+        
+        for key in keys_to_remove:
+            del params[key]
     
     def _apply_special_handling(self, interface_name: str, params: Dict[str, Any]) -> None:
         """应用特殊处理逻辑"""
@@ -1098,7 +1115,7 @@ class AkshareStockParamAdapter(ParamAdapter):
             return value
         
         target_market_key = self._pick_target_key(accepted, self.MARKET_KEYS)
-        if target_market_key and market_val is not None and target_market_key not in out:
+        if target_market_key and market_val is not None and target_market_key not in out and target_market_key in accepted:
             out[target_market_key] = apply_case(market_val)
         if self._pick_target_key(accepted, self.EXCHANGE_KEYS) and exchange_val is not None and "exchange" not in out and "exchange" in accepted:
             out["exchange"] = apply_case(exchange_val)
