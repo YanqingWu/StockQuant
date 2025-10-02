@@ -60,7 +60,7 @@ class StockSymbol:
 
     DOT_RE = re.compile(r"^(?P<code>\d{5,6}|[A-Z]{1,5})\.(?P<mkt>[A-Za-z]{2})$")
     PREFIX_RE = re.compile(r"^(?P<mkt>[A-Za-z]{2})(?P<code>\d{5,6}|[A-Z]{1,5})$")
-    HK_CODE_RE = re.compile(r"^(?P<code>\d{5})$")  # 港股5位数字代码
+    HK_CODE_RE = re.compile(r"^(?P<code>\d{5,6})$")  # 港股5-6位数字代码（支持00700格式）
     US_CODE_RE = re.compile(r"^(?P<code>[A-Z]{1,5})$")  # 美股字母代码
 
     def __init__(self, market: str, code: str) -> None:
@@ -199,6 +199,12 @@ class StockSymbol:
             return cls(m.group("mkt"), m.group("code"))
         
         # 纯代码优先匹配（避免被前缀模式误匹配）
+        # 港股6位数字代码（优先检查，如00700）
+        if re.fullmatch(r"\d{6}", s2) and s2.startswith("00"):
+            # 6位数字且以00开头，很可能是港股代码（如00700）
+            mkt = cls._canon_market(hint_market) or "HK"
+            return cls(mkt, s2)
+        
         # A股6位数字代码
         if re.fullmatch(r"\d{6}", s2):
             mkt = cls._canon_market(hint_market) or cls._infer_market_by_code(s2)
@@ -619,8 +625,8 @@ class AkshareStockParamAdapter(ParamAdapter):
 
     SYMBOL_KEYS = ["symbol", "stock", "code", "ts_code", "index_code"]
     DATE_KEYS = ["date", "trade_date"]
-    START_DATE_KEYS = ["start_date", "from_date", "begin_date"]
-    END_DATE_KEYS = ["end_date", "to_date"]
+    START_DATE_KEYS = ["start_date", "from_date", "begin_date", "start_year"]
+    END_DATE_KEYS = ["end_date", "to_date", "end_year"]
     START_TIME_KEYS = ["start_time"]
     END_TIME_KEYS = ["end_time"]
     PERIOD_KEYS = ["period", "freq", "frequency"]
@@ -720,7 +726,7 @@ class AkshareStockParamAdapter(ParamAdapter):
         converted = self._apply_to_value(value, convert_one)
         if target_key in accepted:
             out[target_key] = converted
-        self._maybe_fill_market_fields(out, example, converted)
+        self._maybe_fill_market_fields(out, example, converted, accepted)
 
     def _detect_target_key_style_case(self, example: Dict[str, Any], accepted: set) -> Optional[Tuple[str, str, str]]:
         # 首先检查 symbol 相关字段
@@ -770,12 +776,25 @@ class AkshareStockParamAdapter(ParamAdapter):
         if not isinstance(v, str):
             return None
         s = v.strip().upper()
+        # A股格式：6位数字
         if re.fullmatch(r"\d{6}\.(SZ|SH|BJ)", s):
             return "dot"
         if re.fullmatch(r"(SZ|SH|BJ)\d{6}", s):
             return "prefix"
         if re.fullmatch(r"\d{6}", s):
             return "code"
+        # 港股格式：5-6位数字（如00981, 00700）
+        if re.fullmatch(r"\d{5,6}", s):
+            return "code"
+        # 美股格式：纯字母代码（如AAPL, FB）
+        if re.fullmatch(r"[A-Z]{1,5}", s):
+            return "code"
+        # 美股历史格式：数字.字母（如105.MSFT）
+        if re.fullmatch(r"\d+\.[A-Z]{1,5}", s):
+            return "code"
+        # B股格式：小写市场前缀+代码（如sh900901）
+        if re.fullmatch(r"(sh|sz)\d{6}", s.lower()):
+            return "prefix"
         return None
 
     def _find_symbol_key(self, params: Dict[str, Any], *, prefer: Optional[str] = None) -> Optional[str]:
@@ -812,7 +831,7 @@ class AkshareStockParamAdapter(ParamAdapter):
         return None
 
     @staticmethod
-    def _maybe_fill_market_fields(params_out: Dict[str, Any], example: Dict[str, Any], sym_val: Any) -> None:
+    def _maybe_fill_market_fields(params_out: Dict[str, Any], example: Dict[str, Any], sym_val: Any, accepted: set) -> None:
         if not isinstance(sym_val, str):
             return
         sym = StockSymbol.parse(sym_val)
@@ -836,9 +855,9 @@ class AkshareStockParamAdapter(ParamAdapter):
                 return value.upper()
             return value
         
-        if "market" in example and "market" not in params_out:
+        if "market" in example and "market" not in params_out and "market" in accepted:
             params_out["market"] = apply_case(market_short)
-        if "exchange" in example and "exchange" not in params_out:
+        if "exchange" in example and "exchange" not in params_out and "exchange" in accepted:
             mapping = {"SZ": "SZSE", "SH": "SSE", "BJ": "BSE"}
             exchange_val = mapping.get(market_short, market_short)
             params_out["exchange"] = apply_case(exchange_val)
@@ -885,6 +904,8 @@ class AkshareStockParamAdapter(ParamAdapter):
 
     @staticmethod
     def _detect_date_style(v: Any) -> str:
+        if isinstance(v, str) and re.fullmatch(r"\d{4}", v.strip()):
+            return "year"
         if isinstance(v, str) and re.fullmatch(r"\d{8}", v.strip()):
             return "ymd"
         if isinstance(v, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", v.strip()):
@@ -906,6 +927,10 @@ class AkshareStockParamAdapter(ParamAdapter):
             y, m, d = s[0:4], s[4:6], s[6:8]
         else:
             return v
+        
+        # 如果是年份参数，只返回年份
+        if target_style == "year":
+            return y
         if target_style == "y-m-d":
             return f"{y}-{m}-{d}"
         return f"{y}{m}{d}"
@@ -1009,15 +1034,16 @@ class AkshareStockParamAdapter(ParamAdapter):
                 return value.upper()
             return value
         
-        if self._pick_target_key(accepted, self.MARKET_KEYS) and market_val is not None and "market" not in out:
-            out["market"] = apply_case(market_val)
-        if self._pick_target_key(accepted, self.EXCHANGE_KEYS) and exchange_val is not None and "exchange" not in out:
+        target_market_key = self._pick_target_key(accepted, self.MARKET_KEYS)
+        if target_market_key and market_val is not None and target_market_key not in out and target_market_key in accepted:
+            out[target_market_key] = apply_case(market_val)
+        if self._pick_target_key(accepted, self.EXCHANGE_KEYS) and exchange_val is not None and "exchange" not in out and "exchange" in accepted:
             out["exchange"] = apply_case(exchange_val)
 
     # ---- 通用别名拷贝 ----
     def _map_synonym_family(self, out: Dict[str, Any], src: Dict[str, Any], aliases: List[str], accepted: set) -> None:
         target_key = self._pick_target_key(accepted, aliases)
-        if not target_key:
+        if not target_key or target_key in out:
             return
         value = self._pick_from_aliases(src, aliases)
         if value is not None:

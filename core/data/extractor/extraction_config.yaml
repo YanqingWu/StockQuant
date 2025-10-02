@@ -2204,3 +2204,15 @@ parameter_mappings:
         ranking_type:
           valid_values: ["即时", "3日排行", "5日排行", "10日排行", "20日排行"]
           default_value: "即时"
+    
+    stock_zh_ah_daily:
+      parameter_mapping:
+        start_date: "start_year"  # 将 start_date 映射为 start_year
+        end_date: "end_year"      # 将 end_date 映射为 end_year
+      validation:
+        start_date:
+          required: false
+          type: date
+        end_date:
+          required: false
+          type: date
