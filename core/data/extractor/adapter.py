@@ -1132,7 +1132,23 @@ class ParameterMapper:
         # 3. 应用默认值
         self._apply_default_values(mapped_params, validation)
         
+        # 4. 特殊处理逻辑
+        self._apply_special_handling(interface_name, mapped_params, params)
+        
         return target_interface, mapped_params
+    
+    def _apply_special_handling(self, interface_name: str, mapped_params: Dict[str, Any], original_params: Dict[str, Any]) -> None:
+        """应用特殊处理逻辑"""
+        if interface_name == "stock_zh_ah_daily":
+            # 特殊处理：如果提供了start_year，必须同时提供end_year
+            if "start_year" in mapped_params and "end_year" not in mapped_params:
+                # 如果只提供了start_year，移除它以避免接口调用失败
+                logger.warning(f"stock_zh_ah_daily接口需要同时提供start_year和end_year，移除start_year参数")
+                del mapped_params["start_year"]
+            elif "end_year" in mapped_params and "start_year" not in mapped_params:
+                # 如果只提供了end_year，移除它以避免接口调用失败
+                logger.warning(f"stock_zh_ah_daily接口需要同时提供start_year和end_year，移除end_year参数")
+                del mapped_params["end_year"]
     
     def _validate_parameters(self, params: Dict[str, Any], validation: Dict[str, Any]) -> None:
         """验证参数"""

@@ -726,9 +726,9 @@ interfaces_config:
             markets: ["SH", "SZ", "BJ"]
           
           - name: "stock_zh_ah_daily"
-            enabled: true
+            enabled: false  # 禁用：akshare库内部有BUG，A股股票无法使用
             priority: 7
-            markets: ["SZ", "SH"]
+            markets: ["HK"]
           
           - name: "stock_hk_daily"
             enabled: true
@@ -2216,3 +2216,10 @@ parameter_mappings:
         end_date:
           required: false
           type: date
+        # 特殊处理：如果提供了start_year，必须同时提供end_year
+        start_year:
+          required: false
+          type: string
+        end_year:
+          required: false
+          type: string
