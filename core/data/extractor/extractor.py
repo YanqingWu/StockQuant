@@ -190,18 +190,13 @@ class Extractor:
                 )
 
             # 统一转换为 DataFrame
-            logger.debug(f"开始转换数据为DataFrame")
             df: Optional[pd.DataFrame] = None
             if isinstance(raw_data, pd.DataFrame):
-                logger.debug(f"原始数据是DataFrame，形状: {raw_data.shape}")
                 df = raw_data.copy()
             elif isinstance(raw_data, list):
-                logger.debug(f"原始数据是列表，长度: {len(raw_data)}")
                 try:
                     df = pd.DataFrame(raw_data)
-                    logger.debug(f"列表转换为DataFrame成功，形状: {df.shape}")
                 except Exception as _e:
-                    logger.debug(f"列表转换为DataFrame失败: {_e}")
                     return ExtractionResult(
                         success=False,
                         data=None,
@@ -274,7 +269,6 @@ class Extractor:
                 )
             
             logger.debug(f"接口 {interface_name} 原始数据形状: {df.shape}, 列名: {list(df.columns)}")
-            logger.debug(f"原始数据前3行:\n{df.head(3)}")
 
             # 应用后处理器（在列名映射之前）
             logger.debug(f"应用后处理器前数据形状: {df.shape}")
@@ -1136,10 +1130,19 @@ class Extractor:
             目标股票的数据行，如果未找到返回None
         """
         if data is None or data.empty:
+            logger.debug(f"数据为空，无法查找目标股票 {target_symbol}")
             return None
         
         # 使用标准的symbol格式和列名
         target_symbol_str = target_symbol.to_dot()  # 标准格式，如 "601727.SH"
+        logger.debug(f"查找目标股票: {target_symbol_str}, 数据形状: {data.shape}")
+        
+        # 添加详细的debug信息
+        if 'symbol' in data.columns:
+            unique_symbols = data['symbol'].dropna().unique()
+            logger.debug(f"数据中的symbol列包含 {len(unique_symbols)} 个唯一值: {list(unique_symbols[:10])}")  # 只显示前10个
+        else:
+            logger.debug(f"数据中没有symbol列，列名: {list(data.columns)}")
         
         # 检查标准的symbol列
         if 'symbol' in data.columns:
@@ -1160,10 +1163,39 @@ class Extractor:
                     return data.iloc[0]
             else:
                 # 正常的symbol列匹配
+                logger.debug(f"开始匹配symbol列，目标: {target_symbol_str}")
                 matched_rows = data[data['symbol'].astype(str) == target_symbol_str]
                 if not matched_rows.empty:
-                    logger.debug(f"在symbol列中找到匹配的股票 {target_symbol_str}")
+                    logger.debug(f"在symbol列中找到匹配的股票 {target_symbol_str}，匹配行数: {len(matched_rows)}")
                     return matched_rows.iloc[0]
+                else:
+                    # 添加更详细的匹配失败信息
+                    logger.debug(f"symbol列匹配失败，目标: {target_symbol_str}")
+                    logger.debug(f"尝试其他格式匹配...")
+                    
+                    # 尝试不同的格式匹配
+                    target_code = target_symbol.code  # 如 "600519"
+                    target_market = target_symbol.market  # 如 "SH"
+                    
+                    # 尝试 "600519.SH" 格式
+                    if f"{target_code}.{target_market}" in data['symbol'].astype(str).values:
+                        logger.debug(f"找到格式 {target_code}.{target_market}")
+                        matched_rows = data[data['symbol'].astype(str) == f"{target_code}.{target_market}"]
+                        return matched_rows.iloc[0]
+                    
+                    # 尝试 "600519" 格式
+                    if target_code in data['symbol'].astype(str).values:
+                        logger.debug(f"找到格式 {target_code}")
+                        matched_rows = data[data['symbol'].astype(str) == target_code]
+                        return matched_rows.iloc[0]
+                    
+                    # 尝试 "SH600519" 格式
+                    if f"{target_market}{target_code}" in data['symbol'].astype(str).values:
+                        logger.debug(f"找到格式 {target_market}{target_code}")
+                        matched_rows = data[data['symbol'].astype(str) == f"{target_market}{target_code}"]
+                        return matched_rows.iloc[0]
+                    
+                    logger.debug(f"所有格式匹配都失败，目标: {target_symbol_str}, 可用格式: {list(data['symbol'].dropna().unique()[:5])}")
         
         # 如果DataFrame只有一行数据，可能是单股票查询结果
         if len(data) == 1:
@@ -1187,7 +1219,7 @@ class Extractor:
                 logger.debug(f"没有日期列或参数，返回第一行作为代表")
                 return data.iloc[0]
         
-        logger.warning(f"未找到目标股票 {target_symbol_str} 的数据")
+        logger.debug(f"未找到目标股票 {target_symbol_str} 的数据 - 这可能是正常的，因为某些接口只覆盖特定股票")
         return None
     
     def _filter_data_by_date(self, data: pd.DataFrame, params) -> pd.DataFrame:

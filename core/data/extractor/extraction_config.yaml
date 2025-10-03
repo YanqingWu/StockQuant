@@ -2718,4 +2718,29 @@ parameter_mappings:
         date:
           required: true
           type: string
+    
+    # 雪球热度排行榜接口 - 这些接口的symbol参数实际是排行榜类型
+    stock_hot_deal_xq:
+      parameter_mapping:
+        ranking_type: "symbol"  # 将 ranking_type 映射为 symbol
+      validation:
+        ranking_type:
+          valid_values: ["本周新增", "最热门"]
+          default_value: "最热门"
+    
+    stock_hot_tweet_xq:
+      parameter_mapping:
+        ranking_type: "symbol"  # 将 ranking_type 映射为 symbol
+      validation:
+        ranking_type:
+          valid_values: ["本周新增", "最热门"]
+          default_value: "最热门"
+    
+    stock_hot_follow_xq:
+      parameter_mapping:
+        ranking_type: "symbol"  # 将 ranking_type 映射为 symbol
+      validation:
+        ranking_type:
+          valid_values: ["本周新增", "最热门"]
+          default_value: "最热门"
           format: "YYYYMMDD"

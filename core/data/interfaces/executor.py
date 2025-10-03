@@ -54,6 +54,9 @@ class ErrorClassifier:
             return ErrorType.VALIDATION_ERROR
         elif 'cache' in error_name or 'cache' in error_msg:
             return ErrorType.CACHE_ERROR
+        elif 'nonetype' in error_msg and 'not subscriptable' in error_msg:
+            # NoneType错误通常是数据源问题，不应该重试
+            return ErrorType.VALIDATION_ERROR
         else:
             return ErrorType.UNKNOWN_ERROR
     
@@ -444,9 +447,29 @@ class InterfaceExecutor:
     
     def _call_akshare_interface(self, task: CallTask) -> Any:
         """调用akshare接口"""
+        logger.debug(f"调用接口: {task.interface_name}, 参数: {task.params}")
+        
         if hasattr(ak, task.interface_name):
             func = getattr(ak, task.interface_name)
-            return func(**task.params)
+            try:
+                result = func(**task.params)
+                logger.info(f"接口 {task.interface_name} 调用成功, 返回类型: {type(result)}")
+                
+                # 添加更详细的debug信息
+                if result is None:
+                    logger.warning(f"接口 {task.interface_name} 返回None")
+                elif hasattr(result, 'shape'):
+                    logger.debug(f"接口 {task.interface_name} 返回DataFrame, 形状: {result.shape}")
+                elif isinstance(result, (list, dict)):
+                    logger.debug(f"接口 {task.interface_name} 返回{type(result).__name__}, 长度: {len(result) if hasattr(result, '__len__') else 'N/A'}")
+                else:
+                    logger.debug(f"接口 {task.interface_name} 返回{type(result).__name__}")
+                
+                return result
+            except Exception as e:
+                logger.error(f"接口 {task.interface_name} 调用失败: {e}")
+                # 让错误通过错误分类系统处理，不要在这里直接处理
+                raise
         else:
             raise AttributeError(f"Interface {task.interface_name} not found in akshare")
     
@@ -530,6 +553,7 @@ class InterfaceExecutor:
                     cached_result = self.cache.get(cache_key)
                     if cached_result is not None:
                         logger.info(f"缓存命中 - 接口: {task.interface_name}, 缓存键: {cache_key[:50]}...")
+                        logger.info(f"接口 {task.interface_name} 调用成功 (缓存命中), 返回类型: {type(cached_result)}")
                         result = CallResult(
                             task_id=task.task_id,
                             interface_name=task.interface_name,
