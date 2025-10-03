@@ -148,6 +148,7 @@ standard_fields:
         - sell_rank                          # 卖出排名
 
       sentiment:
+        - symbol                             # 股票代码
         - date                               # 日期
         - comment_count                      # 评论数量
         - sentiment_score                    # 情绪得分
@@ -156,6 +157,15 @@ standard_fields:
         - popularity_rank                    # 人气排名
         - attention_score                    # 关注度得分
         - market_participation               # 市场参与度
+        - institution_ratio                  # 机构参与度
+        - composite_score                    # 综合得分
+        - attention_index                    # 关注指数
+        - current_rank                       # 目前排名
+        - rise_count                         # 上升
+        - main_cost                          # 主力成本
+        - participation_desire_daily         # 当日意愿上升
+        - participation_desire_5d_avg        # 5日平均参与意愿变化
+        - user_focus_index                   # 用户关注指数
 
       news:
         - news_id                            # 新闻ID（若有）
@@ -1944,6 +1954,12 @@ field_mappings:
   "关注指数": "attention_index"
   "目前排名": "current_rank"
   "上升": "rise_count"
+  
+  # 情绪相关字段
+  "当日意愿上升": "participation_desire_daily"
+  "5日平均参与意愿变化": "participation_desire_5d_avg"
+  "用户关注指数": "user_focus_index"
+  "评分": "comprehensive_score"
   "排名": "rank"
 
   # ESG数据
