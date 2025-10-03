@@ -209,6 +209,7 @@ standard_fields:
         - total_liab_equity                  # 负债和股东权益总计
 
       income_statement:
+        - symbol                             # 股票代码
         - report_date                        # 报告期
         - total_operating_income             # 营业总收入
         - operating_income                   # 营业收入
@@ -225,6 +226,7 @@ standard_fields:
         - non_recurring_profit               # 扣非净利润
 
       cash_flow:
+        - symbol                             # 股票代码
         - report_date                        # 报告期
         - operating_cash_inflow              # 经营活动现金流入
         - operating_cash_outflow             # 经营活动现金流出
@@ -234,6 +236,7 @@ standard_fields:
         - net_cash_increase                  # 现金及现金等价物净增加额
 
       indicators:
+        - symbol                             # 股票代码
         - report_date                        # 报告期
         - eps                                # 每股收益
         - bps                                # 每股净资产
@@ -250,6 +253,7 @@ standard_fields:
         - dividend_yield_ttm                 # 滚动股息率
 
       dividend:
+        - symbol                             # 股票代码
         - report_date                        # 报告期
         - stock_dividend_ratio               # 送转股份比例
         - cash_dividend_ratio                # 现金分红比例
@@ -261,6 +265,7 @@ standard_fields:
 
     holdings:
       fund_holdings:
+        - symbol                             # 股票代码
         - report_date                        # 报告期
         - fund_code                          # 基金代码
         - fund_name                          # 基金名称
@@ -269,6 +274,7 @@ standard_fields:
         - holding_value                      # 持股市值
 
       fund_summary:                      # 基金持仓汇总（股票维度）
+        - symbol                             # 股票代码
         - report_date                        # 报告期
         - holding_fund_count                 # 持有基金数量
         - total_holding_shares               # 总持股数量（累计）
@@ -277,6 +283,7 @@ standard_fields:
         - circulating_ratio                  # 总持股比例（占流通股本）
 
       hsgt_ranking:                      # 沪深港通排行（股票视角）
+        - symbol                             # 股票代码
         - date                               # 日期
         - rank                               # 排名
         - holding_quantity                   # 持股数量
@@ -286,6 +293,7 @@ standard_fields:
 
     events:
       major_contracts:                   # 重大合同明细
+        - symbol                             # 股票代码
         - sign_date                          # 签署日期
         - contract_name                      # 合同名称
         - contract_amount                    # 合同金额
@@ -293,6 +301,7 @@ standard_fields:
         - counterparty                       # 其他签署方
 
       suspension:                        # 停复牌事件（股票维度）
+        - symbol                             # 股票代码
         - start_date                         # 停牌起始日
         - end_date                           # 停牌截止日
         - reason                             # 停牌原因
@@ -300,6 +309,7 @@ standard_fields:
 
     research_and_analyst:
       research_report:
+        - symbol                             # 股票代码
         - report_date                        # 报告日期
         - institution                        # 研究机构
         - analyst                            # 分析师
@@ -315,6 +325,7 @@ standard_fields:
         - pe_forecast                        # 盈利预测-市盈率
 
       analyst_rating:
+        - symbol                             # 股票代码
         - date                               # 日期
         - institution                        # 机构
         - rating                             # 评级
@@ -322,6 +333,7 @@ standard_fields:
         - target_price                       # 目标价
 
       profit_forecast_consensus:
+        - symbol                             # 股票代码
         - report_date                        # 报告期
         - year                               # 预测年份
         - eps_forecast                       # 每股收益预测
@@ -332,11 +344,13 @@ standard_fields:
         - target_price_consensus             # 一致目标价
 
       opinions:                          # 机构/媒体观点
+        - symbol                             # 股票代码
         - date                               # 日期
         - opinion_type                       # 观点类型（看多/看空/中性等）
 
     technical_analysis:
       indicators:                        # 技术指标数据
+        - symbol                             # 股票代码
         - date                               # 日期
         - macd                               # MACD值
         - macd_signal                        # MACD信号线
@@ -371,6 +385,7 @@ standard_fields:
         - dmi_adxr                           # DMI评估数值
 
       ranking:                           # 技术分析排名数据
+        - symbol                             # 股票代码
         - date                               # 日期
         - rank                               # 排名
         - rank_change                        # 排名变化（可选）
@@ -380,6 +395,7 @@ standard_fields:
         - period                             # 统计周期（可选）
 
       breakthrough:                      # 突破数据
+        - symbol                             # 股票代码
         - date                               # 日期
         - breakthrough_type                  # 突破类型（向上/向下）
         - breakthrough_price                 # 突破价格
