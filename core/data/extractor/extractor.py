@@ -1130,13 +1130,15 @@ class Extractor:
             mask = pd.Series([True] * len(data), index=data.index)
             
             # 将DataFrame中的日期列转换为date类型以便比较
-            date_series = pd.to_datetime(data['date']).dt.date
+            date_series = pd.to_datetime(data['date'])
             
             if start_date is not None:
-                mask &= (date_series >= start_date)
+                start_timestamp = pd.Timestamp(start_date)
+                mask &= (date_series >= start_timestamp)
             
             if end_date is not None:
-                mask &= (date_series <= end_date)
+                end_timestamp = pd.Timestamp(end_date)
+                mask &= (date_series <= end_timestamp)
             
             filtered_data = data[mask]
             logger.debug(f"日期过滤: 原始 {len(data)} 行 -> 过滤后 {len(filtered_data)} 行")

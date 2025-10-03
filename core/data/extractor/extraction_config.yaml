@@ -125,6 +125,7 @@ standard_fields:
         - total_amount                       # 成交额（兼容字段）
 
       dragon_tiger:
+        - symbol                             # 股票代码
         - date                               # 上榜日期
         - lhb_net_buy                        # 龙虎榜净买额
         - lhb_buy_amount                     # 龙虎榜买入额
@@ -817,42 +818,6 @@ interfaces_config:
             priority: 2
             markets: ["SH", "SZ"]
             description: "新浪龙虎榜每日数据"
-          
-          - name: "stock_lhb_stock_statistic_em"
-            enabled: true
-            priority: 3
-            markets: ["SH", "SZ"]
-            description: "东方财富龙虎榜个股统计"
-          
-          - name: "stock_lhb_jgstatistic_em"
-            enabled: true
-            priority: 4
-            markets: ["SH", "SZ"]
-            description: "东方财富龙虎榜机构统计"
-          
-          - name: "stock_lhb_jgmmtj_em"
-            enabled: true
-            priority: 5
-            markets: ["SH", "SZ"]
-            description: "东方财富龙虎榜机构买卖统计"
-          
-          - name: "stock_lhb_ggtj_em"
-            enabled: true
-            priority: 6
-            markets: ["SH", "SZ"]
-            description: "东方财富龙虎榜个股统计增强版"
-          
-          - name: "stock_lhb_traderstatistic_em"
-            enabled: true
-            priority: 7
-            markets: ["SH", "SZ"]
-            description: "东方财富龙虎榜营业部统计"
-          
-          - name: "stock_lhb_hyyyb_em"
-            enabled: true
-            priority: 8
-            markets: ["SH", "SZ"]
-            description: "东方财富龙虎榜活跃营业部"
 
       sentiment:
         description: "情绪数据"
