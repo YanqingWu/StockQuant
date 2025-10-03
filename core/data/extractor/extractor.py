@@ -341,17 +341,40 @@ class Extractor:
                         
                         # 如果是字符串，尝试解析为StockSymbol
                         if isinstance(symbol_value, str):
-                            parsed_symbol = StockSymbol.parse(symbol_value.strip())
-                            if parsed_symbol:
-                                return parsed_symbol.to_dot()
-                            else:
-                                # 如果无法解析，保持原值
-                                return symbol_value
+                            code = symbol_value.strip()
+                            
+                            # 获取市场提示
+                            hint_market = None
+                            if hasattr(self, '_current_params') and self._current_params:
+                                if hasattr(self._current_params, 'market') and self._current_params.market:
+                                    hint_market = self._current_params.market
+                                elif hasattr(self._current_params, 'symbol') and self._current_params.symbol:
+                                    hint_market = self._current_params.symbol.market
+                            
+                            try:
+                                parsed_symbol = StockSymbol.parse(code, hint_market=hint_market)
+                                if parsed_symbol:
+                                    return parsed_symbol.to_dot()
+                                else:
+                                    # 如果无法解析，保持原值
+                                    return code
+                            except Exception as e:
+                                # 对于B股代码等无法解析的情况，保持原值
+                                return code
                         
                         # 其他类型，转换为字符串后尝试解析
                         try:
                             str_value = str(symbol_value).strip()
-                            parsed_symbol = StockSymbol.parse(str_value)
+                            
+                            # 获取市场提示
+                            hint_market = None
+                            if hasattr(self, '_current_params') and self._current_params:
+                                if hasattr(self._current_params, 'market') and self._current_params.market:
+                                    hint_market = self._current_params.market
+                                elif hasattr(self._current_params, 'symbol') and self._current_params.symbol:
+                                    hint_market = self._current_params.symbol.market
+                            
+                            parsed_symbol = StockSymbol.parse(str_value, hint_market=hint_market)
                             if parsed_symbol:
                                 return parsed_symbol.to_dot()
                             else:
