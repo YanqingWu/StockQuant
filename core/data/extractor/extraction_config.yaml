@@ -79,6 +79,9 @@ standard_fields:
         - short_repay_amount                 # 融券偿还量
         - net_margin_change                  # 融资净变化
         - net_short_change                   # 融券净变化
+        - margin_trading_balance             # 融资融券余额
+        - net_margin_change                  # 融资净变化
+        - net_short_change                   # 融券净变化
 
       cost_distribution:
         - date                               # 日期
@@ -109,16 +112,6 @@ standard_fields:
         - small_order_net_inflow             # 小单净流入净额
         - small_order_net_inflow_ratio       # 小单净流入净占比
         - retail_net_inflow                  # 散户资金净流入
-        - main_inflow                        # 主力资金流入
-        - main_outflow                       # 主力资金流出
-        - retail_inflow                      # 散户资金流入
-        - retail_outflow                     # 散户资金流出
-        - large_order_inflow                 # 大单流入
-        - large_order_outflow                # 大单流出
-        - medium_order_inflow                # 中单流入
-        - medium_order_outflow               # 中单流出
-        - small_order_inflow                 # 小单流入
-        - small_order_outflow                # 小单流出
 
       dragon_tiger:
         - symbol                             # 股票代码
@@ -148,10 +141,6 @@ standard_fields:
         - attention_score                    # 关注度得分
         - market_participation               # 市场参与度
         - institution_ratio                  # 机构参与度
-        - composite_score                    # 综合得分
-        - attention_index                    # 关注指数
-        - current_rank                       # 目前排名
-        - rise_count                         # 上升
         - main_cost                          # 主力成本
         - participation_desire_daily         # 当日意愿上升
         - participation_desire_5d_avg        # 5日平均参与意愿变化
@@ -172,7 +161,7 @@ standard_fields:
         - report_type                        # 报告类型（年报/中报/一季报/三季报）
         - symbol                             # 股票代码
         - total_assets                       # 资产总计
-        - total_current_assets              # 流动资产合计
+        - total_current_assets               # 流动资产合计
         - total_noncurrent_assets            # 非流动资产合计
         - monetary_funds                     # 货币资金
         - inventory                          # 存货
@@ -201,9 +190,7 @@ standard_fields:
         - symbol                             # 股票代码
         - report_date                        # 报告期
         - report_type                        # 报告类型（年报/中报/一季报/三季报）
-        - total_operating_income             # 营业总收入
         - operating_income                   # 营业收入
-        - total_operating_cost               # 营业总成本
         - operating_cost                     # 营业成本
         - sales_expense                      # 销售费用
         - management_expense                 # 管理费用
@@ -234,13 +221,7 @@ standard_fields:
         - gross_profit_margin                # 毛利率
         - net_profit_margin                  # 净利率
         - operating_profit_margin            # 营业利润率
-        - net_profit_star                    # 净利润(标记)
-        - total_operating_income_star        # 营业总收入(标记)
-        - total_operating_cost_star          # 营业总成本(标记)
-        - parent_net_profit_star             # 归母净利润(标记)
-        - non_recurring_profit_star          # 扣非净利润(标记)
         - continuing_operation_net_profit    # 持续经营净利润
-        - total_operating_cost_total         # 营业总成本-总计
 
       cash_flow:
         - symbol                             # 股票代码
@@ -260,19 +241,10 @@ standard_fields:
         - cash_equivalents_ending            # 期末现金及现金等价物余额
         - operating_cash_flow_per_share      # 每股经营现金流量
         - exchange_rate_effect               # 汇率变动对现金及现金等价物的影响
-        - net_cash_increase_other            # 现金及现金等价物净增加额-其他
-        - net_cash_increase_balance          # 现金及现金等价物净增加额-余额
-        - cash_equivalents_ending_other      # 期末现金及现金等价物余额-其他
-        - cash_equivalents_ending_balance    # 期末现金及现金等价物余额-余额
         - cash_equivalents_beginning_cash    # 期初现金及现金等价物余额-现金
         - cash_equivalents_ending_cash       # 期末现金及现金等价物余额-现金
         - cash_equivalents_beginning_equivalents  # 期初现金及现金等价物余额-等价物
         - cash_equivalents_ending_equivalents     # 期末现金及现金等价物余额-等价物
-        - net_cash_increase_star             # 现金及现金等价物净增加额(标记)
-        - operating_cash_flow_star           # 经营活动现金流量净额(标记)
-        - investing_cash_flow_star           # 投资活动现金流量净额(标记)
-        - financing_cash_flow_star           # 筹资活动现金流量净额(标记)
-        - cash_equivalents_ending_star       # 期末现金及现金等价物余额(标记)
 
       indicators:
         - symbol                             # 股票代码
@@ -302,9 +274,6 @@ standard_fields:
         - payment_date                       # 分红发放日
         - dividend_status                    # 方案进度
         - stock_transfer_ratio               # 转增比例
-        - stock_dividend_ratio_detail        # 送转股份比例-详细
-        - stock_dividend_ratio_gift          # 送转股份比例-送股
-        - stock_dividend_ratio_transfer      # 送转股份比例-转股
 
     holdings:
       fund_holdings:
@@ -324,11 +293,8 @@ standard_fields:
         - institute_name                     # 机构名称
         - institute_full_name                # 机构全称
         - holding_shares                     # 持股数量
-        - latest_holding_shares              # 最新持股数量
         - holding_ratio                      # 持股比例
-        - latest_holding_ratio               # 最新持股比例
         - circulating_ratio                  # 占流通股比例
-        - latest_circulating_ratio           # 最新占流通股比例
         - holding_ratio_change               # 持股比例变化
         - circulating_ratio_change           # 流通股比例变化
 
@@ -520,26 +486,10 @@ standard_fields:
         - premium_rate                       # 溢价率
         - buyer_type                         # 买方类型（可选）
         - seller_type                        # 卖方类型（可选）
-
-    margin_trading:
-      summary_data:                      # 融资融券汇总
-        - date                               # 日期
-        - margin_balance                     # 融资余额
-        - margin_buy_amount                  # 融资买入额
-        - margin_repay_amount                # 融资偿还额
-        - short_balance                      # 融券余量
-        - short_sell_volume                  # 融券卖出量
-        - short_repay_volume                 # 融券偿还量
-        - margin_trading_balance             # 融资融券余额
-        - net_margin_change                  # 融资净变化
-        - net_short_change                   # 融券净变化
-
+    
     market_sentiment:
       sentiment_indicators:              # 市场情绪指标
         - date                               # 日期
-        - bullish_ratio                      # 看多比例
-        - bearish_ratio                      # 看空比例
-        - neutral_ratio                      # 中性比例（可选）
         - sentiment_index                    # 情绪指数
         - confidence_level                   # 信心水平（可选）
         - fear_greed_index                   # 恐惧贪婪指数（可选）
@@ -633,39 +583,24 @@ standard_fields:
       - suspend_count                      # 停牌家数（可选）
       - resume_count                       # 复牌家数（可选）
 
-    industry_sector:
-      metadata:
+    sector_data:
+      industry_metadata:
         - industry_code                      # 行业代码
         - industry_name                      # 行业名称
         - parent_code                        # 上级行业
         - level                              # 分级层级
         - description                        # 行业描述
 
-      quote:
-        - date                               # 日期
-        - close                              # 收盘价
-        - pct_change                         # 涨跌幅
-        - turnover_rate                      # 换手率
-        - net_inflow                         # 净流入
-        - stock_count                        # 成分股数量
-        - leader_stock_name                  # 领涨股票
-        - leader_stock_pct_change            # 领涨股票-涨跌幅
-
-      constituents:
-        - date                               # 日期
-        - symbol                             # 成分股代码
-        - weight                             # 权重（若有）
-        - in_date                            # 纳入日期（若有）
-        - out_date                           # 移出日期（若有）
-
-    concept_sector:
-      metadata:
+      concept_metadata:
         - concept_code                       # 概念代码
         - concept_name                       # 概念名称
         - description                        # 描述
 
-      quote:
+      sector_quote:
         - date                               # 日期
+        - sector_code                        # 板块代码
+        - sector_name                        # 板块名称
+        - sector_type                        # 板块类型（行业/概念）
         - close                              # 收盘价
         - pct_change                         # 涨跌幅
         - turnover_rate                      # 换手率
@@ -674,8 +609,10 @@ standard_fields:
         - leader_stock_name                  # 领涨股票
         - leader_stock_pct_change            # 领涨股票-涨跌幅
 
-      constituents:
+      sector_constituents:
         - date                               # 日期
+        - sector_code                        # 板块代码
+        - sector_type                        # 板块类型（行业/概念）
         - symbol                             # 成分股代码
         - weight                             # 权重（若有）
         - in_date                            # 纳入日期（若有）
