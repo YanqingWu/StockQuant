@@ -547,13 +547,14 @@ class Extractor:
                 else:
                     logger.warning(f"接口 {interface.name} 执行失败: {result.error}")
         
-        # 如果没有成功的结果，返回失败
+        # 如果没有成功的结果，返回空的标准字段DataFrame
         if not successful_results:
+            empty_df = self._create_empty_standard_dataframe(category, data_type)
             return ExtractionResult(
-                success=False,
-                data=None,
+                success=True,
+                data=empty_df,
                 interface_name=None,
-                error=f"所有接口执行失败: {category}.{data_type}"
+                error=None
             )
         
         # 如果只有一个成功结果，应用日期过滤后直接返回
@@ -566,10 +567,12 @@ class Extractor:
                 if not filtered_data.empty:
                     single_result.data = filtered_data
                 else:
+                    # 创建空的标准字段DataFrame而不是返回None
+                    empty_df = self._create_empty_standard_dataframe(category, data_type)
                     return ExtractionResult(
-                        success=False,
-                        data=None,
-                        error="日期过滤后没有数据",
+                        success=True,  # 改为True，因为这是正常的空数据情况
+                        data=empty_df,
+                        error=None,
                         interface_name=single_result.interface_name
                     )
             return single_result
@@ -597,10 +600,12 @@ class Extractor:
         try:
             # 检查是否有成功的结果
             if not successful_results:
+                # 创建空的标准字段DataFrame而不是返回None
+                empty_df = self._create_empty_standard_dataframe(category, data_type)
                 return ExtractionResult(
-                    success=False,
-                    data=None,
-                    error="没有成功的结果可供合并",
+                    success=True,
+                    data=empty_df,
+                    error=None,
                     interface_name=None,
                     source_interface=None
                 )
@@ -610,13 +615,13 @@ class Extractor:
             
             # 根据策略执行合并
             if merge_config["strategy"] == "date_based_merge":
-                return self._merge_by_date(successful_results, standard_params, merge_config)
+                return self._merge_by_date(successful_results, standard_params, merge_config, category, data_type)
             elif merge_config["strategy"] == "symbol_based_merge":
-                return self._merge_by_symbol(successful_results, standard_params, merge_config)
+                return self._merge_by_symbol(successful_results, standard_params, merge_config, category, data_type)
             elif merge_config["strategy"] == "symbol_report_merge":
-                return self._merge_by_symbol_report(successful_results, standard_params, merge_config)
+                return self._merge_by_symbol_report(successful_results, standard_params, merge_config, category, data_type)
             else:
-                return self._merge_default(successful_results, standard_params)
+                return self._merge_default(successful_results, standard_params, category, data_type)
                 
         except Exception as e:
             logger.error(f"数据合并过程中发生错误: {e}")
@@ -624,10 +629,12 @@ class Extractor:
             if successful_results:
                 return successful_results[0][1]
             else:
+                # 创建空的标准字段DataFrame而不是返回None
+                empty_df = self._create_empty_standard_dataframe(category, data_type)
                 return ExtractionResult(
-                    success=False,
-                    data=None,
-                    error=f"数据合并失败且没有可用结果: {e}",
+                    success=True,
+                    data=empty_df,
+                    error=None,
                     interface_name=None,
                     source_interface=None
                 )
@@ -646,7 +653,8 @@ class Extractor:
         return self.config_loader.get_merge_strategy(category, data_type)
 
     def _merge_by_date(self, successful_results: List[Tuple[Any, ExtractionResult]], 
-                      standard_params: StandardParams, merge_config: Dict[str, Any]) -> ExtractionResult:
+                      standard_params: StandardParams, merge_config: Dict[str, Any], 
+                      category: str, data_type: str) -> ExtractionResult:
         """
         按日期合并数据（用于日行情等时间序列数据）
         
@@ -669,7 +677,9 @@ class Extractor:
                 interface_names.append(interface.name)
         
         if not all_data:
-            return ExtractionResult(success=False, data=None, error="没有有效的数据可供合并")
+            # 创建空的标准字段DataFrame而不是返回None
+            empty_df = self._create_empty_standard_dataframe(category, data_type)
+            return ExtractionResult(success=True, data=empty_df, error=None)
         
         # 2. 合并所有数据
         merged_data = pd.concat(all_data, ignore_index=True)
@@ -766,7 +776,8 @@ class Extractor:
         return result
 
     def _merge_by_symbol(self, successful_results: List[Tuple[Any, ExtractionResult]], 
-                        standard_params: StandardParams, merge_config: Dict[str, Any]) -> ExtractionResult:
+                        standard_params: StandardParams, merge_config: Dict[str, Any], 
+                        category: str, data_type: str) -> ExtractionResult:
         """
         按股票合并数据（用于基础信息等非时间序列数据）
         
@@ -798,7 +809,9 @@ class Extractor:
                         interface_names.append(interface.name)
         
         if merged_data is None:
-            return ExtractionResult(success=False, data=None, error=f"未找到目标股票 {target_symbol} 的数据")
+            # 创建空的标准字段DataFrame而不是返回None
+            empty_df = self._create_empty_standard_dataframe(category, data_type)
+            return ExtractionResult(success=True, data=empty_df, error=None)
         
         return ExtractionResult(
             success=True,
@@ -808,7 +821,8 @@ class Extractor:
         )
 
     def _merge_by_symbol_report(self, successful_results: List[Tuple[Any, ExtractionResult]], 
-                               standard_params: StandardParams, merge_config: Dict[str, Any]) -> ExtractionResult:
+                               standard_params: StandardParams, merge_config: Dict[str, Any], 
+                               category: str, data_type: str) -> ExtractionResult:
         """
         按股票和报告期合并数据（用于财务数据）
         
@@ -841,7 +855,9 @@ class Extractor:
                     interface_names.append(interface.name)
         
         if not all_data:
-            return ExtractionResult(success=False, data=None, error=f"未找到目标股票 {target_symbol} 的数据")
+            # 创建空的标准字段DataFrame而不是返回None
+            empty_df = self._create_empty_standard_dataframe(category, data_type)
+            return ExtractionResult(success=True, data=empty_df, error=None)
         
         # 2. 合并所有数据
         merged_data = pd.concat(all_data, ignore_index=True)
@@ -863,7 +879,7 @@ class Extractor:
         )
 
     def _merge_default(self, successful_results: List[Tuple[Any, ExtractionResult]], 
-                      standard_params: StandardParams) -> ExtractionResult:
+                      standard_params: StandardParams, category: str, data_type: str) -> ExtractionResult:
         """
         默认合并策略（向后兼容）
         
@@ -911,11 +927,13 @@ class Extractor:
                 logger.warning(f"接口 {interface.name} 中未找到目标股票 {target_symbol} 的数据")
         
         if merged_data is None:
+            # 创建空的标准字段DataFrame而不是返回None
+            empty_df = self._create_empty_standard_dataframe(category, data_type)
             return ExtractionResult(
-                success=False,
-                data=None,
+                success=True,
+                data=empty_df,
                 interface_name=None,
-                error=f"所有接口中都未找到目标股票 {target_symbol} 的数据"
+                error=None
             )
         
         # 将合并后的单行数据转换为DataFrame
@@ -981,6 +999,35 @@ class Extractor:
         except Exception as e:
             logger.warning(f"日期过滤失败: {e}，返回原数据")
             return data
+
+    def _create_empty_standard_dataframe(self, category: str, data_type: str) -> pd.DataFrame:
+        """
+        创建包含标准字段的空DataFrame
+        
+        Args:
+            category: 数据分类
+            data_type: 数据类型
+            
+        Returns:
+            包含标准字段的空DataFrame
+        """
+        try:
+            # 从配置中获取标准字段
+            standard_fields = self.config.get_standard_fields(category, data_type)
+            
+            if not standard_fields:
+                logger.warning(f"未找到标准字段定义: {category}.{data_type}")
+                return pd.DataFrame()
+            
+            # 创建空DataFrame，包含所有标准字段
+            empty_df = pd.DataFrame(columns=standard_fields)
+            logger.info(f"创建空标准字段DataFrame: {category}.{data_type}, 字段: {standard_fields}")
+            
+            return empty_df
+            
+        except Exception as e:
+            logger.error(f"创建空标准字段DataFrame失败: {e}")
+            return pd.DataFrame()
 
     def _find_target_stock_data(self, data: pd.DataFrame, target_symbol: StockSymbol) -> Optional[pd.Series]:
         """
