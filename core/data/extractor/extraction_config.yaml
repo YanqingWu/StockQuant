@@ -249,12 +249,21 @@ standard_fields:
       cash_flow:
         - symbol                             # 股票代码
         - report_date                        # 报告期
-        - operating_cash_inflow              # 经营活动现金流入
-        - operating_cash_outflow             # 经营活动现金流出
-        - operating_cash_flow                # 经营活动现金流量净额
-        - investing_cash_flow                # 投资活动现金流量净额
-        - financing_cash_flow                # 筹资活动现金流量净额
+        - report_type                        # 报告类型（年报/中报/一季报/三季报）
+        - operating_cash_inflow              # 经营活动现金流入小计
+        - operating_cash_outflow             # 经营活动现金流出小计
+        - operating_cash_flow                # 经营活动产生的现金流量净额
+        - investing_cash_inflow              # 投资活动现金流入小计
+        - investing_cash_outflow             # 投资活动现金流出小计
+        - investing_cash_flow                # 投资活动产生的现金流量净额
+        - financing_cash_inflow              # 筹资活动现金流入小计
+        - financing_cash_outflow             # 筹资活动现金流出小计
+        - financing_cash_flow                # 筹资活动产生的现金流量净额
         - net_cash_increase                  # 现金及现金等价物净增加额
+        - cash_equivalents_beginning         # 期初现金及现金等价物余额
+        - cash_equivalents_ending            # 期末现金及现金等价物余额
+        - operating_cash_flow_per_share      # 每股经营现金流量
+        - exchange_rate_effect               # 汇率变动对现金及现金等价物的影响
 
       indicators:
         - symbol                             # 股票代码
@@ -993,6 +1002,10 @@ interfaces_config:
 
       cash_flow:
         description: "现金流量表"
+        merge_strategy: "symbol_report_merge"
+        group_by: ["symbol", "report_date"]
+        merge_options:
+          data_quality_priority: "highest"  # 按接口优先级，优先选择优先级高的接口
         interfaces:
           - name: "stock_cash_flow_sheet_by_report_em"
             enabled: true
@@ -1009,10 +1022,25 @@ interfaces_config:
             priority: 3
             markets: ["SH", "SZ", "BJ"]
           
-          - name: "stock_xjll_em"
+          - name: "stock_financial_cash_ths"
             enabled: true
             priority: 4
+            markets: ["SH", "SZ", "BJ"]
+          
+          - name: "stock_xjll_em"
+            enabled: true
+            priority: 5
             markets: ["SH", "SZ"]
+          
+          - name: "stock_financial_abstract_ths"
+            enabled: true
+            priority: 6
+            markets: ["SH", "SZ", "BJ"]
+          
+          - name: "stock_yjbb_em"
+            enabled: true
+            priority: 7
+            markets: ["SH", "SZ", "BJ"]
 
       indicators:
         description: "财务指标"
@@ -2344,6 +2372,88 @@ field_mappings:
   "流动比率": "current_ratio"
   "速动比率": "quick_ratio"
   "资产负债率": "debt_to_asset_ratio"
+
+  # 现金流量表字段映射
+  # stock_cash_flow_sheet_by_*_em接口的英文字段映射
+  "SECUCODE": "secucode"
+  "SECURITY_CODE": "security_code"
+  "SECURITY_NAME_ABBR": "security_name"
+  "ORG_CODE": "org_code"
+  "ORG_TYPE": "org_type"
+  "REPORT_DATE": "report_date"
+  "REPORT_TYPE": "report_type"
+  "REPORT_DATE_NAME": "report_date_name"
+  "SECURITY_TYPE_CODE": "security_type_code"
+  "NOTICE_DATE": "notice_date"
+  "UPDATE_DATE": "update_date"
+  "CURRENCY": "currency"
+  "TOTAL_OPERATE_INFLOW": "operating_cash_inflow"
+  "TOTAL_OPERATE_OUTFLOW": "operating_cash_outflow"
+  "NETCASH_OPERATE": "operating_cash_flow"
+  "TOTAL_INVEST_INFLOW": "investing_cash_inflow"
+  "TOTAL_INVEST_OUTFLOW": "investing_cash_outflow"
+  "NETCASH_INVEST": "investing_cash_flow"
+  "TOTAL_FINANCE_INFLOW": "financing_cash_inflow"
+  "TOTAL_FINANCE_OUTFLOW": "financing_cash_outflow"
+  "NETCASH_FINANCE": "financing_cash_flow"
+  "NETCASH_INCREASE": "net_cash_increase"
+  "CASH_EQUIVALENTS_BEGINNING": "cash_equivalents_beginning"
+  "CASH_EQUIVALENTS_ENDING": "cash_equivalents_ending"
+  "EXCHANGE_RATE_EFFECT": "exchange_rate_effect"
+  
+  # 补充缺失的重要字段映射
+  "CCE_ADD": "net_cash_increase"
+  "CCE_ADD_OTHER": "net_cash_increase"
+  "CCE_ADD_BALANCE": "net_cash_increase"
+  "BEGIN_CCE": "cash_equivalents_beginning"
+  "END_CCE": "cash_equivalents_ending"
+  "END_CCE_OTHER": "cash_equivalents_ending"
+  "END_CCE_BALANCE": "cash_equivalents_ending"
+  "RATE_CHANGE_EFFECT": "exchange_rate_effect"
+  "BEGIN_CASH": "cash_equivalents_beginning"
+  "END_CASH": "cash_equivalents_ending"
+  "BEGIN_CASH_EQUIVALENTS": "cash_equivalents_beginning"
+  "END_CASH_EQUIVALENTS": "cash_equivalents_ending"
+  
+  # stock_xjll_em接口的中文字段映射
+  "股票代码": "symbol"
+  "股票简称": "stock_name"
+  "净现金流-净现金流": "net_cash_increase"
+  "净现金流-同比增长": "net_cash_increase_yoy"
+  "经营性现金流-现金流量净额": "operating_cash_flow"
+  "经营性现金流-净现金流占比": "operating_cash_flow_ratio"
+  "投资性现金流-现金流量净额": "investing_cash_flow"
+  "投资性现金流-净现金流占比": "investing_cash_flow_ratio"
+  "融资性现金流-现金流量净额": "financing_cash_flow"
+  "融资性现金流-净现金流占比": "financing_cash_flow_ratio"
+  "公告日期": "announcement_date"
+  
+  # stock_financial_cash_ths接口的中文字段映射
+  "报告期": "report_date"
+  "*现金及现金等价物净增加额": "net_cash_increase"
+  "*经营活动产生的现金流量净额": "operating_cash_flow"
+  "*投资活动产生的现金流量净额": "investing_cash_flow"
+  "*筹资活动产生的现金流量净额": "financing_cash_flow"
+  "*期末现金及现金等价物余额": "cash_equivalents_ending"
+  "经营活动现金流入小计": "operating_cash_inflow"
+  "经营活动现金流出小计": "operating_cash_outflow"
+  "经营活动产生的现金流量净额": "operating_cash_flow"
+  "投资活动现金流入小计": "investing_cash_inflow"
+  "投资活动现金流出小计": "investing_cash_outflow"
+  "投资活动产生的现金流量净额": "investing_cash_flow"
+  "筹资活动现金流入小计": "financing_cash_inflow"
+  "筹资活动现金流出小计": "financing_cash_outflow"
+  "筹资活动产生的现金流量净额": "financing_cash_flow"
+  "四、汇率变动对现金及现金等价物的影响": "exchange_rate_effect"
+  "五、现金及现金等价物净增加额": "net_cash_increase"
+  "加：期初现金及现金等价物余额": "cash_equivalents_beginning"
+  "六、期末现金及现金等价物余额": "cash_equivalents_ending"
+  "间接法-经营活动产生的现金流量净额": "operating_cash_flow_indirect"
+  "间接法-现金及现金等价物净增加额": "net_cash_increase_indirect"
+  
+  # stock_financial_abstract_ths和stock_yjbb_em接口的字段映射
+  "每股经营现金流": "operating_cash_flow_per_share"
+  "每股经营现金流量": "operating_cash_flow_per_share"
 
   # 分红派息
   "送转股份比例": "stock_dividend_ratio"

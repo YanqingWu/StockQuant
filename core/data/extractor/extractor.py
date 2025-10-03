@@ -285,8 +285,8 @@ class Extractor:
                             # 合并这些列的数据
                             merged_series = df.iloc[:, dup_indices[0]].copy()
                             for idx in dup_indices[1:]:
-                                # 用非空值填充
-                                mask = merged_series.isna() | (merged_series == '') | (merged_series == 0)
+                                # 用非空值填充（0值是有意义的，不应该被过滤）
+                                mask = merged_series.isna() | (merged_series == '')
                                 merged_series = merged_series.where(~mask, df.iloc[:, idx])
                             
                             # 删除重复列，保留第一列并更新其数据
