@@ -180,6 +180,7 @@ standard_fields:
     financials:
       balance_sheet:
         - report_date                        # 报告期
+        - report_type                        # 报告类型（年报/中报/一季报/三季报）
         - symbol                             # 股票代码
         - total_assets                       # 资产总计
         - total_current_assets              # 流动资产合计
@@ -1768,6 +1769,7 @@ field_mappings:
   
   # 资产负债表字段映射
   "REPORT_DATE": "report_date"
+  "REPORT_TYPE": "report_type"
   "SECURITY_CODE": "symbol"
   "TOTAL_ASSETS": "total_assets"
   "TOTAL_CURRENT_ASSETS": "total_current_assets"
