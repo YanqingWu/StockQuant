@@ -150,6 +150,7 @@ standard_fields:
       sentiment:
         - symbol                             # 股票代码
         - date                               # 日期
+        - pe                                 # 市盈率
         - comment_count                      # 评论数量
         - sentiment_score                    # 情绪得分
         - bullish_ratio                      # 看多比例
@@ -2133,10 +2134,7 @@ field_mappings:
   "融资融券余额": "total_margin_balance"
 
   # 技术分析和排名
-  "综合得分": "comprehensive_score"
   "技术排名": "technical_rank"
-  "主力成本": "main_cost"
-  "机构参与度": "institutional_participation"
   "技术指标": "technical_indicator"
   "MACD": "macd"
   "KDJ": "kdj"
