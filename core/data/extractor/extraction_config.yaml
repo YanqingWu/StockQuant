@@ -169,11 +169,12 @@ standard_fields:
         - user_focus_index                   # 用户关注指数
 
       news:
+        - symbol                             # 股票代码
         - news_id                            # 新闻ID（若有）
         - title                              # 标题
+        - content                            # 内容
         - publish_time                       # 发布时间
         - news_source                        # 来源
-        - sentiment_score                    # 情绪得分
         - news_link                          # 链接（若有）
 
     financials:
@@ -1747,6 +1748,14 @@ field_mappings:
   "上榜日期": "date"
   "报告期": "report_date"
   "报告日期": "report_date"
+  
+  # 新闻相关字段
+  "关键词": "symbol"
+  "新闻标题": "title"
+  "新闻内容": "content"
+  "发布时间": "publish_time"
+  "文章来源": "news_source"
+  "新闻链接": "news_link"
   "签署日期": "sign_date"
   "除权除息日": "ex_dividend_date"
   "股权登记日": "record_date"
