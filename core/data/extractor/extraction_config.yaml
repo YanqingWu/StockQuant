@@ -180,15 +180,32 @@ standard_fields:
     financials:
       balance_sheet:
         - report_date                        # 报告期
+        - symbol                             # 股票代码
         - total_assets                       # 资产总计
-        - total_liabilities                  # 负债合计
-        - shareholder_equity                 # 股东权益
-        - cash_deposits                      # 货币资金
-        - accounts_receivable                # 应收账款
+        - total_current_assets              # 流动资产合计
+        - total_noncurrent_assets            # 非流动资产合计
+        - monetary_funds                     # 货币资金
         - inventory                          # 存货
+        - accounts_receivable                # 应收账款
         - fixed_assets                       # 固定资产
         - intangible_assets                  # 无形资产
         - goodwill                           # 商誉
+        - construction_in_progress           # 在建工程
+        - total_liabilities                  # 负债合计
+        - total_current_liabilities          # 流动负债合计
+        - total_noncurrent_liabilities       # 非流动负债合计
+        - accounts_payable                   # 应付账款
+        - staff_salary_payable               # 应付职工薪酬
+        - tax_payable                        # 应交税费
+        - contract_liabilities               # 合同负债
+        - total_equity                       # 股东权益合计
+        - total_parent_equity                # 归属于母公司股东权益合计
+        - minority_equity                    # 少数股东权益
+        - share_capital                      # 股本
+        - capital_reserve                    # 资本公积
+        - surplus_reserve                    # 盈余公积
+        - unassigned_profit                  # 未分配利润
+        - total_liab_equity                  # 负债和股东权益总计
 
       income_statement:
         - report_date                        # 报告期
@@ -878,6 +895,8 @@ interfaces_config:
       
       balance_sheet:
         description: "资产负债表"
+        merge_options:
+          data_quality_priority: "highest"  # 改为按接口优先级，优先选择优先级高的接口
         interfaces:
           - name: "stock_balance_sheet_by_report_em"
             enabled: true
@@ -888,16 +907,6 @@ interfaces_config:
             enabled: true
             priority: 2
             markets: ["SH", "SZ", "BJ"]
-          
-          - name: "stock_zcfz_em"
-            enabled: true
-            priority: 3
-            markets: ["SH", "SZ"]
-          
-          - name: "stock_zcfz_bj_em"
-            enabled: true
-            priority: 4
-            markets: ["BJ"]
 
       income_statement:
         description: "利润表"
@@ -1756,6 +1765,35 @@ field_mappings:
   "发布时间": "publish_time"
   "文章来源": "news_source"
   "新闻链接": "news_link"
+  
+  # 资产负债表字段映射
+  "REPORT_DATE": "report_date"
+  "SECURITY_CODE": "symbol"
+  "TOTAL_ASSETS": "total_assets"
+  "TOTAL_CURRENT_ASSETS": "total_current_assets"
+  "TOTAL_NONCURRENT_ASSETS": "total_noncurrent_assets"
+  "MONETARYFUNDS": "monetary_funds"
+  "INVENTORY": "inventory"
+  "ACCOUNTS_RECE": "accounts_receivable"
+  "FIXED_ASSET": "fixed_assets"
+  "INTANGIBLE_ASSET": "intangible_assets"
+  "GOODWILL": "goodwill"
+  "CIP": "construction_in_progress"
+  "TOTAL_LIABILITIES": "total_liabilities"
+  "TOTAL_CURRENT_LIAB": "total_current_liabilities"
+  "TOTAL_NONCURRENT_LIAB": "total_noncurrent_liabilities"
+  "ACCOUNTS_PAYABLE": "accounts_payable"
+  "STAFF_SALARY_PAYABLE": "staff_salary_payable"
+  "TAX_PAYABLE": "tax_payable"
+  "CONTRACT_LIAB": "contract_liabilities"
+  "TOTAL_EQUITY": "total_equity"
+  "TOTAL_PARENT_EQUITY": "total_parent_equity"
+  "MINORITY_EQUITY": "minority_equity"
+  "SHARE_CAPITAL": "share_capital"
+  "CAPITAL_RESERVE": "capital_reserve"
+  "SURPLUS_RESERVE": "surplus_reserve"
+  "UNASSIGN_RPOFIT": "unassigned_profit"
+  "TOTAL_LIAB_EQUITY": "total_liab_equity"
   "签署日期": "sign_date"
   "除权除息日": "ex_dividend_date"
   "股权登记日": "record_date"
