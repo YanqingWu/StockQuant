@@ -21,11 +21,15 @@ class ParameterMapper:
     def map_parameters(self, interface_name: str, params: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
         """映射参数到目标接口"""
         if interface_name not in self.mappings:
-            raise ValueError(f"接口 {interface_name} 没有映射配置")
+            # 无映射配置的接口，直接返回空参数
+            logger.debug(f"接口 {interface_name} 无映射配置，返回空参数")
+            return interface_name, {}
         
         mapping_config = self.mappings[interface_name]
         if not mapping_config:
-            raise ValueError(f"接口 {interface_name} 的映射配置为空")
+            # 映射配置为空，直接返回空参数
+            logger.debug(f"接口 {interface_name} 映射配置为空，返回空参数")
+            return interface_name, {}
         
         target_interface = interface_name
         parameter_mapping = mapping_config["parameter_mapping"]

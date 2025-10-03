@@ -297,21 +297,27 @@ standard_fields:
       fund_holdings:
         - symbol                             # 股票代码
         - report_date                        # 报告期
-        - fund_code                          # 基金代码
-        - fund_name                          # 基金名称
+        - fund_code                          # 机构代码
+        - fund_name                          # 机构名称
         - holding_shares                     # 持股数量
         - holding_ratio                      # 持股比例
         - holding_value                      # 持股市值
         - net_value_ratio                    # 占净值比例
 
-      fund_summary:                      # 基金持仓汇总（股票维度）
+      fund_summary:                      # 机构持仓详情
         - symbol                             # 股票代码
-        - report_date                        # 报告期
-        - holding_fund_count                 # 持有基金数量
-        - total_holding_shares               # 总持股数量（累计）
-        - total_holding_value                # 总持股市值（累计）
-        - total_holding_ratio                # 总持股比例（占总股本）
-        - circulating_ratio                  # 总持股比例（占流通股本）
+        - institute_type                     # 机构类型
+        - institute_code                     # 机构代码
+        - institute_name                     # 机构名称
+        - institute_full_name                # 机构全称
+        - holding_shares                     # 持股数量
+        - latest_holding_shares              # 最新持股数量
+        - holding_ratio                      # 持股比例
+        - latest_holding_ratio               # 最新持股比例
+        - circulating_ratio                  # 占流通股比例
+        - latest_circulating_ratio           # 最新占流通股比例
+        - holding_ratio_change               # 持股比例变化
+        - circulating_ratio_change           # 流通股比例变化
 
       hsgt_ranking:                      # 沪深港通排行（股票视角）
         - symbol                             # 股票代码
@@ -1126,7 +1132,7 @@ interfaces_config:
 
     holdings:
       fund_holdings:
-        description: "基金持仓"
+        description: "机构持仓"
         interfaces:
           - name: "stock_report_fund_hold"
             enabled: false
@@ -1149,16 +1155,11 @@ interfaces_config:
             markets: ["SH", "SZ", "BJ"]
 
       fund_summary:
-        description: "基金持仓汇总"
+        description: "机构持仓汇总"
         interfaces:
-          - name: "stock_zh_a_gdhs"
+          - name: "stock_institute_hold_detail"
             enabled: true
             priority: 1
-            markets: ["SH", "SZ", "BJ"]
-          
-          - name: "stock_zh_a_gdhs_detail_em"
-            enabled: true
-            priority: 2
             markets: ["SH", "SZ", "BJ"]
 
       hsgt_ranking:
@@ -1817,6 +1818,20 @@ field_mappings:
   "代码": "symbol"
   "股票代码": "symbol"
   "证券代码": "symbol"
+  
+  # stock_institute_hold_detail 接口字段映射
+  "持股机构类型": "institute_type"
+  "持股机构代码": "institute_code"
+  "持股机构简称": "institute_name"
+  "持股机构全称": "institute_full_name"
+  "持股数": "holding_shares"
+  "最新持股数": "latest_holding_shares"
+  "持股比例": "holding_ratio"
+  "最新持股比例": "latest_holding_ratio"
+  "占流通股比例": "circulating_ratio"
+  "最新占流通股比例": "latest_circulating_ratio"
+  "持股比例增幅": "holding_ratio_change"
+  "占流通股比例增幅": "circulating_ratio_change"
   "标的代码": "symbol"
   "A股代码": "symbol"
   "名称": "name"
@@ -2568,14 +2583,23 @@ field_mappings:
   "持股市值(基金)": "holding_value"
   "持股市值": "holding_value"
   "持仓数量": "holding_shares"
-  "占流通股比例": "holding_ratio"
+  "占流通股比例": "circulating_ratio"
   "占净值比例": "net_value_ratio"
   "持有基金数量": "holding_fund_count"
+  "持有基金家数": "holding_fund_count"
   "总持股数量": "total_holding_shares"
+  "持股总数": "total_holding_shares"
   "总持股市值": "total_holding_value"
   "总持股比例": "total_holding_ratio"
   "总持股比例(汇总)": "circulating_ratio"
   "占流通股本比例(汇总)": "circulating_ratio"
+  "持股变化": "holding_change"
+  "持股变动数值": "holding_change_amount"
+  "持股变动比例": "holding_change_ratio"
+  "机构数": "institute_count"
+  "机构数变化": "institute_count_change"
+  "持股比例增幅": "holding_ratio_change"
+  "占流通股比例增幅": "circulating_ratio_change"
   "排行": "rank"
   "净买入金额": "net_buy_amount"
   
@@ -2813,10 +2837,6 @@ parameter_mappings:
           valid_values: ["即时", "3日排行", "5日排行", "10日排行", "20日排行"]
           default_value: "即时"
     
-    stock_fund_flow_big_deal:
-      parameter_mapping: {}  # 不映射任何参数，使用默认值
-      validation: {}
-    
     stock_fund_flow_concept:
       parameter_mapping:
         ranking_type: "symbol"
@@ -2866,6 +2886,13 @@ parameter_mappings:
           type: string
     
     stock_financial_report_sina:
+      parameter_mapping:
+        symbol: "stock"  # 将 symbol 映射为 stock (股票代码参数)
+      validation:
+        symbol:
+          required: true
+    
+    stock_institute_hold_detail:
       parameter_mapping:
         symbol: "stock"  # 将 symbol 映射为 stock (股票代码参数)
       validation:

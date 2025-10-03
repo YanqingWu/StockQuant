@@ -177,6 +177,8 @@ class Extractor:
         - 对列名应用字段映射
         - 按标准字段进行列过滤
         """
+        logger.debug(f"=== 开始处理提取结果: {interface_name} ===")
+        logger.debug(f"原始数据类型: {type(raw_data)}, 是否为空: {raw_data is None}")
         try:
             if raw_data is None:
                 return ExtractionResult(
@@ -188,13 +190,18 @@ class Extractor:
                 )
 
             # 统一转换为 DataFrame
+            logger.debug(f"开始转换数据为DataFrame")
             df: Optional[pd.DataFrame] = None
             if isinstance(raw_data, pd.DataFrame):
+                logger.debug(f"原始数据是DataFrame，形状: {raw_data.shape}")
                 df = raw_data.copy()
             elif isinstance(raw_data, list):
+                logger.debug(f"原始数据是列表，长度: {len(raw_data)}")
                 try:
                     df = pd.DataFrame(raw_data)
+                    logger.debug(f"列表转换为DataFrame成功，形状: {df.shape}")
                 except Exception as _e:
+                    logger.debug(f"列表转换为DataFrame失败: {_e}")
                     return ExtractionResult(
                         success=False,
                         data=None,
@@ -255,7 +262,9 @@ class Extractor:
                 )
 
             # 判空
+            logger.debug(f"接口 {interface_name} 数据检查: df is None = {df is None}, df.empty = {df.empty if df is not None else 'N/A'}")
             if df is None or df.empty:
+                logger.debug(f"接口 {interface_name} 返回空数据")
                 return ExtractionResult(
                     success=False,
                     data=None,
@@ -263,14 +272,23 @@ class Extractor:
                     error="空数据",
                     source_interface=interface_name
                 )
+            
+            logger.debug(f"接口 {interface_name} 原始数据形状: {df.shape}, 列名: {list(df.columns)}")
+            logger.debug(f"原始数据前3行:\n{df.head(3)}")
 
             # 应用后处理器（在列名映射之前）
+            logger.debug(f"应用后处理器前数据形状: {df.shape}")
             df = self._apply_post_processor(df, category, data_type, interface_name)
+            logger.debug(f"应用后处理器后数据形状: {df.shape}")
 
             # 列名映射
             try:
+                logger.debug(f"开始字段映射，原始列名: {list(df.columns)}")
                 col_mapping = {col: self.config.get_field_mapping(col) for col in df.columns}
+                logger.debug(f"字段映射: {col_mapping}")
                 df = df.rename(columns=col_mapping)
+                logger.debug(f"映射后列名: {list(df.columns)}")
+                logger.debug(f"映射后数据形状: {df.shape}")
                 
                 # 检查并处理重复列名
                 if len(df.columns) != len(set(df.columns)):
@@ -300,26 +318,33 @@ class Extractor:
 
             # 列过滤（标准字段）
             try:
+                logger.debug(f"开始标准字段过滤")
                 # 标准字段过滤：确保所有标准字段都存在，即使数据为空也创建空列
                 standard_fields = self.config.get_standard_fields(category, data_type)
+                logger.debug(f"标准字段: {standard_fields}")
                 if standard_fields:
                     # 保留存在的标准字段
                     keep_cols = [c for c in df.columns if c in standard_fields]
+                    logger.debug(f"保留的列: {keep_cols}")
                     if keep_cols:
                         df = df[keep_cols]
+                        logger.debug(f"保留列后数据形状: {df.shape}")
                     else:
                         # 如果没有匹配的列，创建一个空的DataFrame但保留原有行数
+                        logger.debug("没有匹配的标准字段列，创建空DataFrame")
                         df = pd.DataFrame(index=df.index)
                     
                     # 为所有缺失的标准字段添加空列
                     missing_fields = [f for f in standard_fields if f not in df.columns]
+                    logger.debug(f"缺失的字段: {missing_fields}")
                     for field in missing_fields:
                         df[field] = None  # 或者使用 pd.NA
                     
                     # 按标准字段顺序重新排列列
                     df = df[standard_fields]
                     
-                    logger.debug(f"标准字段处理完成: {category}.{data_type}, 保留字段: {list(df.columns)}")
+                    logger.debug(f"标准字段处理完成: {category}.{data_type}, 最终字段: {list(df.columns)}, 数据形状: {df.shape}")
+                    logger.debug(f"标准字段处理后前3行:\n{df.head(3)}")
             except Exception as _e:
                 logger.debug(f"标准字段过滤失败，保留原列: {_e}")
 
@@ -461,6 +486,9 @@ class Extractor:
                     source_interface=interface_name
                 )
 
+            logger.debug(f"=== 完成处理提取结果: {interface_name} ===")
+            logger.debug(f"最终数据形状: {df.shape}, 列名: {list(df.columns)}")
+            logger.debug(f"最终数据前3行:\n{df.head(3)}")
             return ExtractionResult(
                 success=True,
                 data=df,
@@ -548,20 +576,36 @@ class Extractor:
                 continue
 
         # 批量执行
+        logger.debug(f"开始批量执行，接口数量: {len(interfaces)}")
         batch_result = self.task_manager.execute_all(context=context)
+        logger.debug(f"批量执行完成，结果: {batch_result}")
 
         # 收集所有成功的结果进行数据合并
         successful_results = []
+        logger.debug(f"批量执行结果: batch_result={batch_result}")
+        if batch_result:
+            logger.debug(f"batch_result存在，results={batch_result.results}")
+            logger.debug(f"batch_result.results类型: {type(batch_result.results)}")
+            logger.debug(f"batch_result.results长度: {len(batch_result.results) if batch_result.results else 'None'}")
+        else:
+            logger.debug("batch_result为None")
+        
         if batch_result and batch_result.results:
+            logger.debug(f"批量结果数量: {len(batch_result.results)}")
             for interface in interfaces:
+                logger.debug(f"=== 开始处理接口: {interface.name} ===")
                 # 查找该接口的结果
                 matched = [r for r in batch_result.results if r.interface_name == interface.name]
+                logger.debug(f"匹配的结果数量: {len(matched)}")
                 if not matched:
                     logger.warning(f"接口 {interface.name} 未返回结果")
                     continue
                 result = matched[0]
+                logger.debug(f"接口 {interface.name} 执行结果: success={result.success}, data_shape={result.data.shape if result.data is not None else 'None'}")
                 if result.success:
+                    logger.debug(f"开始处理接口 {interface.name} 的数据")
                     extraction_result = self._process_extraction_result(result.data, category, data_type, interface.name)
+                    logger.debug(f"接口 {interface.name} 数据处理完成: success={extraction_result.success}, data_shape={extraction_result.data.shape if extraction_result.data is not None else 'None'}")
                     if extraction_result.success:
                         logger.info(f"接口 {interface.name} 执行成功")
                         successful_results.append((interface, extraction_result))
@@ -569,9 +613,12 @@ class Extractor:
                         logger.warning(f"接口 {interface.name} 数据处理失败: {extraction_result.error}")
                 else:
                     logger.warning(f"接口 {interface.name} 执行失败: {result.error}")
+                logger.debug(f"=== 完成处理接口: {interface.name} ===")
         
         # 如果没有成功的结果，返回空的标准字段DataFrame
+        logger.debug(f"成功结果数量: {len(successful_results)}")
         if not successful_results:
+            logger.debug("没有成功的结果，返回空的标准字段DataFrame")
             empty_df = self._create_empty_standard_dataframe(category, data_type)
             return ExtractionResult(
                 success=True,
@@ -582,14 +629,38 @@ class Extractor:
         
         # 如果只有一个成功结果，应用日期过滤后直接返回
         if len(successful_results) == 1:
+            logger.debug("=== 处理单个接口结果 ===")
             single_result = successful_results[0][1]
+            logger.debug(f"单个接口结果处理: {single_result.interface_name}, 数据形状: {single_result.data.shape if single_result.data is not None else 'None'}")
+            
+            # 应用股票代码过滤
+            if single_result.data is not None and not single_result.data.empty and 'symbol' in single_result.data.columns:
+                target_symbol = standard_params.symbol
+                if target_symbol:
+                    logger.debug(f"应用股票代码过滤: {target_symbol.to_dot()}")
+                    original_count = len(single_result.data)
+                    single_result.data = single_result.data[single_result.data['symbol'] == target_symbol.to_dot()]
+                    logger.debug(f"股票代码过滤结果: {original_count} -> {len(single_result.data)} 行")
+                    if single_result.data.empty:
+                        logger.debug("股票代码过滤后数据为空")
+                        empty_df = self._create_empty_standard_dataframe(category, data_type)
+                        return ExtractionResult(
+                            success=True,
+                            data=empty_df,
+                            error=None,
+                            interface_name=single_result.interface_name
+                        )
+            
             # 应用日期过滤
             if single_result.data is not None and not single_result.data.empty:
+                logger.debug("开始应用日期过滤")
                 merge_config = self._get_merge_strategy(category, data_type)
                 filtered_data = self._apply_date_filter(single_result.data, standard_params, merge_config)
                 if not filtered_data.empty:
                     single_result.data = filtered_data
+                    logger.debug(f"日期过滤后数据形状: {single_result.data.shape}")
                 else:
+                    logger.debug("日期过滤后数据为空")
                     # 创建空的标准字段DataFrame而不是返回None
                     empty_df = self._create_empty_standard_dataframe(category, data_type)
                     return ExtractionResult(
@@ -598,6 +669,7 @@ class Extractor:
                         error=None,
                         interface_name=single_result.interface_name
                     )
+            logger.debug(f"单个接口结果处理完成，最终数据形状: {single_result.data.shape if single_result.data is not None else 'None'}")
             return single_result
         
         # 多个成功结果，进行数据合并
@@ -1261,6 +1333,10 @@ class Extractor:
     def get_stock_fund_holdings(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
         """获取基金持仓数据"""
         return self._execute_interface("stock", "holdings.fund_holdings", params)
+    
+    def get_stock_fund_summary(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取基金持仓汇总数据"""
+        return self._execute_interface("stock", "holdings.fund_summary", params)
     
     # ==================== 市场相关接口 ====================
     
