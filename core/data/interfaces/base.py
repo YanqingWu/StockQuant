@@ -155,7 +155,7 @@ class APIRegistry:
         self._update_category_index(interface_name, metadata.function_category)
         self._update_keyword_index(interface_name, metadata)
         
-        logger.debug(f"注册接口: {interface_name} (数据源: {metadata.data_source.value}, 分类: {metadata.function_category.value})")
+        # logger.debug(f"注册接口: {interface_name} (数据源: {metadata.data_source.value}, 分类: {metadata.function_category.value})")
     
     def register_interfaces(self, interfaces: List[InterfaceMetadata]) -> None:
         """批量注册接口"""

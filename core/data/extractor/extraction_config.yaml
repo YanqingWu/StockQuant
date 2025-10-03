@@ -245,6 +245,13 @@ standard_fields:
         - gross_profit_margin                # 毛利率
         - net_profit_margin                  # 净利率
         - operating_profit_margin            # 营业利润率
+        - net_profit_star                    # 净利润(标记)
+        - total_operating_income_star        # 营业总收入(标记)
+        - total_operating_cost_star          # 营业总成本(标记)
+        - parent_net_profit_star             # 归母净利润(标记)
+        - non_recurring_profit_star          # 扣非净利润(标记)
+        - continuing_operation_net_profit    # 持续经营净利润
+        - total_operating_cost_total         # 营业总成本-总计
 
       cash_flow:
         - symbol                             # 股票代码
@@ -264,6 +271,19 @@ standard_fields:
         - cash_equivalents_ending            # 期末现金及现金等价物余额
         - operating_cash_flow_per_share      # 每股经营现金流量
         - exchange_rate_effect               # 汇率变动对现金及现金等价物的影响
+        - net_cash_increase_other            # 现金及现金等价物净增加额-其他
+        - net_cash_increase_balance          # 现金及现金等价物净增加额-余额
+        - cash_equivalents_ending_other      # 期末现金及现金等价物余额-其他
+        - cash_equivalents_ending_balance    # 期末现金及现金等价物余额-余额
+        - cash_equivalents_beginning_cash    # 期初现金及现金等价物余额-现金
+        - cash_equivalents_ending_cash       # 期末现金及现金等价物余额-现金
+        - cash_equivalents_beginning_equivalents  # 期初现金及现金等价物余额-等价物
+        - cash_equivalents_ending_equivalents     # 期末现金及现金等价物余额-等价物
+        - net_cash_increase_star             # 现金及现金等价物净增加额(标记)
+        - operating_cash_flow_star           # 经营活动现金流量净额(标记)
+        - investing_cash_flow_star           # 投资活动现金流量净额(标记)
+        - financing_cash_flow_star           # 筹资活动现金流量净额(标记)
+        - cash_equivalents_ending_star       # 期末现金及现金等价物余额(标记)
 
       indicators:
         - symbol                             # 股票代码
@@ -292,6 +312,10 @@ standard_fields:
         - record_date                        # 股权登记日
         - payment_date                       # 分红发放日
         - dividend_status                    # 方案进度
+        - stock_transfer_ratio               # 转增比例
+        - stock_dividend_ratio_detail        # 送转股份比例-详细
+        - stock_dividend_ratio_gift          # 送转股份比例-送股
+        - stock_dividend_ratio_transfer      # 送转股份比例-转股
 
     holdings:
       fund_holdings:
@@ -2155,18 +2179,18 @@ field_mappings:
   "毛利率": "gross_profit_margin"
   "净利率": "net_profit_margin"
   "营业利润率": "operating_profit_margin"
-  "*净利润": "net_profit"
-  "*营业总收入": "total_operating_income"
-  "*营业总成本": "total_operating_cost"
-  "*归属于母公司所有者的净利润": "parent_net_profit"
-  "*扣除非经常性损益后的净利润": "non_recurring_profit"
+  "*净利润": "net_profit_star"
+  "*营业总收入": "total_operating_income_star"
+  "*营业总成本": "total_operating_cost_star"
+  "*归属于母公司所有者的净利润": "parent_net_profit_star"
+  "*扣除非经常性损益后的净利润": "non_recurring_profit_star"
   "一、营业总收入": "total_operating_income"
   "其中：营业收入": "operating_income"
   "二、营业总成本": "total_operating_cost"
   "其中：营业成本": "operating_cost"
   "三、营业利润": "operating_profit"
   "五、净利润": "net_profit"
-  "（一）持续经营净利润": "net_profit"
+  "（一）持续经营净利润": "continuing_operation_net_profit"
   "归属于母公司所有者的净利润": "parent_net_profit"
   "扣除非经常性损益后的净利润": "non_recurring_profit"
   "经营活动现金流量净额": "operating_cash_flow"
@@ -2224,7 +2248,7 @@ field_mappings:
   "营业总支出-销售费用": "sales_expense"
   "营业总支出-管理费用": "management_expense"
   "营业总支出-财务费用": "finance_expense"
-  "营业总支出-营业总支出": "total_operating_cost"
+  "营业总支出-营业总支出": "total_operating_cost_total"
   "公告日期": "announcement_date"
   
   # stock_profit_sheet_by_*_em接口的英文字段映射
@@ -2486,17 +2510,17 @@ field_mappings:
   
   # 补充缺失的重要字段映射
   "CCE_ADD": "net_cash_increase"
-  "CCE_ADD_OTHER": "net_cash_increase"
-  "CCE_ADD_BALANCE": "net_cash_increase"
+  "CCE_ADD_OTHER": "net_cash_increase_other"
+  "CCE_ADD_BALANCE": "net_cash_increase_balance"
   "BEGIN_CCE": "cash_equivalents_beginning"
   "END_CCE": "cash_equivalents_ending"
-  "END_CCE_OTHER": "cash_equivalents_ending"
-  "END_CCE_BALANCE": "cash_equivalents_ending"
+  "END_CCE_OTHER": "cash_equivalents_ending_other"
+  "END_CCE_BALANCE": "cash_equivalents_ending_balance"
   "RATE_CHANGE_EFFECT": "exchange_rate_effect"
-  "BEGIN_CASH": "cash_equivalents_beginning"
-  "END_CASH": "cash_equivalents_ending"
-  "BEGIN_CASH_EQUIVALENTS": "cash_equivalents_beginning"
-  "END_CASH_EQUIVALENTS": "cash_equivalents_ending"
+  "BEGIN_CASH": "cash_equivalents_beginning_cash"
+  "END_CASH": "cash_equivalents_ending_cash"
+  "BEGIN_CASH_EQUIVALENTS": "cash_equivalents_beginning_equivalents"
+  "END_CASH_EQUIVALENTS": "cash_equivalents_ending_equivalents"
   
   # stock_xjll_em接口的中文字段映射
   "股票代码": "symbol"
@@ -2513,11 +2537,11 @@ field_mappings:
   
   # stock_financial_cash_ths接口的中文字段映射
   "报告期": "report_date"
-  "*现金及现金等价物净增加额": "net_cash_increase"
-  "*经营活动产生的现金流量净额": "operating_cash_flow"
-  "*投资活动产生的现金流量净额": "investing_cash_flow"
-  "*筹资活动产生的现金流量净额": "financing_cash_flow"
-  "*期末现金及现金等价物余额": "cash_equivalents_ending"
+  "*现金及现金等价物净增加额": "net_cash_increase_star"
+  "*经营活动产生的现金流量净额": "operating_cash_flow_star"
+  "*投资活动产生的现金流量净额": "investing_cash_flow_star"
+  "*筹资活动产生的现金流量净额": "financing_cash_flow_star"
+  "*期末现金及现金等价物余额": "cash_equivalents_ending_star"
   "经营活动现金流入小计": "operating_cash_inflow"
   "经营活动现金流出小计": "operating_cash_outflow"
   "经营活动产生的现金流量净额": "operating_cash_flow"
@@ -2578,11 +2602,11 @@ field_mappings:
   # 分红派息
   "送转股份比例": "stock_dividend_ratio"
   "送转股份-送转总比例": "stock_dividend_ratio"
-  "送转股份-送转比例": "stock_dividend_ratio"
-  "送转股份-送股比例": "stock_dividend_ratio"
-  "送转股份-转股比例": "stock_dividend_ratio"
+  "送转股份-送转比例": "stock_dividend_ratio_detail"
+  "送转股份-送股比例": "stock_dividend_ratio_gift"
+  "送转股份-转股比例": "stock_dividend_ratio_transfer"
   "送股比例": "stock_dividend_ratio"
-  "转增比例": "stock_dividend_ratio"
+  "转增比例": "stock_transfer_ratio"
   "转股比例": "stock_dividend_ratio"
   "现金分红比例": "cash_dividend_ratio"
   "现金分红-现金分红比例": "cash_dividend_ratio"
@@ -2796,8 +2820,8 @@ field_mappings:
   "UPDATE_DATE": "update_time"
 
   # 英文证券字段（大写）
-  "SECUCODE": "symbol"
-  "SECURITY_CODE": "symbol"
+  "SECUCODE": "symbol"           # 带市场后缀的完整代码
+  "SECURITY_CODE": "code"        # 纯股票代码（不带市场后缀）
   "SECURITY_NAME_ABBR": "name"
   "REPORT_DATE": "report_date"
   "NOTICE_DATE": "notice_date"
