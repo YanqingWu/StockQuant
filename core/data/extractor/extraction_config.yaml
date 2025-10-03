@@ -1065,35 +1065,40 @@ interfaces_config:
             priority: 4
             markets: ["SH", "SZ", "BJ"]
           
-          - name: "stock_financial_cash_ths"
+          - name: "stock_yjkb_em"
             enabled: true
             priority: 5
             markets: ["SH", "SZ", "BJ"]
           
-          - name: "stock_financial_report_sina"
+          - name: "stock_zcfz_em"
             enabled: true
             priority: 6
             markets: ["SH", "SZ", "BJ"]
           
-          - name: "stock_financial_us_report_em"
+          - name: "stock_financial_hk_analysis_indicator_em"
             enabled: true
             priority: 7
-            markets: ["US"]
+            markets: ["HK"]
           
           - name: "stock_financial_us_analysis_indicator_em"
             enabled: true
             priority: 8
             markets: ["US"]
           
-          - name: "stock_financial_hk_analysis_indicator_em"
+          - name: "stock_financial_report_sina"
             enabled: true
             priority: 9
-            markets: ["HK"]
+            markets: ["SH", "SZ", "BJ"]
+          
+          - name: "stock_financial_us_report_em"
+            enabled: true
+            priority: 10
+            markets: ["US"]
 
       dividend:
         description: "分红派息"
         interfaces:
-          - name: "stock_fhps_em"
+          - name: "stock_fhps_detail_ths"
             enabled: true
             priority: 1
             markets: ["SH", "SZ", "BJ"]
@@ -1103,12 +1108,12 @@ interfaces_config:
             priority: 2
             markets: ["SH", "SZ", "BJ"]
           
-          - name: "stock_fhps_detail_ths"
+          - name: "stock_dividend_cninfo"
             enabled: true
             priority: 3
             markets: ["SH", "SZ", "BJ"]
           
-          - name: "stock_dxsyl_em"
+          - name: "stock_history_dividend_detail"
             enabled: true
             priority: 4
             markets: ["SH", "SZ", "BJ"]
@@ -2454,12 +2459,89 @@ field_mappings:
   # stock_financial_abstract_ths和stock_yjbb_em接口的字段映射
   "每股经营现金流": "operating_cash_flow_per_share"
   "每股经营现金流量": "operating_cash_flow_per_share"
+  
+  # stock_yjkb_em接口的字段映射
+  "股票代码": "symbol"
+  "每股收益": "eps"
+  "每股净资产": "bps"
+  "净资产收益率": "roe"
+  "公告日期": "announcement_date"
+  
+  # stock_zcfz_em接口的字段映射
+  "资产负债率": "debt_to_asset_ratio"
+  "总资产": "total_assets"
+  "总负债": "total_liabilities"
+  "股东权益合计": "total_equity"
+  
+  # stock_financial_hk_analysis_indicator_em接口的字段映射
+  "SECUCODE": "symbol"
+  "SECURITY_CODE": "security_code"
+  "SECURITY_NAME_ABBR": "security_name"
+  "REPORT_DATE": "report_date"
+  "BPS": "bps"
+  "BASIC_EPS": "eps"
+  "DILUTED_EPS": "diluted_eps"
+  "ROE_AVG": "roe"
+  "GROSS_PROFIT_RATIO": "gross_profit_margin"
+  "NET_PROFIT_RATIO": "net_profit_margin"
+  "CURRENT_RATIO": "current_ratio"
+  "DEBT_ASSET_RATIO": "debt_to_asset_ratio"
+  
+  # stock_financial_us_analysis_indicator_em接口的字段映射
+  "BASIC_EPS": "eps"
+  "DILUTED_EPS": "diluted_eps"
+  "ROE_AVG": "roe"
+  "GROSS_PROFIT_RATIO": "gross_profit_margin"
+  "NET_PROFIT_RATIO": "net_profit_margin"
+  "CURRENT_RATIO": "current_ratio"
+  "SPEED_RATIO": "quick_ratio"
+  "DEBT_ASSET_RATIO": "debt_to_asset_ratio"
 
   # 分红派息
   "送转股份比例": "stock_dividend_ratio"
+  "送转股份-送转总比例": "stock_dividend_ratio"
+  "送转股份-送转比例": "stock_dividend_ratio"
+  "送转股份-送股比例": "stock_dividend_ratio"
+  "送转股份-转股比例": "stock_dividend_ratio"
+  "送股比例": "stock_dividend_ratio"
+  "转增比例": "stock_dividend_ratio"
+  "转股比例": "stock_dividend_ratio"
   "现金分红比例": "cash_dividend_ratio"
+  "现金分红-现金分红比例": "cash_dividend_ratio"
+  "派息比例": "cash_dividend_ratio"
   "股息率": "dividend_yield"
+  "现金分红-股息率": "dividend_yield"
+  "税前分红率": "dividend_yield"
   "方案进度": "dividend_status"
+  "进度": "dividend_status"
+  "除权除息日": "ex_dividend_date"
+  "A股除权除息日": "ex_dividend_date"
+  "除权日": "ex_dividend_date"
+  "除净日": "ex_dividend_date"
+  "股权登记日": "record_date"
+  "A股股权登记日": "record_date"
+  "分红发放日": "payment_date"
+  "派息日": "payment_date"
+  "实施方案公告日期": "announcement_date"
+  "预案公告日": "announcement_date"
+  "公告日期": "announcement_date"
+  "董事会日期": "board_date"
+  "股东大会预案公告日期": "shareholder_meeting_date"
+  "实施公告日": "implementation_date"
+  "分红方案说明": "dividend_description"
+  "现金分红-现金分红比例描述": "dividend_description"
+  "实施方案分红说明": "dividend_description"
+  "方案": "dividend_description"
+  "分红总额": "total_dividend"
+  "股利支付率": "dividend_payout_ratio"
+  "股份到账日": "stock_arrival_date"
+  "过户日期起止日-起始": "transfer_start_date"
+  "过户日期起止日-截止": "transfer_end_date"
+  "类型": "dividend_type"
+  "分红类型": "dividend_type"
+  "以股代息": "stock_in_lieu_of_cash"
+  "业绩披露日期": "earnings_disclosure_date"
+  "最新公告日期": "latest_announcement_date"
 
   # 股东与持仓
   "股东户数": "shareholder_count"
@@ -2778,4 +2860,12 @@ parameter_mappings:
           type: string
         end_year:
           required: false
+          type: string
+    
+    stock_financial_report_sina:
+      parameter_mapping:
+        symbol: "stock"  # 将 symbol 映射为 stock (股票代码参数)
+      validation:
+        symbol:
+          required: true
           type: string

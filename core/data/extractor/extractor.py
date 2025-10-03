@@ -1250,6 +1250,14 @@ class Extractor:
         """获取现金流量表"""
         return self._execute_interface("stock", "financials.cash_flow", params)
     
+    def get_stock_indicators(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取财务指标"""
+        return self._execute_interface("stock", "financials.indicators", params)
+    
+    def get_stock_dividend(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取分红数据"""
+        return self._execute_interface("stock", "financials.dividend", params)
+    
     # ==================== 市场相关接口 ====================
     
     # 市场股票列表
