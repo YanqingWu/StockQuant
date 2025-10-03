@@ -368,9 +368,16 @@ standard_fields:
         - rating                             # 评级
         - previous_rating                    # 上次评级
         - target_price                       # 目标价
+        - analyst_name                       # 分析师姓名
+        - analyst_unit                       # 分析师单位
+        - annual_index                       # 年度指数
+        - return_rate                        # 收益率
+        - stock_count                        # 成分股个数
+        - update_date                        # 更新日期
 
       profit_forecast_consensus:
         - symbol                             # 股票代码
+        - name                               # 股票名称
         - report_date                        # 报告期
         - year                               # 预测年份
         - eps_forecast                       # 每股收益预测
@@ -379,6 +386,18 @@ standard_fields:
         - analyst_count                      # 参与分析师数量
         - consensus_rating                   # 一致评级
         - target_price_consensus             # 一致目标价
+        - min_forecast                       # 最小预测值
+        - mean_forecast                      # 平均预测值
+        - max_forecast                       # 最大预测值
+        - industry_average                   # 行业平均值
+        - institution                        # 研究机构
+        - analyst_name                       # 分析师姓名
+        - rating                             # 投资评级
+        - is_first_rating                    # 是否首次评级
+        - rating_change                      # 评级变化
+        - previous_rating                    # 前一次投资评级
+        - target_price_lower                 # 目标价格下限
+        - target_price_upper                 # 目标价格上限
 
       opinions:                          # 机构/媒体观点
         - symbol                             # 股票代码
@@ -1180,33 +1199,16 @@ interfaces_config:
             priority: 3
             markets: ["SH", "SZ", "BJ"]
 
-    events:
-      major_contracts:
-        description: "重大合同"
-        interfaces:
-          - name: "stock_zdhtmx_em"
-            enabled: true
-            priority: 1
-            markets: ["SH", "SZ", "BJ"]
-
-      suspension:
-        description: "停复牌事件"
-        interfaces:
-          - name: "stock_changes_em"
-            enabled: true
-            priority: 1
-            markets: ["SH", "SZ", "BJ"]
-
     research_and_analyst:
       research_report:
         description: "研究报告"
         interfaces:
-          - name: "stock_zyjs_ths"
+          - name: "stock_research_report_em"
             enabled: true
             priority: 1
             markets: ["SH", "SZ", "BJ"]
           
-          - name: "stock_zygc_em"
+          - name: "stock_zyjs_ths"
             enabled: true
             priority: 2
             markets: ["SH", "SZ", "BJ"]
@@ -1214,17 +1216,17 @@ interfaces_config:
       analyst_rating:
         description: "分析师评级"
         interfaces:
-          - name: "stock_hot_rank_detail_em"
+          - name: "stock_analyst_detail_em"
             enabled: true
             priority: 1
             markets: ["SH", "SZ", "BJ"]
           
-          - name: "stock_hot_up_em"
+          - name: "stock_analyst_rank_em"
             enabled: true
             priority: 2
             markets: ["SH", "SZ", "BJ"]
           
-          - name: "stock_hot_rank_em"
+          - name: "stock_institute_recommend_detail"
             enabled: true
             priority: 3
             markets: ["SH", "SZ", "BJ"]
@@ -1236,6 +1238,16 @@ interfaces_config:
             enabled: true
             priority: 1
             markets: ["HK"]
+          
+          - name: "stock_profit_forecast_ths"
+            enabled: true
+            priority: 2
+            markets: ["SH", "SZ", "BJ"]
+          
+          - name: "stock_rank_forecast_cninfo"
+            enabled: true
+            priority: 3
+            markets: ["SH", "SZ", "BJ"]
 
       opinions:
         description: "机构观点"
@@ -1832,6 +1844,56 @@ field_mappings:
   "最新占流通股比例": "latest_circulating_ratio"
   "持股比例增幅": "holding_ratio_change"
   "占流通股比例增幅": "circulating_ratio_change"
+
+  # stock_profit_forecast_ths 接口字段映射
+  "年度": "year"
+  "预测机构数": "analyst_count"
+  "最小值": "min_forecast"
+  "均值": "mean_forecast"
+  "最大值": "max_forecast"
+  "行业平均数": "industry_average"
+
+  # stock_rank_forecast_cninfo 接口字段映射
+  "证券代码": "symbol"
+  "证券简称": "name"
+  "发布日期": "date"
+  "研究机构简称": "institution"
+  "研究员名称": "analyst_name"
+  "投资评级": "rating"
+  "是否首次评级": "is_first_rating"
+  "评级变化": "rating_change"
+  "前一次投资评级": "previous_rating"
+  "目标价格-下限": "target_price_lower"
+  "目标价格-上限": "target_price_upper"
+  
+  # research_and_analyst 接口字段映射
+  "股票代码": "symbol"
+  "股票名称": "name"
+  "报告名称": "title"
+  "东财评级": "rating"
+  "机构": "institution"
+  "近一月个股研报数": "report_count"
+  "2025-盈利预测-收益": "eps_forecast"
+  "2025-盈利预测-市盈率": "pe_forecast"
+  "行业": "industry"
+  "日期": "report_date"
+  "报告PDF链接": "report_link"
+  "主营业务": "main_business"
+  "产品类型": "product_type"
+  "产品名称": "product_name"
+  "经营范围": "business_scope"
+  "分析师名称": "analyst_name"
+  "分析师单位": "analyst_unit"
+  "年度指数": "annual_index"
+  "2024年收益率": "return_rate"
+  "成分股个数": "stock_count"
+  "更新日期": "update_date"
+  "最新评级": "rating"
+  "目标价": "target_price"
+  "评级机构": "institution"
+  "分析师": "analyst"
+  "评级日期": "date"
+  "rate": "sentiment_rate"
   "标的代码": "symbol"
   "A股代码": "symbol"
   "名称": "name"
@@ -2899,3 +2961,25 @@ parameter_mappings:
         symbol:
           required: true
           type: string
+    
+    stock_profit_forecast_ths:
+      parameter_mapping:
+        symbol: "symbol"  # symbol 参数保持不变
+        indicator: "indicator"  # indicator 参数保持不变
+      validation:
+        symbol:
+          required: true
+          type: string
+        indicator:
+          required: true
+          type: string
+          default_value: "预测年报每股收益"
+    
+    stock_rank_forecast_cninfo:
+      parameter_mapping:
+        date: "date"  # date 参数保持不变
+      validation:
+        date:
+          required: true
+          type: string
+          format: "YYYYMMDD"

@@ -1338,6 +1338,23 @@ class Extractor:
         """获取基金持仓汇总数据"""
         return self._execute_interface("stock", "holdings.fund_summary", params)
     
+    # 研究分析数据
+    def get_stock_research_report(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取研究报告数据"""
+        return self._execute_interface("stock", "research_and_analyst.research_report", params)
+    
+    def get_stock_analyst_rating(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取分析师评级数据"""
+        return self._execute_interface("stock", "research_and_analyst.analyst_rating", params)
+    
+    def get_stock_profit_forecast(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取盈利预测数据"""
+        return self._execute_interface("stock", "research_and_analyst.profit_forecast_consensus", params)
+    
+    def get_stock_opinions(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取机构观点数据"""
+        return self._execute_interface("stock", "research_and_analyst.opinions", params)
+    
     # ==================== 市场相关接口 ====================
     
     # 市场股票列表
