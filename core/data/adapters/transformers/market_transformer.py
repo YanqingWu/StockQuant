@@ -50,9 +50,26 @@ class MarketTransformer(BaseTransformer):
         if isinstance(value, str):
             canon_market = ConversionRules.canon_market(value)
             if canon_market in self.supported_markets:
+                # 智能检测：根据接口示例参数决定是否需要转换为小写
+                if self._should_convert_to_lowercase(context):
+                    return canon_market.lower()
                 return canon_market
         
         return str(value) if value is not None else ""
+    
+    def _should_convert_to_lowercase(self, context: TransformContext) -> bool:
+        """智能检测是否需要转换为小写"""
+        if not context.metadata or not context.metadata.example_params:
+            return False
+        
+        example = context.metadata.example_params
+        market_example = example.get("market")
+        
+        if isinstance(market_example, str):
+            # 如果示例参数是小写格式，则需要转换为小写
+            return market_example.islower()
+        
+        return False
     
     def _convert_exchange(self, value: Any, context: TransformContext) -> str:
         """转换交易所代码"""

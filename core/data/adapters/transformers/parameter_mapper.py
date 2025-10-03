@@ -73,6 +73,18 @@ class ParameterMapper:
     
     def _apply_special_handling(self, interface_name: str, mapped_params: Dict[str, Any], original_params: Dict[str, Any]) -> None:
         """应用特殊处理逻辑 - 基于参数特征智能处理，避免硬编码接口名称"""
+        # 处理配置的特殊处理
+        if interface_name in self.mappings:
+            mapping_config = self.mappings[interface_name]
+            special_handling = mapping_config.get("special_handling", {})
+            
+            for param_name, handling_type in special_handling.items():
+                if param_name in mapped_params:
+                    if handling_type == "lowercase":
+                        mapped_params[param_name] = str(mapped_params[param_name]).lower()
+                    elif handling_type == "uppercase":
+                        mapped_params[param_name] = str(mapped_params[param_name]).upper()
+        
         # 处理年份参数的特殊逻辑（基于参数特征检测）
         self._handle_year_parameters(mapped_params)
     

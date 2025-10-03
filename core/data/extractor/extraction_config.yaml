@@ -2223,6 +2223,19 @@ parameter_mappings:
           valid_values: ["即时", "3日排行", "5日排行", "10日排行", "20日排行"]
           default_value: "即时"
     
+    stock_individual_fund_flow:
+      parameter_mapping:
+        symbol: "stock"  # 将 symbol 映射为 stock
+        market: "market" # market 参数保持不变
+      validation:
+        symbol:
+          required: true
+          type: string
+        market:
+          required: true
+          type: string
+          valid_values: ["SH", "SZ", "BJ"]
+    
     stock_zh_ah_daily:
       parameter_mapping:
         start_date: "start_year"  # 将 start_date 映射为 start_year
