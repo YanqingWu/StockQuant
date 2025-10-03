@@ -302,6 +302,7 @@ standard_fields:
         - holding_shares                     # 持股数量
         - holding_ratio                      # 持股比例
         - holding_value                      # 持股市值
+        - net_value_ratio                    # 占净值比例
 
       fund_summary:                      # 基金持仓汇总（股票维度）
         - symbol                             # 股票代码
@@ -1128,7 +1129,7 @@ interfaces_config:
         description: "基金持仓"
         interfaces:
           - name: "stock_report_fund_hold"
-            enabled: true
+            enabled: false
             priority: 1
             markets: ["SH", "SZ", "BJ"]
           
@@ -1138,12 +1139,12 @@ interfaces_config:
             markets: ["SH", "SZ", "BJ"]
           
           - name: "stock_institute_hold_detail"
-            enabled: true
+            enabled: false
             priority: 3
             markets: ["SH", "SZ", "BJ"]
           
           - name: "stock_report_fund_hold_detail"
-            enabled: true
+            enabled: false
             priority: 4
             markets: ["SH", "SZ", "BJ"]
 
@@ -2559,18 +2560,20 @@ field_mappings:
   "股东名称": "shareholder_name"
   "股东类型": "shareholder_type"
   "持股数量(股东)": "holding_shares"
-  "持股比例": "holding_ratio"
+  "持股比例": "total_holding_ratio"
   "持股变动": "change_shares"
   "质押情况": "pledge_status"
   "基金代码": "fund_code"
   "基金名称": "fund_name"
   "持股市值(基金)": "holding_value"
+  "持股市值": "holding_value"
+  "持仓数量": "holding_shares"
+  "占流通股比例": "holding_ratio"
+  "占净值比例": "net_value_ratio"
   "持有基金数量": "holding_fund_count"
   "总持股数量": "total_holding_shares"
   "总持股市值": "total_holding_value"
   "总持股比例": "total_holding_ratio"
-  "总持股比例(汇总)": "circulating_ratio"
-  "占流通股本比例(汇总)": "circulating_ratio"
   "总持股比例(汇总)": "circulating_ratio"
   "占流通股本比例(汇总)": "circulating_ratio"
   "排行": "rank"

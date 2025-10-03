@@ -1258,6 +1258,10 @@ class Extractor:
         """获取分红数据"""
         return self._execute_interface("stock", "financials.dividend", params)
     
+    def get_stock_fund_holdings(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取基金持仓数据"""
+        return self._execute_interface("stock", "holdings.fund_holdings", params)
+    
     # ==================== 市场相关接口 ====================
     
     # 市场股票列表
