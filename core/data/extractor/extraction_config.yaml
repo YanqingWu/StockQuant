@@ -18,10 +18,10 @@ standard_fields:
       - list_date                          # 上市日期
       - industry                           # 所属行业
       - industry_code                      # 行业代码
-      - concepts                           # 所属概念列表
-      - concept_codes                      # 概念代码列表
-      - totals                             # 总股本
-      - outstanding                        # 流通股本
+      - concept_list                       # 所属概念列表
+      - concept_code_list                  # 概念代码列表
+      - total_shares                       # 总股本
+      - outstanding_shares                 # 流通股本
       - index_codes                        # 所属指数代码列表
       - full_name                          # 公司全称
       - short_name                         # 公司简称
@@ -108,21 +108,17 @@ standard_fields:
         - medium_order_net_inflow_ratio      # 中单净流入净占比
         - small_order_net_inflow             # 小单净流入净额
         - small_order_net_inflow_ratio       # 小单净流入净占比
+        - retail_net_inflow                  # 散户资金净流入
         - main_inflow                        # 主力资金流入
         - main_outflow                       # 主力资金流出
         - retail_inflow                      # 散户资金流入
         - retail_outflow                     # 散户资金流出
-        - retail_net_inflow                  # 散户资金净流入
         - large_order_inflow                 # 大单流入
         - large_order_outflow                # 大单流出
         - medium_order_inflow                # 中单流入
         - medium_order_outflow               # 中单流出
         - small_order_inflow                 # 小单流入
         - small_order_outflow                # 小单流出
-        - inflow_amount                      # 流入资金（兼容字段）
-        - outflow_amount                     # 流出资金（兼容字段）
-        - net_amount                         # 净流入金额（兼容字段）
-        - total_amount                       # 成交额（兼容字段）
 
       dragon_tiger:
         - symbol                             # 股票代码
@@ -134,14 +130,7 @@ standard_fields:
         - after_1d_return                    # 上榜后1日收益率
         - after_5d_return                    # 上榜后5日收益率
         - after_10d_return                   # 上榜后10日收益率
-        - net_buy_amount                     # 龙虎榜净买额（兼容字段）
-        - buy_amount                         # 龙虎榜买入额（兼容字段）
-        - sell_amount                        # 龙虎榜卖出额（兼容字段）
         - total_amount                       # 龙虎榜成交额
-        - reason                             # 上榜原因（兼容字段）
-        - after_1d                           # 上榜后1日表现（兼容字段）
-        - after_5d                           # 上榜后5日表现（兼容字段）
-        - after_10d                          # 上榜后10日表现（兼容字段）
         - seat_name                          # 营业部名称
         - seat_type                          # 营业部类型（机构/个人）
         - buy_rank                           # 买入排名
@@ -527,9 +516,6 @@ standard_fields:
         - block_trade_price                  # 大宗交易价格
         - block_trade_volume                 # 大宗交易数量
         - block_trade_amount                 # 大宗交易金额
-        - transaction_price                  # 成交价格（兼容字段）
-        - transaction_volume                 # 成交数量（兼容字段）
-        - transaction_amount                 # 成交金额（兼容字段）
         - discount_rate                      # 折价率
         - premium_rate                       # 溢价率
         - buyer_type                         # 买方类型（可选）
