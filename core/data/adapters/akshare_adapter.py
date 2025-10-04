@@ -80,7 +80,7 @@ class AkshareStockParamAdapter:
         try:
             # 映射到目标接口
             target_interface, mapped_params = self.parameter_mapper.map_parameters(interface_name, params)
-            logger.debug(f"映射接口 {interface_name} -> {target_interface}, 映射后参数: {mapped_params}")
+            # 参数映射完成
             
             # 使用基础适配器处理映射后的参数
             return self._adapt_base(target_interface, mapped_params)

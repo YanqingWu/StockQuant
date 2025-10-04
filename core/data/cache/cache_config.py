@@ -38,7 +38,7 @@ class PersistentCacheConfig(CacheConfig):
         # 确保数据库路径是绝对路径
         if not os.path.isabs(self.db_path):
             self.db_path = os.path.abspath(self.db_path)
-            logger.debug(f"数据库路径已转换为绝对路径: {self.db_path}")
+            # 数据库路径已转换为绝对路径
             
         # 确保数据库目录存在
         db_dir = os.path.dirname(self.db_path)

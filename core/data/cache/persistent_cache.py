@@ -61,7 +61,7 @@ class PersistentCache:
         # 启动后台清理线程
         if self.config.cleanup_interval > 0:
             self._start_cleanup_thread()
-            logger.debug(f"后台清理线程已启动，清理间隔: {self.config.cleanup_interval}秒")
+            # 后台清理线程已启动
     
     def get(self, key: str) -> Optional[Any]:
         """获取缓存值 - 永久存储，无过期检查"""
@@ -85,13 +85,13 @@ class PersistentCache:
             if value is not None:
                 self._add_to_memory_cache(key, value)
                 self._stats['storage_hits'] += 1
-                logger.debug(f"持久化存储命中: {key}")
+                # 持久化存储命中
                 return value
             
             # 未找到
             self._stats['misses'] += 1
             self._stats['hits'] -= 1
-            logger.debug(f"缓存未命中: {key}")
+            # 缓存未命中
             return None
     
     def set(self, key: str, value: Any) -> None:
