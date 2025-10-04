@@ -1311,25 +1311,30 @@ class Extractor:
         return self._execute_interface("stock", "daily_market.news", params)
     
     # 股票财务数据
+    def get_stock_basic_indicators(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取基础财务指标"""
+        return self._execute_interface("stock", "financials.basic_indicators", params)
+    
     def get_stock_balance_sheet(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
         """获取资产负债表"""
-        return self._execute_interface("stock", "financials.balance_sheet", params)
+        return self._execute_interface("stock", "financials.detailed_financials.balance_sheet", params)
     
     def get_stock_income_statement(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
         """获取利润表"""
-        return self._execute_interface("stock", "financials.income_statement", params)
+        return self._execute_interface("stock", "financials.detailed_financials.income_statement", params)
     
     def get_stock_cash_flow(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
         """获取现金流量表"""
-        return self._execute_interface("stock", "financials.cash_flow", params)
-    
-    def get_stock_indicators(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """获取财务指标"""
-        return self._execute_interface("stock", "financials.indicators", params)
+        return self._execute_interface("stock", "financials.detailed_financials.cash_flow", params)
     
     def get_stock_dividend(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
         """获取分红数据"""
         return self._execute_interface("stock", "financials.dividend", params)
+    
+    # 向后兼容的别名方法
+    def get_stock_indicators(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取财务指标（向后兼容，实际调用基础财务指标）"""
+        return self.get_stock_basic_indicators(params)
     
     def get_stock_fund_holdings(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
         """获取基金持仓数据"""
