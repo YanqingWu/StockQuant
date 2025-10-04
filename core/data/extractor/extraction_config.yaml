@@ -959,19 +959,24 @@ interfaces_config:
           merge_options:
             data_quality_priority: "highest"  # 改为按接口优先级，优先选择优先级高的接口
           interfaces:
-            - name: "stock_balance_sheet_by_report_em"
+            - name: "stock_financial_report_sina"
               enabled: true
               priority: 1
               markets: ["SH", "SZ", "BJ"]
             
-            - name: "stock_balance_sheet_by_yearly_em"
+            - name: "stock_balance_sheet_by_report_em"
               enabled: true
               priority: 2
               markets: ["SH", "SZ", "BJ"]
             
-            - name: "stock_financial_debt_ths"
+            - name: "stock_balance_sheet_by_yearly_em"
               enabled: true
               priority: 3
+              markets: ["SH", "SZ", "BJ"]
+            
+            - name: "stock_financial_debt_ths"
+              enabled: true
+              priority: 4
               markets: ["SH", "SZ", "BJ"]
 
         income_statement:
@@ -2247,6 +2252,23 @@ field_mappings:
   "销售净利率": "net_profit_margin"
   "流动比率": "current_ratio"
   "速动比率": "quick_ratio"
+  
+  # stock_financial_report_sina接口的字段映射（资产负债表）
+  "报告日": "report_date"
+  "资产总计": "total_assets"
+  "负债合计": "total_liabilities"
+  "归属于母公司股东权益合计": "total_equity"
+  "货币资金": "monetary_funds"
+  "存货": "inventory"
+  "应收账款": "accounts_receivable"
+  "固定资产净额": "fixed_assets"
+  "无形资产": "intangible_assets"
+  "商誉": "goodwill"
+  "应付账款": "accounts_payable"
+  "实收资本(或股本)": "share_capital"
+  "资本公积": "capital_reserve"
+  "盈余公积": "surplus_reserve"
+  "未分配利润": "unassigned_profit"
   "资产负债率": "debt_to_asset_ratio"
 
   # 现金流量表字段映射
