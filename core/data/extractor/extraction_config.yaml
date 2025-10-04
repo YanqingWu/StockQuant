@@ -236,27 +236,24 @@ standard_fields:
         - stock_transfer_ratio               # 转增比例
 
     holdings:
-      fund_holdings:
+      institutional_holdings:            # 机构持仓（包含基金、保险、券商等）
         - symbol                             # 股票代码
         - report_date                        # 报告期
-        - fund_code                          # 机构代码
-        - fund_name                          # 机构名称
+        - institution_type                   # 机构类型（基金、保险、券商等）
+        - institution_code                   # 机构代码
+        - institution_name                   # 机构名称
+        - institution_full_name              # 机构全称
         - holding_shares                     # 持股数量
         - holding_ratio                      # 持股比例
         - holding_value                      # 持股市值
-        - net_value_ratio                    # 占净值比例
-
-      fund_summary:                      # 机构持仓详情
-        - symbol                             # 股票代码
-        - institute_type                     # 机构类型
-        - institute_code                     # 机构代码
-        - institute_name                     # 机构名称
-        - institute_full_name                # 机构全称
-        - holding_shares                     # 持股数量
-        - holding_ratio                      # 持股比例
         - circulating_ratio                  # 占流通股比例
-        - holding_ratio_change               # 持股比例变化
-        - circulating_ratio_change           # 流通股比例变化
+        - net_value_ratio                    # 占净值比例（仅基金）
+        - institution_count                  # 机构数量
+        - holding_change                     # 持股变化
+        - holding_change_shares              # 持股变动数值
+        - holding_change_ratio               # 持股变动比例
+        - share_type                         # 股本性质
+        - shareholder_description            # 股东说明
 
       hsgt_ranking:                      # 沪深港通排行（股票视角）
         - symbol                             # 股票代码
@@ -1095,35 +1092,32 @@ interfaces_config:
             markets: ["HK"]
 
     holdings:
-      fund_holdings:
-        description: "机构持仓"
+      institutional_holdings:
+        description: "机构持仓（包含基金、保险、券商等大资金）"
         interfaces:
-          - name: "stock_report_fund_hold"
-            enabled: false
+          - name: "stock_fund_stock_holder"
+            enabled: true
             priority: 1
             markets: ["SH", "SZ", "BJ"]
           
-          - name: "stock_fund_stock_holder"
+          - name: "stock_report_fund_hold"
             enabled: true
             priority: 2
             markets: ["SH", "SZ", "BJ"]
           
-          - name: "stock_institute_hold_detail"
-            enabled: false
+          - name: "stock_institute_hold"
+            enabled: true
             priority: 3
             markets: ["SH", "SZ", "BJ"]
           
-          - name: "stock_report_fund_hold_detail"
-            enabled: false
+          - name: "stock_main_stock_holder"
+            enabled: true
             priority: 4
             markets: ["SH", "SZ", "BJ"]
-
-      fund_summary:
-        description: "机构持仓汇总"
-        interfaces:
-          - name: "stock_institute_hold_detail"
+          
+          - name: "stock_circulate_stock_holder"
             enabled: true
-            priority: 1
+            priority: 5
             markets: ["SH", "SZ", "BJ"]
 
       hsgt_ranking:
@@ -2531,6 +2525,37 @@ field_mappings:
   "持仓数量": "position_shares"
   "占流通股比例": "circulating_ratio"
   "占净值比例": "net_value_ratio"
+  
+  # 机构持仓相关字段映射
+  "截止日期": "report_date"
+  "报告期": "report_date"
+  "持仓数量": "holding_shares"
+  "持股数量": "holding_shares"
+  "持股比例": "holding_ratio"
+  "占流通股比例": "circulating_ratio"
+  "持股市值": "holding_value"
+  "占净值比例": "net_value_ratio"
+  "基金名称": "institution_name"
+  "基金代码": "institution_code"
+  "机构名称": "institution_name"
+  "机构代码": "institution_code"
+  "股东名称": "institution_name"
+  "持有基金家数": "institution_count"
+  "机构数": "institution_count"
+  "持股总数": "total_holding_shares"
+  "持股变化": "holding_change"
+  "持股变动数值": "holding_change_shares"
+  "持股变动比例": "holding_change_ratio"
+  "持股比例增幅": "holding_change_ratio"
+  "占流通股比例增幅": "circulating_ratio_change"
+  "股票代码": "symbol"
+  "股票简称": "stock_name"
+  "证券代码": "symbol"
+  "证券简称": "stock_name"
+  "编号": "institution_code"
+  "股本性质": "share_type"
+  "股东说明": "shareholder_description"
+  "机构数变化": "institution_count_change"
   "持有基金数量": "holding_fund_count"
   "持有基金家数": "holding_fund_count"
   "总持股数量": "total_holding_shares"

@@ -1331,18 +1331,9 @@ class Extractor:
         """获取分红数据"""
         return self._execute_interface("stock", "financials.dividend", params)
     
-    # 向后兼容的别名方法
-    def get_stock_indicators(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """获取财务指标（向后兼容，实际调用基础财务指标）"""
-        return self.get_stock_basic_indicators(params)
-    
-    def get_stock_fund_holdings(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """获取基金持仓数据"""
-        return self._execute_interface("stock", "holdings.fund_holdings", params)
-    
-    def get_stock_fund_summary(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """获取基金持仓汇总数据"""
-        return self._execute_interface("stock", "holdings.fund_summary", params)
+    def get_stock_institutional_holdings(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取机构持仓数据（包含基金、保险、券商等大资金）"""
+        return self._execute_interface("stock", "holdings.institutional_holdings", params)
     
     # 研究分析数据
     def get_stock_research_report(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
