@@ -280,7 +280,7 @@ standard_fields:
         - resume_date                        # 复牌日期
 
     research_and_analyst:
-      research_report:
+      research_reports:                  # 研报数据
         - symbol                             # 股票代码
         - report_date                        # 报告日期
         - institution                        # 研究机构
@@ -300,14 +300,6 @@ standard_fields:
         - pe_forecast_2026                   # 2026年盈利预测-市盈率
         - eps_forecast_2027                  # 2027年盈利预测-收益
         - pe_forecast_2027                   # 2027年盈利预测-市盈率
-
-      analyst_rating:
-        - symbol                             # 股票代码
-        - date                               # 日期
-        - institution                        # 机构
-        - rating                             # 评级
-        - previous_rating                    # 上次评级
-        - target_price                       # 目标价
         - analyst_name                       # 分析师姓名
         - analyst_unit                       # 分析师单位
         - annual_index                       # 年度指数
@@ -315,9 +307,8 @@ standard_fields:
         - stock_count                        # 成分股个数
         - update_date                        # 更新日期
 
-      profit_forecast_consensus:
+      forecast_consensus:                # 预测共识数据
         - symbol                             # 股票代码
-        - name                               # 股票名称
         - report_date                        # 报告期
         - year                               # 预测年份
         - eps_forecast                       # 每股收益预测
@@ -338,11 +329,6 @@ standard_fields:
         - previous_rating                    # 前一次投资评级
         - target_price_lower                 # 目标价格下限
         - target_price_upper                 # 目标价格上限
-
-      opinions:                          # 机构/媒体观点
-        - symbol                             # 股票代码
-        - date                               # 日期
-        - opinion_type                       # 观点类型（看多/看空/中性等）
 
     technical_analysis:
       indicators:                        # 技术指标数据
@@ -1143,8 +1129,8 @@ interfaces_config:
             markets: ["SH", "SZ", "BJ"]
 
     research_and_analyst:
-      research_report:
-        description: "研究报告"
+      research_reports:
+        description: "研报数据（合并研究报告和分析师评级）"
         interfaces:
           - name: "stock_research_report_em"
             enabled: true
@@ -1155,27 +1141,24 @@ interfaces_config:
             enabled: true
             priority: 2
             markets: ["SH", "SZ", "BJ"]
-
-      analyst_rating:
-        description: "分析师评级"
-        interfaces:
+          
           - name: "stock_analyst_detail_em"
             enabled: true
-            priority: 1
+            priority: 3
             markets: ["SH", "SZ", "BJ"]
           
           - name: "stock_analyst_rank_em"
             enabled: true
-            priority: 2
+            priority: 4
             markets: ["SH", "SZ", "BJ"]
           
           - name: "stock_institute_recommend_detail"
             enabled: true
-            priority: 3
+            priority: 5
             markets: ["SH", "SZ", "BJ"]
 
-      profit_forecast_consensus:
-        description: "盈利预测共识"
+      forecast_consensus:
+        description: "预测共识数据"
         interfaces:
           - name: "stock_hk_profit_forecast_et"
             enabled: true

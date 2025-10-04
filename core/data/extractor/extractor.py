@@ -1340,17 +1340,13 @@ class Extractor:
         return self._execute_interface("stock", "holdings.hsgt_holdings", params)
     
     # 研究分析数据
-    def get_stock_research_report(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """获取研究报告数据"""
-        return self._execute_interface("stock", "research_and_analyst.research_report", params)
+    def get_stock_research_reports(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取研报数据"""
+        return self._execute_interface("stock", "research_and_analyst.research_reports", params)
     
-    def get_stock_analyst_rating(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """获取分析师评级数据"""
-        return self._execute_interface("stock", "research_and_analyst.analyst_rating", params)
-    
-    def get_stock_profit_forecast(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """获取盈利预测数据"""
-        return self._execute_interface("stock", "research_and_analyst.profit_forecast_consensus", params)
+    def get_stock_forecast_consensus(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取预测共识数据"""
+        return self._execute_interface("stock", "research_and_analyst.forecast_consensus", params)
     
     def get_stock_opinions(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
         """获取机构观点数据"""
