@@ -279,6 +279,73 @@ standard_fields:
         - reason                             # 停牌原因
         - resume_date                        # 复牌日期
 
+    technical_analysis:
+      innovation_high:                    # 创新高排名
+        - symbol                             # 股票代码
+        - date                               # 日期
+        - rank                               # 排名
+        - price                              # 最新价
+        - change_pct                         # 涨跌幅
+        - turnover_rate                      # 换手率
+        - previous_high                      # 前期高点
+        - previous_high_date                 # 前期高点日期
+        - industry                           # 所属行业
+
+      innovation_low:                     # 创新低排名
+        - symbol                             # 股票代码
+        - date                               # 日期
+        - rank                               # 排名
+        - price                              # 最新价
+        - change_pct                         # 涨跌幅
+        - turnover_rate                      # 换手率
+        - previous_low                       # 前期低点
+        - previous_low_date                  # 前期低点日期
+        - industry                           # 所属行业
+
+      volume_price_rise:                  # 量价齐升排名
+        - symbol                             # 股票代码
+        - date                               # 日期
+        - rank                               # 排名
+        - price                              # 最新价
+        - period_days                        # 量价齐升天数
+        - total_change_pct                   # 阶段涨幅
+        - turnover_rate                      # 累计换手率
+        - industry                           # 所属行业
+
+      continuous_rise:                    # 连续上涨排名
+        - symbol                             # 股票代码
+        - date                               # 日期
+        - rank                               # 排名
+        - price                              # 收盘价
+        - high_price                         # 最高价
+        - low_price                          # 最低价
+        - period_days                        # 连涨天数
+        - total_change_pct                   # 连续涨跌幅
+        - turnover_rate                      # 累计换手率
+        - industry                           # 所属行业
+
+      volume_price_fall:                  # 量价齐跌排名
+        - symbol                             # 股票代码
+        - date                               # 日期
+        - rank                               # 排名
+        - price                              # 最新价
+        - period_days                        # 量价齐跌天数
+        - total_change_pct                   # 阶段涨幅
+        - turnover_rate                      # 累计换手率
+        - industry                           # 所属行业
+
+      volume_shrink:                      # 创新缩量排名
+        - symbol                             # 股票代码
+        - date                               # 日期
+        - rank                               # 排名
+        - price                              # 最新价
+        - change_pct                         # 涨跌幅
+        - volume                             # 成交量
+        - base_volume                        # 基准日成交量
+        - period_days                        # 缩量天数
+        - total_change_pct                   # 阶段涨跌幅
+        - industry                           # 所属行业
+
     research_and_analyst:
       research_reports:                  # 研报数据
         - symbol                             # 股票代码
@@ -329,61 +396,6 @@ standard_fields:
         - previous_rating                    # 前一次投资评级
         - target_price_lower                 # 目标价格下限
         - target_price_upper                 # 目标价格上限
-
-    technical_analysis:
-      indicators:                        # 技术指标数据
-        - symbol                             # 股票代码
-        - date                               # 日期
-        - macd                               # MACD值
-        - macd_signal                        # MACD信号线
-        - macd_histogram                     # MACD柱状图
-        - kdj_k                              # KDJ-K值
-        - kdj_d                              # KDJ-D值
-        - kdj_j                              # KDJ-J值
-        - rsi_6                              # 6日RSI
-        - rsi_12                             # 12日RSI
-        - rsi_24                             # 24日RSI
-        - boll_upper                         # 布林带上轨
-        - boll_mid                           # 布林带中轨
-        - boll_lower                         # 布林带下轨
-        - boll_width                         # 布林带宽度
-        - ma_5                               # 5日均线
-        - ma_10                              # 10日均线
-        - ma_20                              # 20日均线
-        - ma_30                              # 30日均线
-        - ma_60                              # 60日均线
-        - ma_120                             # 120日均线
-        - ma_250                             # 250日均线
-        - ema_12                             # 12日指数移动平均
-        - ema_26                             # 26日指数移动平均
-        - cci                                # 顺势指标CCI
-        - williams_r                         # 威廉指标WR
-        - bias_6                             # 6日乖离率
-        - bias_12                            # 12日乖离率
-        - bias_24                            # 24日乖离率
-        - dmi_pdi                            # DMI正向指标
-        - dmi_mdi                            # DMI负向指标
-        - dmi_adx                            # DMI趋向平均值
-        - dmi_adxr                           # DMI评估数值
-
-      ranking:                           # 技术分析排名数据
-        - symbol                             # 股票代码
-        - date                               # 日期
-        - rank                               # 排名
-        - rank_change                        # 排名变化（可选）
-        - score                              # 评分（可选）
-        - reason                             # 入选原因（可选）
-        - technical_indicator                # 技术指标值（可选）
-        - period                             # 统计周期（可选）
-
-      breakthrough:                      # 突破数据
-        - symbol                             # 股票代码
-        - date                               # 日期
-        - breakthrough_type                  # 突破类型（向上/向下）
-        - breakthrough_price                 # 突破价格
-        - support_level                      # 支撑位（可选）
-        - resistance_level                   # 阻力位（可选）
-        - volume_confirmation                # 成交量确认（可选）
 
     market_valuation:
       overall_metrics:                   # 整体估值指标
@@ -1128,6 +1140,61 @@ interfaces_config:
             priority: 3
             markets: ["SH", "SZ", "BJ"]
 
+    technical_analysis:
+      innovation_high:
+        description: "创新高股票排名"
+        interfaces:
+          - name: "stock_rank_cxg_ths"
+            enabled: true
+            priority: 1
+            markets: ["SH", "SZ"]
+            description: "创新高股票列表"
+
+      innovation_low:
+        description: "创新低股票排名"
+        interfaces:
+          - name: "stock_rank_cxd_ths"
+            enabled: true
+            priority: 1
+            markets: ["SH", "SZ"]
+            description: "创新低股票列表"
+
+      volume_price_rise:
+        description: "量价齐升股票排名"
+        interfaces:
+          - name: "stock_rank_ljqs_ths"
+            enabled: true
+            priority: 1
+            markets: ["SH", "SZ"]
+            description: "量价齐升股票列表"
+
+      continuous_rise:
+        description: "连续上涨股票排名"
+        interfaces:
+          - name: "stock_rank_lxsz_ths"
+            enabled: true
+            priority: 1
+            markets: ["SH", "SZ"]
+            description: "连续上涨股票列表"
+
+      volume_price_fall:
+        description: "量价齐跌股票排名"
+        interfaces:
+          - name: "stock_rank_ljqd_ths"
+            enabled: true
+            priority: 1
+            markets: ["SH", "SZ"]
+            description: "量价齐跌股票列表"
+
+      volume_shrink:
+        description: "创新缩量股票排名"
+        interfaces:
+          - name: "stock_rank_cxsl_ths"
+            enabled: true
+            priority: 1
+            markets: ["SH", "SZ"]
+            description: "创新缩量股票列表"
+
     research_and_analyst:
       research_reports:
         description: "研报数据（合并研究报告和分析师评级）"
@@ -1348,88 +1415,6 @@ interfaces_config:
           enabled: true
           priority: 1
           markets: ["SH", "SZ"]
-
-    technical_analysis:
-      indicators:
-        description: "技术指标数据"
-        interfaces:
-          - name: "stock_zh_a_hist_163"
-            enabled: true
-            priority: 1
-            markets: ["SH", "SZ"]
-            description: "网易财经技术指标数据"
-          
-          - name: "stock_technical_analysis_indicator_sina"
-            enabled: true
-            priority: 2
-            markets: ["SH", "SZ"]
-            description: "新浪技术指标数据"
-          
-          - name: "stock_zh_a_hist_tx"
-            enabled: true
-            priority: 3
-            markets: ["SH", "SZ"]
-            description: "腾讯财经技术指标数据"
-          
-          - name: "stock_technical_analysis_ths"
-            enabled: true
-            priority: 4
-            markets: ["SH", "SZ"]
-            description: "同花顺技术指标数据"
-
-      ranking:
-        description: "技术分析排名数据"
-        interfaces:
-          - name: "stock_rank_cxg_ths"
-            enabled: true
-            priority: 1
-            markets: ["SH", "SZ"]
-            description: "创新高股票列表"
-          
-          - name: "stock_rank_cxd_ths"
-            enabled: true
-            priority: 2
-            markets: ["SH", "SZ"]
-            description: "创新低股票列表"
-          
-          - name: "stock_rank_ljqs_ths"
-            enabled: true
-            priority: 3
-            markets: ["SH", "SZ"]
-            description: "量价齐升股票列表"
-          
-          - name: "stock_rank_ljqd_ths"
-            enabled: true
-            priority: 4
-            markets: ["SH", "SZ"]
-            description: "量价齐跌股票列表"
-          
-          - name: "stock_rank_xstp_ths"
-            enabled: true
-            priority: 5
-            markets: ["SH", "SZ"]
-            description: "向上突破股票列表"
-          
-          - name: "stock_rank_xxtp_ths"
-            enabled: true
-            priority: 6
-            markets: ["SH", "SZ"]
-            description: "向下突破股票列表"
-
-      breakthrough:
-        description: "突破数据"
-        interfaces:
-          - name: "stock_rank_xstp_ths"
-            enabled: true
-            priority: 1
-            markets: ["SH", "SZ"]
-            description: "向上突破股票数据"
-          
-          - name: "stock_rank_xxtp_ths"
-            enabled: true
-            priority: 2
-            markets: ["SH", "SZ"]
-            description: "向下突破股票数据"
 
     market_valuation:
       description: "市场估值数据"
@@ -2664,6 +2649,31 @@ field_mappings:
   "摘要": "summary"
   "机构": "institution"
   "上次评级": "previous_rating"
+  
+  # 技术分析相关字段映射
+  "序号": "rank"
+  "前期高点": "previous_high"
+  "前期高点日期": "previous_high_date"
+  "前期低点": "previous_low"
+  "前期低点日期": "previous_low_date"
+  "量价齐升天数": "period_days"
+  "量价齐跌天数": "period_days"
+  "连涨天数": "period_days"
+  "缩量天数": "period_days"
+  "阶段涨幅": "total_change_pct"
+  "连续涨跌幅": "total_change_pct"
+  "阶段涨跌幅": "total_change_pct"
+  "累计换手率": "turnover_rate"
+  "换手率": "turnover_rate"
+  "基准日成交量": "base_volume"
+  "最新价": "price"
+  "收盘价": "price"
+  "最高价": "high_price"
+  "最低价": "low_price"
+  "涨跌幅": "change_pct"
+  "成交量": "volume"
+  "股票简称": "name"
+  "所属行业": "industry"
   "预测年份": "year"
   "每股收益预测": "eps_forecast"
   "营业收入预测": "revenue_forecast"

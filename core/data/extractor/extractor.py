@@ -1404,13 +1404,29 @@ class Extractor:
         return self._execute_interface("market", "sector_spot", params)
     
     # 技术分析
-    def get_technical_indicators(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """获取技术指标数据"""
-        return self._execute_interface("market", "technical_analysis.indicators", params)
+    def get_innovation_high_ranking(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取创新高股票排名"""
+        return self._execute_interface("stock", "technical_analysis.innovation_high", params)
     
-    def get_technical_ranking(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """获取技术分析排名数据"""
-        return self._execute_interface("market", "technical_analysis.ranking", params)
+    def get_innovation_low_ranking(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取创新低股票排名"""
+        return self._execute_interface("stock", "technical_analysis.innovation_low", params)
+    
+    def get_volume_price_rise_ranking(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取量价齐升股票排名"""
+        return self._execute_interface("stock", "technical_analysis.volume_price_rise", params)
+    
+    def get_continuous_rise_ranking(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取连续上涨股票排名"""
+        return self._execute_interface("stock", "technical_analysis.continuous_rise", params)
+    
+    def get_volume_price_fall_ranking(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取量价齐跌股票排名"""
+        return self._execute_interface("stock", "technical_analysis.volume_price_fall", params)
+    
+    def get_volume_shrink_ranking(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取创新缩量股票排名"""
+        return self._execute_interface("stock", "technical_analysis.volume_shrink", params)
     
     # ==================== 工具方法 ====================
     
