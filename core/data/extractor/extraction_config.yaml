@@ -491,8 +491,7 @@ standard_fields:
       - turnover_amount                    # 成交金额
       - total_market_cap                   # 总市值
       - circulating_market_cap             # 流通市值
-      - avg_pe                             # 平均市盈率
-      - avg_pb                             # 平均市净率
+      - circulating_shares                 # 流通股本
 
     market_indices:
       - date                               # 日期
@@ -882,26 +881,20 @@ interfaces_config:
             priority: 12
             markets: ["SH", "SZ", "BJ"]
             description: "人气榜历史趋势"
-
           
           - name: "stock_hot_follow_xq"
             enabled: true
-            priority: 8
+            priority: 13
             markets: ["SH", "SZ", "BJ"]
           
           - name: "stock_hot_deal_xq"
             enabled: true
-            priority: 9
+            priority: 14
             markets: ["SH", "SZ", "BJ"]
           
           - name: "stock_hot_tweet_xq"
             enabled: true
-            priority: 10
-            markets: ["SH", "SZ", "BJ"]
-          
-          - name: "stock_hot_keyword_em"
-            enabled: true
-            priority: 11
+            priority: 15
             markets: ["SH", "SZ", "BJ"]
 
       news:
@@ -1292,11 +1285,13 @@ interfaces_config:
           enabled: true
           priority: 1
           markets: ["SH"]
+          post_processor: "convert_market_summary_to_columns"
         
         - name: "stock_szse_summary"
           enabled: true
           priority: 2
           markets: ["SZ"]
+          post_processor: "convert_market_summary_to_columns"
 
     market_indices:
       description: "市场指数"
@@ -1708,7 +1703,13 @@ field_mappings:
   "停牌": "suspend_count"
   "复牌": "resume_count"
   
-  
+  # 市场概览字段映射
+  "数量": "stock_count"
+  "上市公司": "stock_count"
+  "成交金额": "turnover_amount"
+  "总市值": "total_market_cap"
+  "流通市值": "circulating_market_cap"
+  "流通股本": "circulating_shares"
   
   # stock_institute_hold_detail 接口字段映射
   "持股机构类型": "institute_type"
