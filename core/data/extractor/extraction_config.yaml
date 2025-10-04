@@ -142,13 +142,11 @@ standard_fields:
         - participation_desire_daily         # 当日意愿上升
         - participation_desire_5d_avg        # 5日平均参与意愿变化
         - user_focus_index                   # 用户关注指数
-        - composite_score                    # 综合得分
         - historical_score                   # 历史评分
         - rank_change                        # 排名变化
         - current_price                      # 最新价
         - price_change_pct                   # 涨跌幅
         - turnover_rate                      # 换手率
-
 
       news:
         - symbol                             # 股票代码
@@ -1675,6 +1673,7 @@ field_mappings:
   
   # 情绪相关字段映射
   "交易日": "date"
+  "名称": "name"
   "市盈率": "pe"
   "综合得分": "sentiment_score"
   "目前排名": "popularity_rank"
