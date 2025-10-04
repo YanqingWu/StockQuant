@@ -2271,9 +2271,9 @@ field_mappings:
   "未分配利润": "unassigned_profit"
   
   # stock_profit_sheet_by_*_em接口的字段映射（利润表）
-  "TOTAL_OPERATE_INCOME": "operating_income"
+  "TOTAL_OPERATE_INCOME": "operating_income_total"
   "OPERATE_INCOME": "operating_income"
-  "TOTAL_OPERATE_COST": "operating_cost"
+  "TOTAL_OPERATE_COST": "operating_cost_total"
   "OPERATE_COST": "operating_cost"
   "OPERATE_PROFIT": "operating_profit"
   "NETPROFIT": "net_profit"
@@ -2337,8 +2337,29 @@ field_mappings:
   "资产负债率": "debt_to_asset_ratio"
 
   # 现金流量表字段映射
+  # stock_xjll_em接口的字段映射（现金流量表汇总）
+  "经营性现金流-现金流量净额": "operating_cash_flow"
+  "投资性现金流-现金流量净额": "investing_cash_flow"
+  "融资性现金流-现金流量净额": "financing_cash_flow"
+  "净现金流-净现金流": "net_cash_increase"
+  "公告日期": "notice_date"
+  
+  # stock_financial_cash_ths接口的字段映射（同花顺现金流量表）
+  "*经营活动产生的现金流量净额": "operating_cash_flow"
+  "*投资活动产生的现金流量净额": "investing_cash_flow"
+  "*筹资活动产生的现金流量净额": "financing_cash_flow"
+  "*现金及现金等价物净增加额": "net_cash_increase"
+  "*期末现金及现金等价物余额": "ending_cash_balance"
+  "报告期": "report_date"
+  
   # stock_cash_flow_sheet_by_*_em接口的英文字段映射
   "SECUCODE": "secucode"
+  "REPORT_DATE": "report_date"
+  "REPORT_TYPE": "report_type"
+  "OPERATE_CASH_FLOW": "operating_cash_flow_direct"
+  "INVEST_CASH_FLOW": "investing_cash_flow_direct"
+  "FINANCE_CASH_FLOW": "financing_cash_flow_direct"
+  "NET_CASH_INCREASE": "net_cash_increase_direct"
   "SECURITY_CODE": "security_code"
   "SECURITY_NAME_ABBR": "security_name"
   "ORG_CODE": "org_code"
@@ -2654,7 +2675,7 @@ field_mappings:
 
   # 公告/日期与更新时间
   "公告日期": "notice_date"
-  "最新公告日期": "notice_date"
+  "最新公告日期": "latest_notice_date"
   "NOTICE_DATE": "notice_date"
   "REPORT_DATE": "report_date"
   "UPDATE_DATE": "update_time"
