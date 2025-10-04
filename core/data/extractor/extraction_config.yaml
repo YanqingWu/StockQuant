@@ -143,14 +143,19 @@ standard_fields:
         - participation_desire_5d_avg        # 5日平均参与意愿变化
         - user_focus_index                   # 用户关注指数
         - composite_score                    # 综合得分
-        - new_fans                           # 新晋粉丝
-        - loyal_fans                         # 铁杆粉丝
-        - search_heat                        # 搜索热度
-        - keyword_heat                       # 关键词热度
-        - follow_count                       # 关注数量
-        - deal_attention                     # 交易关注度
-        - tweet_attention                    # 讨论关注度
-        - concept_name                       # 概念名称
+        - historical_score                   # 历史评分
+        - rank_change                        # 排名变化
+        - current_price                      # 最新价
+        - price_change_pct                   # 涨跌幅
+        - turnover_rate                      # 换手率
+
+      unusual_activity:                    # 个股异动数据
+        - symbol                             # 股票代码
+        - date                               # 日期
+        - time                               # 时间
+        - unusual_type                       # 异动类型
+        - related_info                       # 相关信息
+        - sector                             # 所属板块
 
       news:
         - symbol                             # 股票代码
@@ -446,33 +451,6 @@ standard_fields:
         - buyer_type                         # 买方类型（可选）
         - seller_type                        # 卖方类型（可选）
     
-    market_sentiment:
-      sentiment_indicators:              # 市场情绪指标
-        - symbol                             # 股票代码
-        - date                               # 日期
-        - sentiment_index                    # 情绪指数
-        - confidence_level                   # 信心水平（可选）
-        - fear_greed_index                   # 恐惧贪婪指数（可选）
-
-      market_activity:                   # 市场活跃度
-        - symbol                             # 股票代码
-        - date                               # 日期
-        - activity_index                     # 活跃度指数
-        - participation_rate                 # 参与率
-        - turnover_activity                  # 换手活跃度
-        - price_activity                     # 价格活跃度（可选）
-
-      unusual_activity:                  # 异动数据
-        - symbol                             # 股票代码
-        - date                               # 日期
-        - unusual_type                       # 异动类型
-        - trigger_condition                  # 触发条件
-        - intensity_level                    # 强度等级
-        - volume_ratio                       # 成交量比率
-        - limit_up_count                     # 涨停次数
-        - limit_down_count                   # 跌停次数
-        - price_change_speed                 # 价格变化速度
-
     new_stock:
       ipo_data:                          # 新股发行数据
         - ipo_date                           # 发行日期
@@ -537,16 +515,23 @@ standard_fields:
       - amount                             # 成交额
       - pct_change                         # 涨跌幅
 
-    market_activity:
-      - date                               # 日期
-      - activity_index                     # 活跃度指数
-      - limit_up_count                     # 涨停数
-      - limit_down_count                   # 跌停数
-      - avg_turnover_rate                  # 平均换手率
-      - up_count                           # 上涨家数
-      - down_count                         # 下跌家数
-      - suspend_count                      # 停牌家数（可选）
-      - resume_count                       # 复牌家数（可选）
+
+    sentiment:                             # 市场情绪数据
+      market_sentiment:                    # 市场情绪数据
+        - date                               # 日期
+        - bullish_ratio                      # 看涨比例
+        - bearish_ratio                      # 看跌比例
+        - bullish_count                      # 看涨数量
+        - bearish_count                      # 看跌数量
+        - period                             # 统计周期
+
+      market_activity:                     # 市场活跃度数据
+        - date                               # 日期
+        - rising_count                       # 上涨数量
+        - limit_up_count                     # 涨停数量
+        - real_limit_up_count                # 真实涨停数量
+        - item_type                          # 统计项目类型
+        - item_value                         # 统计项目数值
 
     sector_data:
       industry_metadata:
@@ -870,10 +855,51 @@ interfaces_config:
             priority: 6
             markets: ["SH", "SZ", "BJ"]
           
-          - name: "stock_hot_rank_detail_em"
+          - name: "stock_zh_vote_baidu"
             enabled: true
             priority: 7
+            markets: ["SH", "SZ"]
+            description: "百度看多看空比例"
+          
+          - name: "stock_market_activity_legu"
+            enabled: true
+            priority: 8
+            markets: ["SH", "SZ"]
+            description: "市场活跃度统计"
+            post_processor: "convert_item_value_to_columns"
+          
+          - name: "stock_changes_em"
+            enabled: true
+            priority: 9
             markets: ["SH", "SZ", "BJ"]
+            description: "盘口异动数据"
+          
+          - name: "stock_hot_search_baidu"
+            enabled: true
+            priority: 10
+            markets: ["SH", "SZ", "BJ"]
+            description: "百度搜索热度"
+          
+          - name: "stock_hot_keyword_em"
+            enabled: true
+            priority: 11
+            markets: ["SH", "SZ", "BJ"]
+            description: "热门关键词热度"
+          
+          - name: "stock_hot_rank_detail_em"
+            enabled: true
+            priority: 12
+            markets: ["SH", "SZ", "BJ"]
+            description: "人气榜历史趋势"
+
+      unusual_activity:
+        description: "个股异动数据"
+        interfaces:
+          - name: "stock_changes_em"
+            enabled: true
+            priority: 1
+            markets: ["SH", "SZ", "BJ"]
+            description: "盘口异动数据"
           
           - name: "stock_hot_follow_xq"
             enabled: true
@@ -1312,28 +1338,6 @@ interfaces_config:
           priority: 4
           markets: ["SH", "SZ"]
 
-    market_activity:
-      description: "市场活跃度"
-      interfaces:
-        - name: "stock_rank_lxsz_ths"
-          enabled: true
-          priority: 1
-          markets: ["SH", "SZ"]
-        
-        - name: "stock_rank_lxxd_ths"
-          enabled: true
-          priority: 2
-          markets: ["SH", "SZ"]
-        
-        - name: "stock_rank_cxsl_ths"
-          enabled: true
-          priority: 3
-          markets: ["SH", "SZ"]
-        
-        - name: "stock_rank_cxfl_ths"
-          enabled: true
-          priority: 4
-          markets: ["SH", "SZ"]
 
     industry_sector:
       metadata:
@@ -1491,37 +1495,6 @@ interfaces_config:
           markets: ["SH", "SZ"]
           description: "融资融券余额数据"
 
-    market_sentiment:
-      description: "市场情绪数据"
-      interfaces:
-        - name: "stock_zh_vote_baidu"
-          enabled: true
-          priority: 1
-          markets: ["SH", "SZ"]
-          description: "百度看多看空比例"
-        
-        - name: "stock_market_activity_legu"
-          enabled: true
-          priority: 2
-          markets: ["SH", "SZ"]
-          description: "市场活跃度统计"
-        
-        - name: "stock_changes_em"
-          enabled: true
-          priority: 3
-          markets: ["SH", "SZ", "BJ"]
-          description: "盘口异动数据"
-        
-        - name: "stock_hot_rank_em"
-          enabled: true
-          priority: 4
-          markets: ["SH", "SZ", "BJ"]
-          description: "股票人气排行榜"
-        
-        - name: "stock_hot_rank_detail_em"
-          enabled: true
-          priority: 5
-          markets: ["SH", "SZ", "BJ"]
           description: "股票人气排行详情"
         
         - name: "stock_attention_baidu"
@@ -1714,6 +1687,48 @@ field_mappings:
   "代码": "symbol"
   "股票代码": "symbol"
   "证券代码": "symbol"
+  
+  # 情绪相关字段映射
+  "交易日": "date"
+  "市盈率": "pe"
+  "综合得分": "sentiment_score"
+  "目前排名": "popularity_rank"
+  "当前排名": "popularity_rank"
+  "关注指数": "attention_score"
+  "用户关注指数": "user_focus_index"
+  "机构参与度": "institution_ratio"
+  "主力成本": "main_cost"
+  "当日意愿上升": "participation_desire_daily"
+  "5日平均参与意愿变化": "participation_desire_5d_avg"
+  "评分": "historical_score"
+  "上升": "rank_change"
+  "最新价": "current_price"
+  "涨跌幅": "price_change_pct"
+  "换手率": "turnover_rate"
+  
+  # 市场情绪字段映射
+  "周期": "period"
+  "看涨": "bullish_count"
+  "看跌": "bearish_count"
+  "看涨比例": "bullish_ratio"
+  "看跌比例": "bearish_ratio"
+  
+  # 市场活跃度字段映射
+  "item": "item_type"
+  "value": "item_value"
+  "上涨": "rising_count"
+  "涨停": "limit_up_count"
+  "真实涨停": "real_limit_up_count"
+  "下跌": "falling_count"
+  "跌停": "limit_down_count"
+  "停牌": "suspend_count"
+  "复牌": "resume_count"
+  
+  # 个股异动字段映射
+  "时间": "time"
+  "板块": "unusual_type"
+  "相关信息": "related_info"
+  
   
   # stock_institute_hold_detail 接口字段映射
   "持股机构类型": "institute_type"
