@@ -64,10 +64,15 @@ class ParameterMapper:
             if param_config.get("required", False) and value is None:
                 raise ValueError(f"参数 {param_name} 是必需的")
             
-            # 检查有效值
+            # 检查有效值 - 改为warning并使用默认值
             valid_values = param_config.get("valid_values", [])
             if valid_values and value not in valid_values:
-                raise ValueError(f"参数 {param_name} 的值 {value} 不在有效范围内: {valid_values}")
+                default_value = param_config.get("default_value")
+                if default_value is not None:
+                    logger.warning(f"参数 {param_name} 的值 {value} 不在有效范围内: {valid_values}，使用默认值: {default_value}")
+                    params[param_name] = default_value
+                else:
+                    raise ValueError(f"参数 {param_name} 的值 {value} 不在有效范围内: {valid_values}，且无默认值")
     
     def _apply_default_values(self, params: Dict[str, Any], validation: Dict[str, Any]) -> None:
         """应用默认值"""
