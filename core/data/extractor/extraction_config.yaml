@@ -134,18 +134,23 @@ standard_fields:
         - symbol                             # 股票代码
         - date                               # 日期
         - pe                                 # 市盈率
-        - comment_count                      # 评论数量
         - sentiment_score                    # 情绪得分
-        - bullish_ratio                      # 看多比例
-        - bearish_ratio                      # 看空比例
         - popularity_rank                    # 人气排名
         - attention_score                    # 关注度得分
-        - market_participation               # 市场参与度
         - institution_ratio                  # 机构参与度
         - main_cost                          # 主力成本
         - participation_desire_daily         # 当日意愿上升
         - participation_desire_5d_avg        # 5日平均参与意愿变化
         - user_focus_index                   # 用户关注指数
+        - composite_score                    # 综合得分
+        - new_fans                           # 新晋粉丝
+        - loyal_fans                         # 铁杆粉丝
+        - search_heat                        # 搜索热度
+        - keyword_heat                       # 关键词热度
+        - follow_count                       # 关注数量
+        - deal_attention                     # 交易关注度
+        - tweet_attention                    # 讨论关注度
+        - concept_name                       # 概念名称
 
       news:
         - symbol                             # 股票代码
@@ -911,6 +916,36 @@ interfaces_config:
           - name: "stock_comment_detail_zlkp_jgcyd_em"
             enabled: true
             priority: 5
+            markets: ["SH", "SZ", "BJ"]
+          
+          - name: "stock_hot_rank_em"
+            enabled: true
+            priority: 6
+            markets: ["SH", "SZ", "BJ"]
+          
+          - name: "stock_hot_rank_detail_em"
+            enabled: true
+            priority: 7
+            markets: ["SH", "SZ", "BJ"]
+          
+          - name: "stock_hot_follow_xq"
+            enabled: true
+            priority: 8
+            markets: ["SH", "SZ", "BJ"]
+          
+          - name: "stock_hot_deal_xq"
+            enabled: true
+            priority: 9
+            markets: ["SH", "SZ", "BJ"]
+          
+          - name: "stock_hot_tweet_xq"
+            enabled: true
+            priority: 10
+            markets: ["SH", "SZ", "BJ"]
+          
+          - name: "stock_hot_keyword_em"
+            enabled: true
+            priority: 11
             markets: ["SH", "SZ", "BJ"]
 
       news:
@@ -2425,15 +2460,16 @@ field_mappings:
   "主力成本": "main_cost"
   "机构参与度": "institution_ratio"
   "综合得分": "composite_score"
-  "关注指数": "attention_index"
-  "目前排名": "current_rank"
+  "关注指数": "attention_score"
+  "目前排名": "popularity_rank"
   "上升": "rise_count"
   
   # 情绪相关字段
   "当日意愿上升": "participation_desire_daily"
   "5日平均参与意愿变化": "participation_desire_5d_avg"
   "用户关注指数": "user_focus_index"
-  "评分": "comprehensive_score"
+  "评分": "sentiment_score"
+  "综合得分": "composite_score"
   "排名": "rank"
 
   # ESG数据
@@ -2617,6 +2653,10 @@ field_mappings:
   "人气排名": "popularity_rank"
   "新晋粉丝": "new_fans"
   "铁杆粉丝": "loyal_fans"
+  "综合热度": "search_heat"
+  "热度": "keyword_heat"
+  "关注": "follow_count"
+  "概念名称": "concept_name"
 
   # 公司基本信息 (company_profile)
   "公司名称": "full_name"
@@ -2762,4 +2802,3 @@ parameter_mappings:
         ranking_type:
           valid_values: ["本周新增", "最热门"]
           default_value: "最热门"
-          format: "YYYYMMDD"
