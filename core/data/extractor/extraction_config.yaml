@@ -923,44 +923,34 @@ interfaces_config:
         merge_options:
           data_quality_priority: "highest"  # 按接口优先级，优先选择优先级高的接口
         interfaces:
-          - name: "stock_financial_abstract_ths"
+          - name: "stock_financial_analysis_indicator_em"
             enabled: true
             priority: 1
             markets: ["SH", "SZ", "BJ"]
           
-          - name: "stock_financial_analysis_indicator_em"
-            enabled: true
-            priority: 2
-            markets: ["SH", "SZ", "BJ"]
-          
-          - name: "stock_yjkb_em"
-            enabled: true
-            priority: 3
-            markets: ["SH", "SZ", "BJ"]
-          
-          - name: "stock_zcfz_em"
-            enabled: true
-            priority: 4
-            markets: ["SH", "SZ", "BJ"]
-          
           - name: "stock_financial_hk_analysis_indicator_em"
             enabled: true
-            priority: 5
+            priority: 2
             markets: ["HK"]
           
           - name: "stock_financial_us_analysis_indicator_em"
             enabled: true
-            priority: 6
+            priority: 3
             markets: ["US"]
           
+          - name: "stock_financial_abstract_ths"
+            enabled: true   # 重新启用：只使用正常字段
+            priority: 2
+            markets: ["SH", "SZ", "BJ"]
+          
           - name: "stock_financial_report_sina"
-            enabled: true
-            priority: 7
+            enabled: false  # 禁用：不包含eps/bps字段
+            priority: 5
             markets: ["SH", "SZ", "BJ"]
           
           - name: "stock_financial_us_report_em"
             enabled: true
-            priority: 8
+            priority: 6
             markets: ["US"]
 
       detailed_financials:
@@ -1996,6 +1986,50 @@ field_mappings:
   "主营业务": "main_business"
   "入选指数成员": "index_membership"
 
+  # 基础财务指标字段映射
+  # 注意：以下字段在某些接口中可能返回False值，已移除
+  # "基本每股收益": "eps"  # 移除：返回False值
+  # "每股收益": "eps"      # 移除：返回False值  
+  "每股净资产": "bps"      # 重新启用：有正常数值
+  "净资产收益率": "roe"    # 重新启用：有正常数值
+  "净资产收益率-摊薄": "roe"  # 新增：有正常数值
+  "销售毛利率": "gross_profit_margin"
+  "毛利率": "gross_profit_margin"
+  "销售净利率": "net_profit_margin"
+  "净利率": "net_profit_margin"
+  "流动比率": "current_ratio"
+  "速动比率": "quick_ratio"
+  "资产负债率": "debt_to_asset_ratio"
+  "股息率": "dividend_yield"
+  "报告期": "report_date"
+  "报告类型": "report_type"
+  
+  # 英文字段映射（来自接口返回）
+  # EPS相关字段（按优先级排序）
+  "EPSJB": "eps"           # 基本每股收益（主要）
+  "BASIC_EPS": "eps"       # 基本每股收益（港股）
+  "EPSKCJB": "eps"         # 扣非每股收益（备选）
+  "EPSXS": "eps"           # 稀释每股收益（备选）
+  "DILUTED_EPS": "eps"     # 稀释每股收益（港股）
+  
+  # BPS相关字段（按优先级排序）
+  "BPS": "bps"             # 每股净资产（主要）
+  
+  # ROE相关字段
+  "ROEJQ": "roe"           # 净资产收益率
+  "ROEKCJQ": "roe"         # 扣非净资产收益率
+  
+  # 其他财务指标
+  "XSMLL": "gross_profit_margin"    # 销售毛利率
+  "XSJLL": "net_profit_margin"      # 销售净利率
+  "LD": "current_ratio"             # 流动比率
+  "SD": "quick_ratio"               # 速动比率
+  "ZCFZL": "debt_to_asset_ratio"    # 资产负债率
+  
+  # 日期字段
+  "REPORT_DATE": "report_date"
+  "REPORT_TYPE": "report_type"
+
   # 指数相关
   "指数代码": "index_code"
   "指数名称": "index_name"
@@ -2182,7 +2216,7 @@ field_mappings:
   "净利润同比增长率": "net_profit_yoy"
   "扣非净利润同比增长率": "non_recurring_profit_yoy"
   "营业总收入同比增长率": "operating_income_yoy"
-  "基本每股收益": "eps"
+  # "基本每股收益": "eps"  # 已移除：返回False值
   "每股资本公积金": "capital_reserve_per_share"
   "每股未分配利润": "retained_earnings_per_share"
   "每股经营现金流": "operating_cash_flow_per_share"
@@ -2302,7 +2336,7 @@ field_mappings:
   "SECURITY_NAME_ABBR": "security_name"
   "REPORT_DATE": "report_date"
   "BPS": "bps"
-  "BASIC_EPS": "eps"
+  # "BASIC_EPS": "eps"  # 已在上面定义，避免重复
   "ROE_AVG": "roe"
   "GROSS_PROFIT_RATIO": "gross_profit_margin"
   "NET_PROFIT_RATIO": "net_profit_margin"
@@ -2310,7 +2344,7 @@ field_mappings:
   "DEBT_ASSET_RATIO": "debt_to_asset_ratio"
   
   # stock_financial_us_analysis_indicator_em接口的字段映射
-  "BASIC_EPS": "eps"
+  # "BASIC_EPS": "eps"  # 已在上面定义，避免重复
   "ROE_AVG": "roe"
   "GROSS_PROFIT_RATIO": "gross_profit_margin"
   "NET_PROFIT_RATIO": "net_profit_margin"
