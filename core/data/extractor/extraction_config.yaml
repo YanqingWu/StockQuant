@@ -70,15 +70,16 @@ standard_fields:
         - suspended                          # 是否停牌
 
       financing:
-        - date                               # 日期
+        - symbol                             # 股票代码
+        - date                               # 日期（仅上交所）
         - margin_balance                     # 融资余额
-        - short_balance                      # 融券余量
+        - short_balance                      # 融券余额（金额，仅深交所）
+        - short_balance_volume               # 融券余量（股数）
         - margin_buy_amount                  # 融资买入额
-        - margin_repay_amount                # 融资偿还额
+        - margin_repay_amount                # 融资偿还额（仅上交所明细）
         - short_sell_amount                  # 融券卖出量
-        - short_repay_amount                 # 融券偿还量
-        - net_margin_change                  # 融资净变化
-        - net_short_change                   # 融券净变化
+        - short_repay_amount                 # 融券偿还量（仅上交所明细）
+        - short_balance_amount               # 融券余量金额（仅上交所汇总）
         - margin_trading_balance             # 融资融券余额
 
       cost_distribution:
@@ -804,25 +805,29 @@ interfaces_config:
           data_quality_priority: "most_complete"  # highest, latest, most_complete
           handle_date_gaps: "keep_all"  # keep_all, fill_gaps, latest_only
         interfaces:
+          - name: "stock_margin_sse"
+            enabled: true
+            priority: 0
+            markets: ["SH"]
+            description: "上交所融资融券汇总数据"
+          
+          - name: "stock_margin_detail_sse"
+            enabled: true
+            priority: 1
+            markets: ["SH"]
+            description: "上交所融资融券明细数据"
+          
           - name: "stock_margin_szse"
             enabled: true
             priority: 0
             markets: ["SZ"]
+            description: "深交所融资融券汇总数据"
           
           - name: "stock_margin_detail_szse"
             enabled: true
             priority: 1
             markets: ["SZ"]
-
-          - name: "stock_margin_underlying_info_szse"
-            enabled: true
-            priority: 1
-            markets: ["SZ"]
-          
-          - name: "stock_margin_sse"
-            enabled: true
-            priority: 0
-            markets: ["SH"]
+            description: "深交所融资融券明细数据"
 
       cost_distribution:
         description: "成本分布数据"
@@ -2581,10 +2586,10 @@ field_mappings:
   "融资偿还额": "margin_repay_amount"
   "融券余量": "short_balance_volume"
   "融券余量金额": "short_balance_amount"
-  "融券卖出量": "short_sell_volume"
-  "融券偿还量": "short_repay_volume"
+  "融券卖出量": "short_sell_amount"
+  "融券偿还量": "short_repay_amount"
   "融券余额": "short_balance"
-  "融资融券余额": "total_margin_balance"
+  "融资融券余额": "margin_trading_balance"
 
   # 技术分析和排名
   "技术排名": "technical_rank"
