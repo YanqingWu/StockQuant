@@ -288,6 +288,7 @@ standard_fields:
         - rating                             # 评级
         - rating_change                      # 评级变动
         - target_price                       # 目标价
+        - target_price_upper                 # 目标价上限
         - industry                           # 所属行业
         - title                              # 报告标题
         - summary                            # 摘要
@@ -295,6 +296,10 @@ standard_fields:
         - report_link                        # 报告PDF链接
         - eps_forecast                       # 盈利预测-收益
         - pe_forecast                        # 盈利预测-市盈率
+        - eps_forecast_2026                  # 2026年盈利预测-收益
+        - pe_forecast_2026                   # 2026年盈利预测-市盈率
+        - eps_forecast_2027                  # 2027年盈利预测-收益
+        - pe_forecast_2027                   # 2027年盈利预测-市盈率
 
       analyst_rating:
         - symbol                             # 股票代码
@@ -1806,16 +1811,31 @@ field_mappings:
   
   # research_and_analyst 接口字段映射
   "股票代码": "symbol"
-  "股票名称": "name"
+  "股票简称": "stock_name"
+  "股票名称": "stock_name"
+  "证券代码": "symbol"
+  "证券简称": "stock_name"
   "报告名称": "title"
   "东财评级": "rating"
+  "投资评级": "rating"
   "机构": "institution"
+  "研究机构简称": "institution"
   "近一月个股研报数": "report_count"
   "2025-盈利预测-收益": "eps_forecast"
   "2025-盈利预测-市盈率": "pe_forecast"
+  "2026-盈利预测-收益": "eps_forecast_2026"
+  "2026-盈利预测-市盈率": "pe_forecast_2026"
+  "2027-盈利预测-收益": "eps_forecast_2027"
+  "2027-盈利预测-市盈率": "pe_forecast_2027"
   "行业": "industry"
   "日期": "report_date"
+  "发布日期": "report_date"
   "报告PDF链接": "report_link"
+  "目标价格-下限": "target_price"
+  "目标价格-上限": "target_price_upper"
+  "研究员名称": "analyst"
+  "分析师": "analyst"
+  "评级变化": "rating_change"
   "主营业务": "main_business"
   "产品类型": "product_type"
   "产品名称": "product_name"
