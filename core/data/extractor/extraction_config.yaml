@@ -149,13 +149,6 @@ standard_fields:
         - price_change_pct                   # 涨跌幅
         - turnover_rate                      # 换手率
 
-      unusual_activity:                    # 个股异动数据
-        - symbol                             # 股票代码
-        - date                               # 日期
-        - time                               # 时间
-        - unusual_type                       # 异动类型
-        - related_info                       # 相关信息
-        - sector                             # 所属板块
 
       news:
         - symbol                             # 股票代码
@@ -892,14 +885,6 @@ interfaces_config:
             markets: ["SH", "SZ", "BJ"]
             description: "人气榜历史趋势"
 
-      unusual_activity:
-        description: "个股异动数据"
-        interfaces:
-          - name: "stock_changes_em"
-            enabled: true
-            priority: 1
-            markets: ["SH", "SZ", "BJ"]
-            description: "盘口异动数据"
           
           - name: "stock_hot_follow_xq"
             enabled: true
@@ -1724,10 +1709,6 @@ field_mappings:
   "停牌": "suspend_count"
   "复牌": "resume_count"
   
-  # 个股异动字段映射
-  "时间": "time"
-  "板块": "unusual_type"
-  "相关信息": "related_info"
   
   
   # stock_institute_hold_detail 接口字段映射
