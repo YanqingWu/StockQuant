@@ -46,6 +46,7 @@ standard_fields:
 
     daily_market:
       quote:
+        - symbol                             # 股票代码
         - date                               # 日期
         - open                               # 开盘
         - high                               # 最高
@@ -83,6 +84,7 @@ standard_fields:
         - margin_trading_balance             # 融资融券余额
 
       cost_distribution:
+        - symbol                             # 股票代码
         - date                               # 日期
         - profit_ratio                       # 获利比例
         - loss_ratio                         # 套牢比例
@@ -156,6 +158,7 @@ standard_fields:
 
     financials:
       balance_sheet:
+        - symbol                             # 股票代码
         - report_date                        # 报告期
         - report_type                        # 报告类型（年报/中报/一季报/三季报）
         - symbol                             # 股票代码
@@ -439,6 +442,7 @@ standard_fields:
 
     market_valuation:
       overall_metrics:                   # 整体估值指标
+        - symbol                             # 股票代码
         - date                               # 日期
         - pe_percentile                      # 市盈率分位数
         - pb_percentile                      # 市净率分位数
@@ -447,6 +451,7 @@ standard_fields:
         - historical_comparison              # 历史比较（可选）
 
       index_valuation:                   # 指数估值
+        - symbol                             # 股票代码
         - date                               # 日期
         - index_code                         # 指数代码
         - index_name                         # 指数名称
@@ -457,6 +462,7 @@ standard_fields:
 
     esg_data:
       esg_rating:                        # ESG评级
+        - symbol                             # 股票代码
         - date                               # 日期
         - esg_score                          # ESG总分
         - environment_score                  # 环境得分
@@ -469,6 +475,7 @@ standard_fields:
 
     block_trading:
       daily_summary:                     # 大宗交易日度汇总
+        - symbol                             # 股票代码
         - date                               # 日期
         - transaction_count                  # 交易笔数
         - total_volume                       # 总成交量
@@ -477,6 +484,7 @@ standard_fields:
         - premium_rate                       # 溢价率（可选）
 
       individual_transaction:            # 个股大宗交易
+        - symbol                             # 股票代码
         - date                               # 日期
         - block_trade_price                  # 大宗交易价格
         - block_trade_volume                 # 大宗交易数量
@@ -488,12 +496,14 @@ standard_fields:
     
     market_sentiment:
       sentiment_indicators:              # 市场情绪指标
+        - symbol                             # 股票代码
         - date                               # 日期
         - sentiment_index                    # 情绪指数
         - confidence_level                   # 信心水平（可选）
         - fear_greed_index                   # 恐惧贪婪指数（可选）
 
       market_activity:                   # 市场活跃度
+        - symbol                             # 股票代码
         - date                               # 日期
         - activity_index                     # 活跃度指数
         - participation_rate                 # 参与率
@@ -501,6 +511,7 @@ standard_fields:
         - price_activity                     # 价格活跃度（可选）
 
       unusual_activity:                  # 异动数据
+        - symbol                             # 股票代码
         - date                               # 日期
         - unusual_type                       # 异动类型
         - trigger_condition                  # 触发条件
@@ -521,6 +532,7 @@ standard_fields:
         - expected_return                    # 预期收益率（可选）
 
       performance:                       # 新股表现
+        - symbol                             # 股票代码
         - date                               # 日期
         - days_since_ipo                     # 上市天数
         - first_day_return                   # 首日收益率
@@ -529,6 +541,7 @@ standard_fields:
 
     repurchase:
       repurchase_plan:                   # 回购计划
+        - symbol                             # 股票代码
         - announcement_date                  # 公告日期
         - plan_amount_min                    # 计划回购金额下限
         - plan_amount_max                    # 计划回购金额上限
@@ -538,6 +551,7 @@ standard_fields:
         - implementation_period              # 实施期限
 
       repurchase_progress:               # 回购进展
+        - symbol                             # 股票代码
         - date                               # 日期
         - cumulative_amount                  # 累计回购金额
         - cumulative_volume                  # 累计回购数量
