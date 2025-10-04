@@ -239,10 +239,8 @@ standard_fields:
       institutional_holdings:            # 机构持仓（包含基金、保险、券商等）
         - symbol                             # 股票代码
         - report_date                        # 报告期
-        - institution_type                   # 机构类型（基金、保险、券商等）
         - institution_code                   # 机构代码
         - institution_name                   # 机构名称
-        - institution_full_name              # 机构全称
         - holding_shares                     # 持股数量
         - holding_ratio                      # 持股比例
         - holding_value                      # 持股市值
@@ -2556,6 +2554,12 @@ field_mappings:
   "股本性质": "share_type"
   "股东说明": "shareholder_description"
   "机构数变化": "institution_count_change"
+  "持股比例增幅": "holding_change_ratio"
+  "占流通股比例增幅": "circulating_ratio_change"
+  "股东总数": "total_shareholders"
+  "平均持股数": "avg_holding_shares"
+  "公告日期": "announcement_date"
+  "截至日期": "report_date"
   "持有基金数量": "holding_fund_count"
   "持有基金家数": "holding_fund_count"
   "总持股数量": "total_holding_shares"
