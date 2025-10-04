@@ -1427,6 +1427,10 @@ class Extractor:
     def get_volume_shrink_ranking(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
         """获取创新缩量股票排名"""
         return self._execute_interface("stock", "technical_analysis.volume_shrink", params)
+
+    def get_stock_valuation(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取个股估值数据"""
+        return self._execute_interface("stock", "valuation", params)
     
     # ==================== 工具方法 ====================
     

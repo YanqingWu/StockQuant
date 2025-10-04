@@ -397,25 +397,20 @@ standard_fields:
         - target_price_lower                 # 目标价格下限
         - target_price_upper                 # 目标价格上限
 
-    market_valuation:
-      overall_metrics:                   # 整体估值指标
-        - symbol                             # 股票代码
-        - date                               # 日期
-        - pe_percentile                      # 市盈率分位数
-        - pb_percentile                      # 市净率分位数
-        - dividend_yield_percentile          # 股息率分位数（可选）
-        - valuation_level                    # 估值水平（高估/合理/低估）
-        - historical_comparison              # 历史比较（可选）
-
-      index_valuation:                   # 指数估值
-        - symbol                             # 股票代码
-        - date                               # 日期
-        - index_code                         # 指数代码
-        - index_name                         # 指数名称
-        - pe                                 # 市盈率
-        - pb                                 # 市净率
-        - dividend_yield                     # 股息率
-        - roe                                # 净资产收益率（可选）
+    valuation:                          # 个股估值数据
+      - symbol                             # 股票代码
+      - date                               # 日期
+      - pe_dynamic                         # 动态市盈率
+      - pe_ttm                             # 滚动市盈率
+      - pe_static                          # 静态市盈率
+      - pb                                 # 市净率
+      - peg_ratio                          # PEG比率
+      - price_to_cash_flow                 # 市现率
+      - price_to_sales                     # 市销率
+      - total_market_cap                   # 总市值
+      - circulating_market_cap             # 流通市值
+      - total_shares                       # 总股本
+      - circulating_shares                 # 流通股本
 
     esg_data:
       esg_rating:                        # ESG评级
@@ -1195,6 +1190,21 @@ interfaces_config:
             markets: ["SH", "SZ"]
             description: "创新缩量股票列表"
 
+    valuation:
+      description: "个股估值数据"
+      interfaces:
+        - name: "stock_cy_a_spot_em"
+          enabled: true
+          priority: 1
+          markets: ["SZ"]
+          description: "创业板行情数据-包含估值指标"
+        
+        - name: "stock_value_em"
+          enabled: true
+          priority: 2
+          markets: ["SH", "SZ", "BJ"]
+          description: "东方财富估值分析-详细估值指标"
+
     research_and_analyst:
       research_reports:
         description: "研报数据（合并研究报告和分析师评级）"
@@ -1240,29 +1250,6 @@ interfaces_config:
           - name: "stock_rank_forecast_cninfo"
             enabled: true
             priority: 3
-            markets: ["SH", "SZ", "BJ"]
-
-      opinions:
-        description: "机构观点"
-        interfaces:
-          - name: "stock_hot_deal_xq"
-            enabled: true
-            priority: 1
-            markets: ["SH", "SZ", "BJ"]
-          
-          - name: "stock_hot_follow_xq"
-            enabled: true
-            priority: 2
-            markets: ["SH", "SZ", "BJ"]
-          
-          - name: "stock_hot_tweet_xq"
-            enabled: true
-            priority: 3
-            markets: ["SH", "SZ", "BJ"]
-          
-          - name: "stock_hot_keyword_em"
-            enabled: true
-            priority: 4
             markets: ["SH", "SZ", "BJ"]
 
   market:
@@ -1416,20 +1403,6 @@ interfaces_config:
           priority: 1
           markets: ["SH", "SZ"]
 
-    market_valuation:
-      description: "市场估值数据"
-      interfaces:
-        - name: "stock_a_all_pb"
-          enabled: true
-          priority: 1
-          markets: ["SH", "SZ"]
-          description: "全部A股市净率数据"
-        
-        - name: "stock_zh_index_value_csindex"
-          enabled: true
-          priority: 2
-          markets: ["SH", "SZ"]
-          description: "中证指数估值数据"
 
     esg_data:
       description: "ESG数据"
@@ -2674,6 +2647,19 @@ field_mappings:
   "成交量": "volume"
   "股票简称": "name"
   "所属行业": "industry"
+  
+  # 估值相关字段映射
+  "市盈率-动态": "pe_dynamic"
+  "PE(TTM)": "pe_ttm"
+  "PE(静)": "pe_static"
+  "市净率": "pb"
+  "PEG值": "peg_ratio"
+  "市现率": "price_to_cash_flow"
+  "市销率": "price_to_sales"
+  "总市值": "total_market_cap"
+  "流通市值": "circulating_market_cap"
+  "总股本": "total_shares"
+  "流通股本": "circulating_shares"
   "预测年份": "year"
   "每股收益预测": "eps_forecast"
   "营业收入预测": "revenue_forecast"
