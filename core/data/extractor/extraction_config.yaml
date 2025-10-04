@@ -253,7 +253,7 @@ standard_fields:
         - share_type                         # 股本性质
         - shareholder_description            # 股东说明
 
-      hsgt_ranking:                      # 沪深港通排行（股票视角）
+      hsgt_holdings:                      # 沪深港通（股票视角）
         - symbol                             # 股票代码
         - date                               # 日期
         - rank                               # 排名
@@ -261,6 +261,7 @@ standard_fields:
         - holding_value                      # 持股市值
         - holding_ratio                      # 持股比例
         - net_buy_amount                     # 净买入金额
+        - holding_change_shares              # 持股变化数量
 
     events:
       major_contracts:                   # 重大合同明细
@@ -1118,8 +1119,8 @@ interfaces_config:
             priority: 5
             markets: ["SH", "SZ", "BJ"]
 
-      hsgt_ranking:
-        description: "沪深港通排行"
+      hsgt_holdings:
+        description: "沪深港通持仓"
         interfaces:
           - name: "stock_hsgt_individual_em"
             enabled: true
@@ -2565,10 +2566,23 @@ field_mappings:
   "总持股数量": "total_holding_shares"
   "持股总数": "total_holding_shares"
   "总持股市值": "total_holding_value"
-  "总持股比例": "total_holding_ratio"
-  "总持股比例(汇总)": "total_circulating_ratio"
-  "占流通股本比例(汇总)": "circulating_share_ratio_summary"
-  "持股变化": "holding_change"
+  
+  # 沪深港通相关字段映射
+  "持股日期": "date"
+  "序号": "rank"
+  "代码": "symbol"
+  "股票代码": "symbol"
+  "持股数量": "holding_quantity"
+  "持股市值": "holding_value"
+  "今日持股-股数": "holding_quantity"
+  "今日持股-市值": "holding_value"
+  "今日持股-占流通股比": "holding_ratio"
+  "持股数量占A股百分比": "holding_ratio"
+  "持股数量占发行股百分比": "holding_ratio"
+  "今日增持资金": "net_buy_amount"
+  "5日增持估计-市值": "net_buy_amount"
+  "今日增持股数": "holding_change_shares"
+  "5日增持估计-股数": "holding_change_shares"
   "持股变动数值": "holding_change_amount"
   "持股变动比例": "holding_change_ratio"
   "机构数": "institute_count"

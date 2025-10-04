@@ -1335,6 +1335,10 @@ class Extractor:
         """获取机构持仓数据（包含基金、保险、券商等大资金）"""
         return self._execute_interface("stock", "holdings.institutional_holdings", params)
     
+    def get_stock_hsgt_holdings(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取沪深港通持仓数据"""
+        return self._execute_interface("stock", "holdings.hsgt_holdings", params)
+    
     # 研究分析数据
     def get_stock_research_report(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
         """获取研究报告数据"""
