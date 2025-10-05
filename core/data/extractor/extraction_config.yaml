@@ -485,6 +485,7 @@ standard_fields:
       - name                               # 股票简称
 
     market_overview:
+      # 核心市场数据字段
       - date                               # 日期
       - exchange                           # 交易所（SSE/SZSE 等）
       - stock_count                        # 上市公司数量
@@ -492,6 +493,34 @@ standard_fields:
       - total_market_cap                   # 总市值
       - circulating_market_cap             # 流通市值
       - circulating_shares                 # 流通股本
+      
+      # 投资者相关数据
+      - investor_count                     # 投资者总数
+      - new_investor_count                 # 新增投资者数量
+      - investor_growth_rate               # 投资者增长率
+      
+      # 市场估值指标
+      - market_cap_to_gdp_ratio            # 市值GDP比值（巴菲特指数）
+      - pe_ratio_ttm                       # 滚动市盈率
+      - pb_ratio                           # 市净率
+      
+      # 市场活跃度指标
+      - rising_count                       # 上涨股票数量
+      - falling_count                      # 下跌股票数量
+      - limit_up_count                     # 涨停股票数量
+      - limit_down_count                   # 跌停股票数量
+      - real_limit_up_count                # 真实涨停数量
+      
+      # 资金流向指标
+      - main_net_inflow                    # 主力净流入
+      - main_net_inflow_ratio              # 主力净流入占比
+      - large_net_inflow                   # 超大单净流入
+      - large_net_inflow_ratio             # 超大单净流入占比
+      
+      # 市场情绪指标
+      - market_sentiment_score             # 市场情绪评分
+      - volatility_index                   # 波动率指数
+      - fear_greed_index                   # 恐慌贪婪指数
 
     market_indices:
       - date                               # 日期
@@ -1287,6 +1316,7 @@ interfaces_config:
     market_overview:
       description: "市场概览"
       interfaces:
+        # 基础市场数据
         - name: "stock_sse_summary"
           enabled: true
           priority: 1
@@ -1297,7 +1327,35 @@ interfaces_config:
           enabled: true
           priority: 2
           markets: ["SZ"]
-          post_processor: "convert_market_summary_to_columns"
+          post_processor: "convert_szse_summary_to_market_overview"
+        
+        # 投资者统计
+        - name: "stock_account_statistics_em"
+          enabled: true
+          priority: 3
+          markets: ["SH", "SZ"]
+          post_processor: "convert_account_statistics_to_market_overview"
+        
+        # 市场估值指标
+        - name: "stock_buffett_index_lg"
+          enabled: true
+          priority: 4
+          markets: ["SH", "SZ"]
+          post_processor: "convert_buffett_index_to_market_overview"
+        
+        # 市场活跃度
+        - name: "stock_market_activity_legu"
+          enabled: true
+          priority: 5
+          markets: ["SH", "SZ"]
+          post_processor: "convert_market_activity_to_market_overview"
+        
+        # 资金流向
+        - name: "stock_market_fund_flow"
+          enabled: true
+          priority: 6
+          markets: ["SH", "SZ"]
+          post_processor: "convert_fund_flow_to_market_overview"
 
     market_indices:
       description: "市场指数"
@@ -1666,6 +1724,14 @@ interfaces_config:
 
 
 field_mappings:
+
+  # 市场情绪字段映射
+  "周期": "period"
+  "看涨": "bullish_count"
+  "看跌": "bearish_count"
+  "看涨比例": "bullish_ratio"
+  "看跌比例": "bearish_ratio"
+
   # 通用标识与名称
   "code": "symbol"
   "代码": "symbol"
