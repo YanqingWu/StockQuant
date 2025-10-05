@@ -1269,7 +1269,7 @@ class Extractor:
         
         return merged
 
-    # ==================== 股票相关接口 ====================
+    # ==================== 股票相关接口 (STOCK) ====================
     
     # 股票基础信息
     def get_stock_profile(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
@@ -1326,6 +1326,7 @@ class Extractor:
         """获取分红数据"""
         return self._execute_interface("stock", "financials.dividend", params)
     
+    # 股票持仓数据
     def get_stock_institutional_holdings(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
         """获取机构持仓数据（包含基金、保险、券商等大资金）"""
         return self._execute_interface("stock", "holdings.institutional_holdings", params)
@@ -1334,7 +1335,7 @@ class Extractor:
         """获取沪深港通持仓数据"""
         return self._execute_interface("stock", "holdings.hsgt_holdings", params)
     
-    # 研究分析数据
+    # 股票研究分析数据
     def get_stock_research_reports(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
         """获取研报数据"""
         return self._execute_interface("stock", "research_and_analyst.research_reports", params)
@@ -1347,32 +1348,7 @@ class Extractor:
         """获取机构观点数据"""
         return self._execute_interface("stock", "research_and_analyst.opinions", params)
     
-    # ==================== 市场相关接口 ====================
-    
-    # 市场股票列表
-    def get_stock_list(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """获取市场股票列表"""
-        return self._execute_interface("market", "stock_list", params)
-    
-    # 市场概览
-    def get_market_overview(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """获取市场概览数据"""
-        return self._execute_interface("market", "market_overview", params)
-    
-    def get_market_indices(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """获取市场指数数据"""
-        return self._execute_interface("market", "market_indices", params)
-    
-    def get_market_activity(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """获取市场活跃度数据"""
-        return self._execute_interface("market", "market_activity", params)
-    
-    def get_market_sentiment(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """获取市场情绪数据"""
-        return self._execute_interface("market", "market_sentiment", params)
-    
-    
-    # 技术分析
+    # 股票技术分析
     def get_innovation_high_ranking(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
         """获取创新高股票排名"""
         return self._execute_interface("stock", "technical_analysis.innovation_high", params)
@@ -1401,7 +1377,53 @@ class Extractor:
         """获取个股估值数据"""
         return self._execute_interface("stock", "valuation", params)
     
-    # ==================== 板块数据 ====================
+    # 股票大宗交易数据
+    def get_stock_block_trading(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取个股大宗交易数据"""
+        return self._execute_interface("stock", "block_trading", params)
+
+    # ==================== 市场相关接口 (MARKET) ====================
+    
+    # 市场基础数据
+    def get_stock_list(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取市场股票列表"""
+        return self._execute_interface("market", "stock_list", params)
+    
+    def get_market_overview(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取市场概览数据"""
+        return self._execute_interface("market", "market_overview", params)
+    
+    def get_market_indices(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取市场指数数据"""
+        return self._execute_interface("market", "market_indices", params)
+    
+    def get_market_activity(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取市场活跃度数据"""
+        return self._execute_interface("market", "market_activity", params)
+    
+    def get_market_sentiment(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取市场情绪数据"""
+        return self._execute_interface("market", "market_sentiment", params)
+    
+    # 市场资金流向数据
+    def get_market_fund_flow(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取市场级别资金流向数据"""
+        return self._execute_interface("market", "fund_flow.market_level", params)
+    
+    def get_hsgt_fund_flow(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取沪深港通资金流向数据"""
+        return self._execute_interface("market", "fund_flow.hsgt_flow", params)
+    
+    def get_big_deal_tracking(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取大单追踪数据"""
+        return self._execute_interface("market", "fund_flow.big_deal_tracking", params)
+
+    # 市场大宗交易数据
+    def get_market_block_trading(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取市场大宗交易统计数据"""
+        return self._execute_interface("market", "block_trading", params)
+    
+    # 市场板块数据
     def get_sector_quote(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
         """获取行业板块行情数据"""
         return self._execute_interface("market", "sector_data.sector_quote", params)
@@ -1414,7 +1436,7 @@ class Extractor:
         """获取行业板块资金流向数据"""
         return self._execute_interface("market", "sector_data.sector_fund_flow", params)
     
-    # ==================== 概念数据 ====================
+    # 市场概念数据
     def get_concept_quote(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
         """获取概念板块行情数据"""
         return self._execute_interface("market", "concept_data.concept_quote", params)
@@ -1455,28 +1477,6 @@ class Extractor:
             标准字段列表
         """
         return self.config.get_standard_fields(category, data_type)
-    
-    # ==================== 资金流向数据 ====================
-    def get_market_fund_flow(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """获取市场级别资金流向数据"""
-        return self._execute_interface("market", "fund_flow.market_level", params)
-    
-    def get_hsgt_fund_flow(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """获取沪深港通资金流向数据"""
-        return self._execute_interface("market", "fund_flow.hsgt_flow", params)
-    
-    def get_big_deal_tracking(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """获取大单追踪数据"""
-        return self._execute_interface("market", "fund_flow.big_deal_tracking", params)
-
-    # ==================== 大宗交易数据 ====================
-    def get_stock_block_trading(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """获取个股大宗交易数据"""
-        return self._execute_interface("stock", "block_trading", params)
-
-    def get_market_block_trading(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """获取市场大宗交易统计数据"""
-        return self._execute_interface("market", "block_trading", params)
 
     def reload_config(self) -> None:
         """重新加载配置文件"""
