@@ -162,3 +162,129 @@ def convert_item_value_to_columns(data: Any) -> Any:
     except Exception as e:
         logger.error(f"item-value格式转换失败: {e}")
         return data  # 失败时返回原数据
+
+
+def convert_sector_quote_to_columns(data: Any) -> Any:
+    """
+    板块行情数据格式转换（字段映射由全局field_mappings处理）
+    
+    适用于stock_board_industry_name_em和stock_board_concept_name_em接口
+    只做数据格式转换，字段映射由全局field_mappings处理
+    
+    Args:
+        data: 原始数据（通常是DataFrame）
+        
+    Returns:
+        转换后的数据（保持相同类型）
+    """
+    if not isinstance(data, pd.DataFrame):
+        logger.debug("数据不是DataFrame类型，跳过板块行情转换")
+        return data
+    
+    if data.empty:
+        logger.debug("DataFrame为空，跳过转换")
+        return data
+    
+    try:
+        logger.debug(f"开始处理板块行情数据，原始数据形状: {data.shape}")
+        logger.debug(f"原始数据列名: {data.columns.tolist()}")
+        
+        # 检查是否是板块行情格式
+        if '板块代码' not in data.columns or '板块名称' not in data.columns:
+            logger.debug("DataFrame不包含板块相关列，跳过转换")
+            return data
+        
+        # 添加板块类型标识
+        data = data.copy()
+        data['sector_type'] = "行业" if "industry" in str(data.columns).lower() else "概念"
+        
+        logger.debug(f"成功添加板块类型标识，数据形状: {data.shape}")
+        return data
+        
+    except Exception as e:
+        logger.error(f"转换板块行情格式时出错: {e}")
+        return data
+
+
+def convert_constituent_quotes_to_columns(data: Any) -> Any:
+    """
+    成分股行情数据格式转换（字段映射由全局field_mappings处理）
+    
+    适用于stock_board_industry_cons_em和stock_board_concept_cons_em接口
+    只做数据格式转换，字段映射由全局field_mappings处理
+    
+    Args:
+        data: 原始数据（通常是DataFrame）
+        
+    Returns:
+        转换后的数据（保持相同类型）
+    """
+    if not isinstance(data, pd.DataFrame):
+        logger.debug("数据不是DataFrame类型，跳过成分股行情转换")
+        return data
+    
+    if data.empty:
+        logger.debug("DataFrame为空，跳过转换")
+        return data
+    
+    try:
+        logger.debug(f"开始处理成分股行情数据，原始数据形状: {data.shape}")
+        logger.debug(f"原始数据列名: {data.columns.tolist()}")
+        
+        # 检查是否是成分股行情格式
+        if '代码' not in data.columns or '名称' not in data.columns:
+            logger.debug("DataFrame不包含成分股相关列，跳过转换")
+            return data
+        
+        # 添加板块类型标识
+        data = data.copy()
+        data['sector_type'] = "行业" if "industry" in str(data.columns).lower() else "概念"
+        
+        logger.debug(f"成功添加板块类型标识，数据形状: {data.shape}")
+        return data
+        
+    except Exception as e:
+        logger.error(f"转换成分股行情格式时出错: {e}")
+        return data
+
+
+def convert_sector_fund_flow_to_columns(data: Any) -> Any:
+    """
+    板块资金流向数据格式转换（字段映射由全局field_mappings处理）
+    
+    适用于stock_fund_flow_industry和stock_fund_flow_concept接口
+    只做数据格式转换，字段映射由全局field_mappings处理
+    
+    Args:
+        data: 原始数据（通常是DataFrame）
+        
+    Returns:
+        转换后的数据（保持相同类型）
+    """
+    if not isinstance(data, pd.DataFrame):
+        logger.debug("数据不是DataFrame类型，跳过板块资金流向转换")
+        return data
+    
+    if data.empty:
+        logger.debug("DataFrame为空，跳过转换")
+        return data
+    
+    try:
+        logger.debug(f"开始处理板块资金流向数据，原始数据形状: {data.shape}")
+        logger.debug(f"原始数据列名: {data.columns.tolist()}")
+        
+        # 检查是否是板块资金流向格式
+        if '行业' not in data.columns or '流入资金' not in data.columns:
+            logger.debug("DataFrame不包含资金流向相关列，跳过转换")
+            return data
+        
+        # 添加板块类型标识
+        data = data.copy()
+        data['sector_type'] = "行业" if "industry" in str(data.columns).lower() else "概念"
+        
+        logger.debug(f"成功添加板块类型标识，数据形状: {data.shape}")
+        return data
+        
+    except Exception as e:
+        logger.error(f"转换板块资金流向格式时出错: {e}")
+        return data

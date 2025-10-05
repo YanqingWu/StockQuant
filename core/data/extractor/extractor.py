@@ -1371,36 +1371,6 @@ class Extractor:
         """获取市场情绪数据"""
         return self._execute_interface("market", "market_sentiment", params)
     
-    # 行业板块
-    def get_industry_sector_metadata(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """获取行业板块元数据"""
-        return self._execute_interface("market", "industry_sector.metadata", params)
-    
-    def get_industry_sector_quote(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """获取行业板块行情"""
-        return self._execute_interface("market", "industry_sector.quote", params)
-    
-    def get_industry_sector_constituents(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """获取行业板块成分股"""
-        return self._execute_interface("market", "industry_sector.constituents", params)
-    
-    # 概念板块
-    def get_concept_sector_metadata(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """获取概念板块元数据"""
-        return self._execute_interface("market", "concept_sector.metadata", params)
-    
-    def get_concept_sector_quote(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """获取概念板块行情"""
-        return self._execute_interface("market", "concept_sector.quote", params)
-    
-    def get_concept_sector_constituents(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """获取概念板块成分股"""
-        return self._execute_interface("market", "concept_sector.constituents", params)
-    
-    # 板块实时行情
-    def get_sector_spot_data(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
-        """获取板块实时行情"""
-        return self._execute_interface("market", "sector_spot", params)
     
     # 技术分析
     def get_innovation_high_ranking(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
@@ -1430,6 +1400,19 @@ class Extractor:
     def get_stock_valuation(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
         """获取个股估值数据"""
         return self._execute_interface("stock", "valuation", params)
+    
+    # ==================== 板块数据 ====================
+    def get_sector_quote(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取板块行情数据（行业+概念统一）"""
+        return self._execute_interface("market", "sector_data.sector_quote", params)
+    
+    def get_constituent_quotes(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取成分股行情数据"""
+        return self._execute_interface("market", "sector_data.constituent_quotes", params)
+    
+    def get_sector_fund_flow(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取板块资金流向数据"""
+        return self._execute_interface("market", "sector_data.sector_fund_flow", params)
     
     # ==================== 工具方法 ====================
     

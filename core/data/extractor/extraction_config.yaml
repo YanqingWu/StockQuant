@@ -558,39 +558,58 @@ standard_fields:
       - item_value                         # 统计项目数值
 
     sector_data:
-      industry_metadata:
-        - industry_code                      # 行业代码
-        - industry_name                      # 行业名称
-        - parent_code                        # 上级行业
-        - level                              # 分级层级
-        - description                        # 行业描述
-
-      concept_metadata:
-        - concept_code                       # 概念代码
-        - concept_name                       # 概念名称
-        - description                        # 描述
-
+      # 板块行情（行业+概念统一）
       sector_quote:
         - date                               # 日期
         - sector_code                        # 板块代码
         - sector_name                        # 板块名称
         - sector_type                        # 板块类型（行业/概念）
-        - close                              # 收盘价
+        - latest_price                       # 最新价
+        - change_amount                      # 涨跌额
         - pct_change                         # 涨跌幅
+        - total_market_cap                   # 总市值
         - turnover_rate                      # 换手率
-        - net_inflow                         # 净流入
-        - stock_count                        # 成分股数量
+        - rising_count                       # 上涨家数
+        - falling_count                      # 下跌家数
         - leader_stock_name                  # 领涨股票
         - leader_stock_pct_change            # 领涨股票-涨跌幅
 
-      sector_constituents:
+      # 成分股行情（个股详细行情数据）
+      constituent_quotes:
         - date                               # 日期
         - sector_code                        # 板块代码
         - sector_type                        # 板块类型（行业/概念）
         - symbol                             # 成分股代码
-        - weight                             # 权重（若有）
-        - in_date                            # 纳入日期（若有）
-        - out_date                           # 移出日期（若有）
+        - stock_name                         # 成分股名称
+        - latest_price                       # 最新价
+        - pct_change                         # 涨跌幅
+        - change_amount                      # 涨跌额
+        - volume                             # 成交量
+        - amount                             # 成交额
+        - amplitude                          # 振幅
+        - high                               # 最高价
+        - low                                # 最低价
+        - open                               # 开盘价
+        - close                              # 收盘价
+        - turnover_rate                      # 换手率
+        - pe_ratio                           # 市盈率
+        - pb_ratio                           # 市净率
+
+      # 板块资金流向
+      sector_fund_flow:
+        - date                               # 日期
+        - sector_code                        # 板块代码
+        - sector_name                        # 板块名称
+        - sector_type                        # 板块类型（行业/概念）
+        - sector_index                       # 板块指数
+        - pct_change                         # 涨跌幅
+        - inflow_amount                      # 流入资金
+        - outflow_amount                     # 流出资金
+        - net_amount                         # 净额
+        - stock_count                        # 公司家数
+        - leader_stock_name                  # 领涨股
+        - leader_stock_pct_change            # 领涨股-涨跌幅
+        - current_price                      # 当前价
 
     fund_flow:
       market_level:                      # 市场级别资金流向
@@ -1394,74 +1413,51 @@ interfaces_config:
           markets: ["SH", "SZ"]
           post_processor: "convert_item_value_to_columns"
 
-    industry_sector:
-      metadata:
-        description: "行业板块元数据"
+    sector_data:
+      sector_quote:
+        description: "板块行情（行业+概念统一）"
         interfaces:
-          - name: "stock_board_industry_cons_em"
+          - name: "stock_board_industry_name_em"
             enabled: true
             priority: 1
             markets: ["SH", "SZ"]
-
-      quote:
-        description: "行业板块行情"
-        interfaces:
-          - name: "stock_board_industry_cons_em"
-            enabled: true
-            priority: 1
-            markets: ["SH", "SZ"]
+            post_processor: "convert_sector_quote_to_columns"
           
-          - name: "stock_board_industry_index_ths"
+          - name: "stock_board_concept_name_em_async"
             enabled: true
             priority: 2
             markets: ["SH", "SZ"]
+            post_processor: "convert_sector_quote_to_columns"
 
-      constituents:
-        description: "行业板块成分股"
+      constituent_quotes:
+        description: "成分股行情（个股详细行情数据）"
         interfaces:
           - name: "stock_board_industry_cons_em"
             enabled: true
             priority: 1
             markets: ["SH", "SZ"]
-
-    concept_sector:
-      metadata:
-        description: "概念板块元数据"
-        interfaces:
-          - name: "stock_board_concept_cons_em"
-            enabled: true
-            priority: 1
-            markets: ["SH", "SZ"]
-
-      quote:
-        description: "概念板块行情"
-        interfaces:
-          - name: "stock_board_concept_cons_em"
-            enabled: true
-            priority: 1
-            markets: ["SH", "SZ"]
+            post_processor: "convert_constituent_quotes_to_columns"
           
-          - name: "stock_board_concept_index_ths"
+          - name: "stock_board_concept_cons_em"
             enabled: true
             priority: 2
             markets: ["SH", "SZ"]
+            post_processor: "convert_constituent_quotes_to_columns"
 
-      constituents:
-        description: "概念板块成分股"
+      sector_fund_flow:
+        description: "板块资金流向"
         interfaces:
-          - name: "stock_board_concept_cons_em"
+          - name: "stock_fund_flow_industry"
             enabled: true
             priority: 1
             markets: ["SH", "SZ"]
-
-    sector_spot:
-      description: "板块实时行情"
-      interfaces:
-        - name: "stock_sector_spot"
-          enabled: true
-          priority: 1
-          markets: ["SH", "SZ"]
-
+            post_processor: "convert_sector_fund_flow_to_columns"
+          
+          - name: "stock_fund_flow_concept"
+            enabled: true
+            priority: 2
+            markets: ["SH", "SZ"]
+            post_processor: "convert_sector_fund_flow_to_columns"
 
     esg_data:
       description: "ESG数据"
@@ -1736,6 +1732,7 @@ interfaces_config:
           description: "机构调研统计"
 
 
+
 field_mappings:
 
   # 市场情绪字段映射
@@ -1787,6 +1784,42 @@ field_mappings:
   "跌停": "limit_down_count"
   "停牌": "suspend_count"
   "复牌": "resume_count"
+  
+  # 板块行情字段映射
+  "板块代码": "sector_code"
+  "板块名称": "sector_name"
+  "最新价": "latest_price"
+  "涨跌额": "change_amount"
+  "涨跌幅": "pct_change"
+  "总市值": "total_market_cap"
+  "上涨家数": "rising_count"
+  "下跌家数": "falling_count"
+  "领涨股票": "leader_stock_name"
+  "领涨股票-涨跌幅": "leader_stock_pct_change"
+  
+  # 成分股行情字段映射
+  "名称": "stock_name"
+  "成交量": "volume"
+  "成交额": "amount"
+  "振幅": "amplitude"
+  "最高": "high"
+  "最低": "low"
+  "今开": "open"
+  "昨收": "close"
+  "市盈率-动态": "pe_ratio"
+  "市净率": "pb_ratio"
+  
+  # 板块资金流向字段映射
+  "行业": "sector_name"
+  "行业指数": "sector_index"
+  "行业-涨跌幅": "pct_change"
+  "流入资金": "inflow_amount"
+  "流出资金": "outflow_amount"
+  "净额": "net_amount"
+  "公司家数": "stock_count"
+  "领涨股": "leader_stock_name"
+  "领涨股-涨跌幅": "leader_stock_pct_change"
+  "当前价": "current_price"
   "统计日期": "date"
   
   # 市场概览字段映射
