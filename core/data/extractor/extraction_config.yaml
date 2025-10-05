@@ -541,22 +541,21 @@ standard_fields:
       - sample_count                       # 样本数量
       - pe_ttm                             # 滚动市盈率
 
-    sentiment:                             # 市场情绪数据
-      market_sentiment:                    # 市场情绪数据
-        - date                               # 日期
-        - bullish_ratio                      # 看涨比例
-        - bearish_ratio                      # 看跌比例
-        - bullish_count                      # 看涨数量
-        - bearish_count                      # 看跌数量
-        - period                             # 统计周期
+    market_sentiment:                      # 市场情绪数据
+      - date                               # 日期
+      - bullish_ratio                      # 看涨比例
+      - bearish_ratio                      # 看跌比例
+      - bullish_count                      # 看涨数量
+      - bearish_count                      # 看跌数量
+      - period                             # 统计周期
 
-      market_activity:                     # 市场活跃度数据
-        - date                               # 日期
-        - rising_count                       # 上涨数量
-        - limit_up_count                     # 涨停数量
-        - real_limit_up_count                # 真实涨停数量
-        - item_type                          # 统计项目类型
-        - item_value                         # 统计项目数值
+    market_activity:                       # 市场活跃度数据
+      - date                               # 日期
+      - rising_count                       # 上涨数量
+      - limit_up_count                     # 涨停数量
+      - real_limit_up_count                # 真实涨停数量
+      - item_type                          # 统计项目类型
+      - item_value                         # 统计项目数值
 
     sector_data:
       industry_metadata:
@@ -879,19 +878,6 @@ interfaces_config:
             enabled: true
             priority: 6
             markets: ["SH", "SZ", "BJ"]
-          
-          - name: "stock_zh_vote_baidu"
-            enabled: true
-            priority: 7
-            markets: ["SH", "SZ"]
-            description: "百度看多看空比例"
-          
-          - name: "stock_market_activity_legu"
-            enabled: true
-            priority: 8
-            markets: ["SH", "SZ"]
-            description: "市场活跃度统计"
-            post_processor: "convert_item_value_to_columns"
           
           - name: "stock_changes_em"
             enabled: true
@@ -1343,13 +1329,6 @@ interfaces_config:
           markets: ["SH", "SZ"]
           post_processor: "convert_field_mapping"
         
-        # 市场活跃度
-        - name: "stock_market_activity_legu"
-          enabled: true
-          priority: 5
-          markets: ["SH", "SZ"]
-          post_processor: "convert_item_value_to_columns"
-        
         # 资金流向
         - name: "stock_market_fund_flow"
           enabled: true
@@ -1396,6 +1375,24 @@ interfaces_config:
           enabled: true
           priority: 6
           markets: ["SH", "SZ"]
+
+    market_sentiment:
+      description: "市场情绪数据"
+      interfaces:
+        - name: "stock_zh_vote_baidu"
+          enabled: true
+          priority: 1
+          markets: ["SH", "SZ"]
+          post_processor: "convert_item_value_to_columns"
+
+    market_activity:
+      description: "市场活跃度数据"
+      interfaces:
+        - name: "stock_market_activity_legu"
+          enabled: true
+          priority: 1
+          markets: ["SH", "SZ"]
+          post_processor: "convert_item_value_to_columns"
 
     industry_sector:
       metadata:
@@ -1790,6 +1787,7 @@ field_mappings:
   "跌停": "limit_down_count"
   "停牌": "suspend_count"
   "复牌": "resume_count"
+  "统计日期": "date"
   
   # 市场概览字段映射
   "数量": "stock_count"

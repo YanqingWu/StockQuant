@@ -501,11 +501,6 @@ class Extractor:
         standard_params = to_standard_params(params)
         params_dict = standard_params.to_dict()
         
-        # 特殊处理：对于stock_us_hist接口，移除market参数
-        if category == "stock" and data_type == "daily_market.quote" and "market" in params_dict:
-            if params_dict.get("market") == "US" or (standard_params.symbol and standard_params.symbol.market == "US"):
-                logger.debug("检测到美股数据请求，移除market参数以避免stock_us_hist接口错误")
-        
         # 从参数中提取市场信息用于接口筛选
         market = None
         if standard_params.symbol and hasattr(standard_params.symbol, 'market'):
@@ -1371,6 +1366,10 @@ class Extractor:
     def get_market_activity(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
         """获取市场活跃度数据"""
         return self._execute_interface("market", "market_activity", params)
+    
+    def get_market_sentiment(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取市场情绪数据"""
+        return self._execute_interface("market", "market_sentiment", params)
     
     # 行业板块
     def get_industry_sector_metadata(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
