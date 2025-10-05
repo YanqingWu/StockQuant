@@ -1469,6 +1469,15 @@ class Extractor:
         """获取大单追踪数据"""
         return self._execute_interface("market", "fund_flow.big_deal_tracking", params)
 
+    # ==================== 大宗交易数据 ====================
+    def get_stock_block_trading(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取个股大宗交易数据"""
+        return self._execute_interface("stock", "block_trading", params)
+
+    def get_market_block_trading(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取市场大宗交易统计数据"""
+        return self._execute_interface("market", "block_trading", params)
+
     def reload_config(self) -> None:
         """重新加载配置文件"""
         self.config = self.config_loader.reload()

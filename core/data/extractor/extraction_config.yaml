@@ -421,26 +421,14 @@ standard_fields:
         - industry_rank                      # 行业排名（可选）
         - percentile_rank                    # 百分位排名（可选）
 
-    block_trading:
-      daily_summary:                     # 大宗交易日度汇总
-        - symbol                             # 股票代码
-        - date                               # 日期
-        - transaction_count                  # 交易笔数
-        - total_volume                       # 总成交量
-        - total_amount                       # 总成交额
-        - avg_discount_rate                  # 平均折价率
-        - premium_rate                       # 溢价率（可选）
-
-      individual_transaction:            # 个股大宗交易
-        - symbol                             # 股票代码
-        - date                               # 日期
-        - block_trade_price                  # 大宗交易价格
-        - block_trade_volume                 # 大宗交易数量
-        - block_trade_amount                 # 大宗交易金额
-        - discount_rate                      # 折价率
-        - premium_rate                       # 溢价率
-        - buyer_type                         # 买方类型（可选）
-        - seller_type                        # 卖方类型（可选）
+    block_trading:                      # 个股大宗交易
+      - symbol                             # 股票代码
+      - date                               # 日期
+      - block_trade_price                  # 大宗交易价格
+      - block_trade_volume                 # 大宗交易数量
+      - block_trade_amount                 # 大宗交易金额
+      - buyer_type                         # 买方类型
+      - seller_type                        # 卖方类型
     
     new_stock:
       ipo_data:                          # 新股发行数据
@@ -702,6 +690,12 @@ standard_fields:
         - deal_type                          # 大单性质（买盘/卖盘）
         - pct_change                         # 涨跌幅
         - change_amount                      # 涨跌额
+
+    block_trading:                      # 市场大宗交易统计
+      - date                               # 日期
+      - total_amount                       # 总成交额
+      - premium_rate                       # 溢价率占比
+      - discount_rate                      # 折价率占比
 
 
 interfaces_config:
@@ -1318,6 +1312,14 @@ interfaces_config:
             priority: 3
             markets: ["SH", "SZ", "BJ"]
 
+    block_trading:
+      description: "个股大宗交易明细"
+      interfaces:
+        - name: "stock_dzjy_mrmx"
+          enabled: true
+          priority: 1
+          markets: ["SH", "SZ"]
+
   market:
     stock_list:
       description: "股票列表"
@@ -1535,6 +1537,14 @@ interfaces_config:
           priority: 3
           markets: ["SH", "SZ", "HK"]
           description: "A股/港股ESG指标"
+
+    block_trading:
+      description: "市场大宗交易统计"
+      interfaces:
+        - name: "stock_dzjy_sctj"
+          enabled: true
+          priority: 1
+          markets: ["SH", "SZ"]
 
 field_mappings:
 
@@ -2817,6 +2827,21 @@ field_mappings:
   "实施方案公告日期": "announcement_date"
   "实施公告日": "implementation_date"
   "董事会日期": "board_date"
+
+  # 大宗交易字段映射
+  "交易日期": "date"
+  "证券代码": "symbol"
+  "证券简称": "name"
+  "成交价": "block_trade_price"
+  "成交量": "block_trade_volume"
+  "成交额": "block_trade_amount"
+  "买方营业部": "buyer_type"
+  "卖方营业部": "seller_type"
+  "大宗交易成交总额": "total_amount"
+  "溢价成交总额": "premium_amount"
+  "溢价成交总额占比": "premium_rate"
+  "折价成交总额": "discount_amount"
+  "折价成交总额占比": "discount_rate"
   "股东大会预案公告日期": "shareholder_meeting_date"
   "分红总额": "total_dividend"
   "股利支付率": "dividend_payout_ratio"
