@@ -162,5 +162,3 @@ def convert_item_value_to_columns(data: Any) -> Any:
     except Exception as e:
         logger.error(f"item-value格式转换失败: {e}")
         return data  # 失败时返回原数据
-
-
