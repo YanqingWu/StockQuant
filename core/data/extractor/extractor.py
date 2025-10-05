@@ -1377,6 +1377,38 @@ class Extractor:
         """获取个股估值数据"""
         return self._execute_interface("stock", "valuation", params)
     
+    # 股票ESG数据
+    def get_stock_esg_rating(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取股票ESG评级数据"""
+        return self._execute_interface("stock", "esg_data.esg_rating", params)
+    
+    # 股票事件数据
+    def get_stock_major_contracts(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取重大合同事件数据"""
+        return self._execute_interface("stock", "events.major_contracts", params)
+    
+    def get_stock_suspension(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取停牌事件数据"""
+        return self._execute_interface("stock", "events.suspension", params)
+    
+    # 股票新股数据
+    def get_stock_ipo_data(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取新股发行数据"""
+        return self._execute_interface("stock", "new_stock.ipo_data", params)
+    
+    def get_stock_ipo_performance(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取新股表现数据"""
+        return self._execute_interface("stock", "new_stock.performance", params)
+    
+    # 股票回购数据
+    def get_stock_repurchase_plan(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取回购计划数据"""
+        return self._execute_interface("stock", "repurchase.repurchase_plan", params)
+    
+    def get_stock_repurchase_progress(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取回购进度数据"""
+        return self._execute_interface("stock", "repurchase.repurchase_progress", params)
+    
     # 股票大宗交易数据
     def get_stock_block_trading(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
         """获取个股大宗交易数据"""

@@ -1312,6 +1312,85 @@ interfaces_config:
             priority: 3
             markets: ["SH", "SZ", "BJ"]
 
+    esg_data:
+      esg_rating:
+        description: "ESG评级数据"
+        interfaces:
+          - name: "stock_esg_hz_sina"
+            enabled: true
+            priority: 1
+            markets: ["SH", "SZ"]
+            description: "A股ESG指标"
+          
+          - name: "stock_esg_msci_sina"
+            enabled: true
+            priority: 2
+            markets: ["HK"]
+            description: "港股MSCI ESG评级"
+          
+          - name: "stock_esg_zd_sina"
+            enabled: true
+            priority: 3
+            markets: ["SH", "SZ", "HK"]
+            description: "A股/港股ESG指标"
+
+    events:
+      major_contracts:
+        description: "重大合同事件"
+        interfaces:
+          - name: "stock_zdhtmx_em"
+            enabled: true
+            priority: 1
+            markets: ["SH", "SZ", "BJ"]
+            description: "重大合同明细"
+      
+      suspension:
+        description: "停牌事件"
+        interfaces:
+          - name: "stock_suspension_em"
+            enabled: false
+            priority: 1
+            markets: ["SH", "SZ", "BJ"]
+            description: "停牌复牌信息（接口不存在）"
+
+    new_stock:
+      ipo_data:
+        description: "新股发行数据"
+        interfaces:
+          - name: "stock_zh_a_new_em"
+            enabled: true
+            priority: 1
+            markets: ["SH", "SZ", "BJ"]
+            description: "新股行情数据"
+      
+      performance:
+        description: "新股表现数据"
+        interfaces:
+          - name: "stock_zh_a_new"
+            enabled: true
+            priority: 1
+            markets: ["SH", "SZ", "BJ"]
+            description: "次新股行情数据"
+
+    repurchase:
+      repurchase_plan:
+        description: "回购计划"
+        interfaces:
+          - name: "stock_repurchase_em"
+            enabled: true
+            priority: 1
+            markets: ["SH", "SZ", "BJ"]
+            description: "股票回购数据"
+      
+      repurchase_progress:
+        description: "回购进度"
+        interfaces:
+          - name: "stock_repurchase_em"
+            enabled: true
+            priority: 1
+            markets: ["SH", "SZ", "BJ"]
+            description: "股票回购数据（包含进度信息）"
+
     block_trading:
       description: "个股大宗交易明细"
       interfaces:
@@ -1517,26 +1596,6 @@ interfaces_config:
             priority: 1
             markets: ["SH", "SZ"]
 
-    esg_data:
-      description: "ESG数据"
-      interfaces:
-        - name: "stock_esg_hz_sina"
-          enabled: true
-          priority: 1
-          markets: ["SH", "SZ"]
-          description: "A股ESG指标"
-        
-        - name: "stock_esg_msci_sina"
-          enabled: true
-          priority: 2
-          markets: ["HK"]
-          description: "港股MSCI ESG评级"
-        
-        - name: "stock_esg_zd_sina"
-          enabled: true
-          priority: 3
-          markets: ["SH", "SZ", "HK"]
-          description: "A股/港股ESG指标"
 
     block_trading:
       description: "市场大宗交易统计"
@@ -2849,6 +2908,62 @@ field_mappings:
   "股份到账日": "stock_arrival_date"
   "报告时间": "report_time"
   "业绩披露日期": "earnings_disclosure_date"
+
+  # ESG数据字段映射
+  "ESG评分": "esg_score"
+  "ESG等级": "esg_rating"
+  "环境": "environment_score"
+  "环境等级": "environment_rating"
+  "社会": "social_score"
+  "社会等级": "social_rating"
+  "公司治理": "governance_score"
+  "公司治理等级": "governance_rating"
+  "评级机构": "rating_agency"
+  "行业排名": "industry_rank"
+  "百分位排名": "percentile_rank"
+
+  # 重大合同字段映射
+  "签署日期": "sign_date"
+  "合同名称": "contract_name"
+  "合同金额": "contract_amount"
+  "签署主体": "contract_party"
+  "其他签署方": "counterparty"
+
+  # 停牌事件字段映射
+  "停牌起始日": "start_date"
+  "停牌截止日": "end_date"
+  "停牌原因": "reason"
+  "复牌日期": "resume_date"
+
+  # 新股相关字段映射
+  "发行日期": "ipo_date"
+  "发行价格": "issue_price"
+  "发行数量": "issue_volume"
+  "发行金额": "issue_amount"
+  "申购倍数": "subscription_ratio"
+  "中签率": "winning_rate"
+  "预期收益率": "expected_return"
+  "上市天数": "days_since_ipo"
+  "首日收益率": "first_day_return"
+  "累计收益率": "cumulative_return"
+  "破发日期": "break_issue_price_date"
+
+  # 回购相关字段映射
+  "公告日期": "announcement_date"
+  "计划回购价格区间": "plan_amount_min"
+  "计划回购数量区间-下限": "plan_volume_min"
+  "计划回购数量区间-上限": "plan_volume_max"
+  "计划回购金额区间-下限": "plan_amount_min"
+  "计划回购金额区间-上限": "plan_amount_max"
+  "回购起始时间": "repurchase_purpose"
+  "实施进度": "implementation_period"
+  "已回购股份价格区间-下限": "actual_repurchase_price_min"
+  "已回购股份价格区间-上限": "actual_repurchase_price_max"
+  "已回购股份数量": "actual_repurchase_volume"
+  "已回购金额": "actual_repurchase_amount"
+  "占公告前一日总股本比例-下限": "repurchase_ratio_min"
+  "占公告前一日总股本比例-上限": "repurchase_ratio_max"
+  "最新公告日期": "latest_announcement_date"
 
   # 公司基本信息 (company_profile)
   "公司名称": "full_name"
