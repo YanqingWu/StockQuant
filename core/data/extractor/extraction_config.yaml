@@ -1359,6 +1359,13 @@ interfaces_config:
 
     market_indices:
       description: "市场指数"
+      # 市场指数数据：按日期合并
+      merge_strategy: "date_based_merge"
+      date_column: "date"
+      group_by: ["index_code", "date"]
+      merge_options:
+        data_quality_priority: "most_complete"  # most_complete, highest, latest
+        handle_date_gaps: "keep_all"  # keep_all, fill_gaps, latest_only
       interfaces:
         - name: "stock_zh_index_spot_sina"
           enabled: true
@@ -1379,7 +1386,16 @@ interfaces_config:
           enabled: true
           priority: 4
           markets: ["SH", "SZ"]
-
+        
+        - name: "stock_zh_index_daily_em"
+          enabled: true
+          priority: 5
+          markets: ["SH", "SZ"]
+        
+        - name: "stock_zh_index_value_csindex"
+          enabled: true
+          priority: 6
+          markets: ["SH", "SZ"]
 
     industry_sector:
       metadata:
