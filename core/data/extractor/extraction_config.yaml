@@ -1327,18 +1327,21 @@ interfaces_config:
           enabled: true
           priority: 2
           markets: ["SZ"]
+          post_processor: "convert_field_mapping"
         
         # 投资者统计
         - name: "stock_account_statistics_em"
           enabled: true
           priority: 3
           markets: ["SH", "SZ"]
+          post_processor: "convert_field_mapping"
         
         # 市场估值指标
         - name: "stock_buffett_index_lg"
           enabled: true
           priority: 4
           markets: ["SH", "SZ"]
+          post_processor: "convert_field_mapping"
         
         # 市场活跃度
         - name: "stock_market_activity_legu"
@@ -1352,6 +1355,7 @@ interfaces_config:
           enabled: true
           priority: 6
           markets: ["SH", "SZ"]
+          post_processor: "convert_field_mapping"
 
     market_indices:
       description: "市场指数"
@@ -2857,8 +2861,6 @@ field_mappings:
   # 个股资金流向字段映射
   "主力净流入-净额": "main_net_inflow"
   "主力净流入-净占比": "main_net_inflow_ratio"
-  "超大单净流入-净额": "super_large_net_inflow"
-  "超大单净流入-净占比": "super_large_net_inflow_ratio"
   "大单净流入-净额": "large_order_net_inflow"
   "大单净流入-净占比": "large_order_net_inflow_ratio"
   "中单净流入-净额": "medium_order_net_inflow"
