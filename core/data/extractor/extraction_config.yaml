@@ -662,41 +662,46 @@ standard_fields:
     fund_flow:
       market_level:                      # 市场级别资金流向
         - date                               # 日期
-        - total_inflow                       # 总流入
-        - total_outflow                      # 总流出
-        - net_inflow                         # 净流入
-        - main_inflow                        # 主力流入
-        - main_outflow                       # 主力流出
-        - main_net_inflow                    # 主力净流入
-        - retail_inflow                      # 散户流入（可选）
-        - retail_outflow                     # 散户流出（可选）
-
-      sector_level:                      # 行业/概念级别资金流向
-        - date                               # 日期
-        - sector_code                        # 板块代码
-        - sector_name                        # 板块名称
-        - sector_type                        # 板块类型（行业/概念）
-        - net_inflow                         # 净流入
-        - inflow_ratio                       # 流入占比
-        - main_net_inflow                    # 主力净流入
-        - rank                               # 排名（可选）
+        - sh_close_price                     # 上证收盘价
+        - sh_pct_change                      # 上证涨跌幅
+        - sz_close_price                     # 深证收盘价
+        - sz_pct_change                      # 深证涨跌幅
+        - main_net_inflow                    # 主力净流入-净额
+        - main_net_ratio                     # 主力净流入-净占比
+        - super_big_net_inflow               # 超大单净流入-净额
+        - super_big_net_ratio                # 超大单净流入-净占比
+        - big_net_inflow                     # 大单净流入-净额
+        - big_net_ratio                      # 大单净流入-净占比
+        - medium_net_inflow                  # 中单净流入-净额
+        - medium_net_ratio                   # 中单净流入-净占比
+        - small_net_inflow                   # 小单净流入-净额
+        - small_net_ratio                    # 小单净流入-净占比
 
       hsgt_flow:                         # 沪深港通资金流向
         - date                               # 日期
-        - hk_to_sh_net                       # 港资买沪股净额
-        - hk_to_sz_net                       # 港资买深股净额
-        - total_northbound_net               # 北向资金净流入
-        - sh_to_hk_net                       # 沪股通净流出（可选）
-        - sz_to_hk_net                       # 深股通净流出（可选）
-        - total_southbound_net               # 南向资金净流出（可选）
+        - trade_type                         # 类型（沪港通/深港通）
+        - sector_name                        # 板块
+        - flow_direction                     # 资金方向（北向/南向）
+        - trade_status                       # 交易状态
+        - net_buy_amount                     # 成交净买额
+        - net_inflow                         # 资金净流入
+        - daily_balance                      # 当日资金余额
+        - rising_count                       # 上涨数
+        - flat_count                         # 持平数
+        - falling_count                      # 下跌数
+        - related_index                      # 相关指数
+        - index_pct_change                   # 指数涨跌幅
 
       big_deal_tracking:                 # 大单追踪
-        - date                               # 日期
-        - big_buy_amount                     # 大单买入金额
-        - big_sell_amount                    # 大单卖出金额
-        - big_net_amount                     # 大单净额
-        - super_big_net_amount               # 超大单净额（可选）
-        - deal_count                         # 大单笔数（可选）
+        - deal_time                          # 成交时间
+        - symbol                             # 股票代码
+        - stock_name                         # 股票简称
+        - deal_price                         # 成交价格
+        - deal_volume                        # 成交量
+        - deal_amount                        # 成交额
+        - deal_type                          # 大单性质（买盘/卖盘）
+        - pct_change                         # 涨跌幅
+        - change_amount                      # 涨跌额
 
     analyst_research:
       analyst_rating:                    # 分析师评级详情
@@ -1461,6 +1466,31 @@ interfaces_config:
           markets: ["SH", "SZ"]
           post_processor: "convert_item_value_to_columns"
 
+    fund_flow:
+      market_level:
+        description: "市场级别资金流向"
+        interfaces:
+          - name: "stock_market_fund_flow"
+            enabled: true
+            priority: 1
+            markets: ["SH", "SZ"]
+
+      hsgt_flow:
+        description: "沪深港通资金流向"
+        interfaces:
+          - name: "stock_hsgt_fund_flow_summary_em"
+            enabled: true
+            priority: 1
+            markets: ["SH", "SZ"]
+
+      big_deal_tracking:
+        description: "大单追踪"
+        interfaces:
+          - name: "stock_fund_flow_big_deal"
+            enabled: true
+            priority: 1
+            markets: ["SH", "SZ"]
+
     sector_data:
       sector_quote:
         description: "行业板块行情"
@@ -1904,10 +1934,46 @@ field_mappings:
   
   # 资金流向字段映射
   "日期": "date"
+  "上证-收盘价": "sh_close_price"
+  "上证-涨跌幅": "sh_pct_change"
+  "深证-收盘价": "sz_close_price"
+  "深证-涨跌幅": "sz_pct_change"
   "主力净流入-净额": "main_net_inflow"
-  "主力净流入-净占比": "main_net_inflow_ratio"
-  "超大单净流入-净额": "large_net_inflow"
-  "超大单净流入-净占比": "large_net_inflow_ratio"
+  "主力净流入-净占比": "main_net_ratio"
+  "超大单净流入-净额": "super_big_net_inflow"
+  "超大单净流入-净占比": "super_big_net_ratio"
+  "大单净流入-净额": "big_net_inflow"
+  "大单净流入-净占比": "big_net_ratio"
+  "中单净流入-净额": "medium_net_inflow"
+  "中单净流入-净占比": "medium_net_ratio"
+  "小单净流入-净额": "small_net_inflow"
+  "小单净流入-净占比": "small_net_ratio"
+  
+  # 沪深港通字段映射
+  "交易日": "date"
+  "类型": "trade_type"
+  "板块": "sector_name"
+  "资金方向": "flow_direction"
+  "交易状态": "trade_status"
+  "成交净买额": "net_buy_amount"
+  "资金净流入": "net_inflow"
+  "当日资金余额": "daily_balance"
+  "上涨数": "rising_count"
+  "持平数": "flat_count"
+  "下跌数": "falling_count"
+  "相关指数": "related_index"
+  "指数涨跌幅": "index_pct_change"
+  
+  # 大单追踪字段映射
+  "成交时间": "deal_time"
+  "股票代码": "symbol"
+  "股票简称": "stock_name"
+  "成交价格": "deal_price"
+  "成交量": "deal_volume"
+  "成交额": "deal_amount"
+  "大单性质": "deal_type"
+  "涨跌幅": "pct_change"
+  "涨跌额": "change_amount"
   
   # 市场指数字段映射
   "代码": "index_code"

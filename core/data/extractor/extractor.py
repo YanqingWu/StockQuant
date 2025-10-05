@@ -1456,6 +1456,19 @@ class Extractor:
         """
         return self.config.get_standard_fields(category, data_type)
     
+    # ==================== 资金流向数据 ====================
+    def get_market_fund_flow(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取市场级别资金流向数据"""
+        return self._execute_interface("market", "fund_flow.market_level", params)
+    
+    def get_hsgt_fund_flow(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取沪深港通资金流向数据"""
+        return self._execute_interface("market", "fund_flow.hsgt_flow", params)
+    
+    def get_big_deal_tracking(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+        """获取大单追踪数据"""
+        return self._execute_interface("market", "fund_flow.big_deal_tracking", params)
+
     def reload_config(self) -> None:
         """重新加载配置文件"""
         self.config = self.config_loader.reload()
