@@ -154,18 +154,25 @@ class AkshareStockParamAdapter:
                 metadata=metadata
             )
             
-            # 3. 执行参数转换（增强错误处理）
+            # 3. 执行参数转换（增强错误处理和详细日志）
             try:
-                context = self.transform_chain.transform(context)
+                logger.debug(f"开始参数转换: {interface_name}")
+                logger.debug(f"源参数: {context.source_params}")
+                
+                context = self._transform_with_logging(context)
+                logger.debug(f"转换后参数: {context.target_params}")
                 logger.debug(f"参数转换链执行成功: {interface_name}")
             except Exception as e:
                 logger.error(f"参数转换链执行失败: {interface_name}, 错误: {e}")
                 # 回退到原始参数
                 context.target_params = context.source_params.copy()
             
-            # 4. 执行参数验证（增强错误处理）
+            # 4. 执行参数验证（增强错误处理和详细日志）
             try:
-                if not self.validation_chain.validate(context):
+                logger.debug(f"开始参数验证: {interface_name}")
+                validation_result = self._validate_with_logging(context)
+                
+                if not validation_result:
                     logger.warning(f"参数验证失败: {interface_name}")
                     # 可以选择是否继续使用转换后的参数
                 else:
@@ -178,3 +185,46 @@ class AkshareStockParamAdapter:
         except Exception as e:
             logger.error(f"参数适配失败: {interface_name}, 错误: {e}")
             return params  # 回退到原始参数
+    
+    def _transform_with_logging(self, context: TransformContext) -> TransformContext:
+        """带详细日志的参数转换"""
+        for i, transformer in enumerate(self.transform_chain.transformers):
+            transformer_name = transformer.__class__.__name__
+            
+            if transformer.can_transform(context):
+                logger.debug(f"  [{i+1}] 执行转换器: {transformer_name}")
+                logger.debug(f"      转换前: {context.target_params}")
+                
+                try:
+                    context = transformer.transform(context)
+                    logger.debug(f"      转换后: {context.target_params}")
+                except Exception as e:
+                    logger.error(f"      转换器 {transformer_name} 执行失败: {e}")
+                    # 继续执行下一个转换器
+            else:
+                logger.debug(f"  [{i+1}] 跳过转换器: {transformer_name} (不适用)")
+        
+        return context
+    
+    def _validate_with_logging(self, context: TransformContext) -> bool:
+        """带详细日志的参数验证"""
+        for i, validator in enumerate(self.validation_chain.validators):
+            validator_name = validator.__class__.__name__
+            
+            if validator.can_validate(context):
+                logger.debug(f"  [{i+1}] 执行验证器: {validator_name}")
+                
+                try:
+                    result = validator.validate(context)
+                    if result:
+                        logger.debug(f"      验证通过: {validator_name}")
+                    else:
+                        logger.warning(f"      验证失败: {validator_name}")
+                        return False
+                except Exception as e:
+                    logger.error(f"      验证器 {validator_name} 执行异常: {e}")
+                    return False
+            else:
+                logger.debug(f"  [{i+1}] 跳过验证器: {validator_name} (不适用)")
+        
+        return True
