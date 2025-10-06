@@ -482,8 +482,19 @@ class Extractor:
             extraction_context.set_extraction_info(category, data_type)
             
             # 标准化参数
-            standard_params = to_standard_params(params)
-            params_dict = standard_params.to_dict()
+            try:
+                standard_params = to_standard_params(params)
+                params_dict = standard_params.to_dict()
+                logger.debug(f"参数标准化成功: {category}.{data_type}")
+            except Exception as e:
+                logger.error(f"参数标准化失败: {e}")
+                # 回退到原始参数
+                if isinstance(params, dict):
+                    params_dict = params
+                else:
+                    params_dict = {}
+                # 创建默认的StandardParams对象
+                standard_params = StandardParams()
             
             # 从参数中提取市场信息用于接口筛选
             market = self._extract_market_from_params(standard_params)
@@ -492,11 +503,14 @@ class Extractor:
             interfaces = self.config.get_enabled_interfaces(category, data_type, market)
             if not interfaces:
                 market_info = f" (市场: {market})" if market else ""
+                logger.warning(f"未找到启用的接口: {category}.{data_type}{market_info}")
                 return ExtractionResult(
                     success=False,
                     data=None,
                     error=f"未找到启用的接口: {category}.{data_type}{market_info}"
                 )
+            
+            logger.info(f"找到 {len(interfaces)} 个可用接口: {[i.name for i in interfaces]}")
             
             # 使用全局参数适配器
             param_adapter = self.param_adapter
@@ -516,8 +530,10 @@ class Extractor:
                         # 统一通过适配器执行参数适配，隐藏具体映射细节
                         # 进行参数适配
                         adapted_params = param_adapter.adapt(interface.name, params_dict)
+                        logger.debug(f"参数适配成功: {interface.name}")
                     except Exception as _e:
                         # 参数适配失败，回退原始参数
+                        logger.warning(f"参数适配失败: {interface.name}, 错误: {_e}")
                         adapted_params = params_dict
                     task = CallTask(interface_name=interface.name, params=adapted_params)
                     self.task_manager.add_task(task)
@@ -615,11 +631,22 @@ class Extractor:
     
     def _extract_market_from_params(self, standard_params: StandardParams) -> Optional[str]:
         """从参数中提取市场信息"""
-        if standard_params.symbol and hasattr(standard_params.symbol, 'market'):
-            return standard_params.symbol.market
-        elif standard_params.market:
-            return standard_params.market
-        return None
+        try:
+            if standard_params.symbol and hasattr(standard_params.symbol, 'market'):
+                market = standard_params.symbol.market
+                if market:
+                    logger.debug(f"从symbol中提取市场: {market}")
+                    return market
+            
+            if standard_params.market:
+                logger.debug(f"使用直接指定的市场: {standard_params.market}")
+                return standard_params.market
+            
+            logger.debug("未找到市场信息")
+            return None
+        except Exception as e:
+            logger.error(f"提取市场信息失败: {e}")
+            return None
     
     def _merge_interface_results(self, successful_results: List[Tuple[Any, ExtractionResult]], 
                                 standard_params: StandardParams, category: str, data_type: str) -> ExtractionResult:
