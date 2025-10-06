@@ -15,10 +15,21 @@ from .transformers import (
 
 def to_standard_params(params: Union[StandardParams, Dict[str, Any]]) -> StandardParams:
     """将输入参数规范化为 StandardParams 格式"""
+    # 参数类型验证
+    if params is None:
+        raise ValueError("参数不能为 None")
+    
     if isinstance(params, StandardParams):
         return params
 
-    src: Dict[str, Any] = dict(params or {})
+    if not isinstance(params, dict):
+        raise ValueError(f"参数类型错误，期望 dict 或 StandardParams，实际: {type(params)}")
+    
+    # 确保字典不为空
+    if not params:
+        raise ValueError("参数字典不能为空")
+    
+    src: Dict[str, Any] = dict(params)
     adapter = AkshareStockParamAdapter()
     normalizer = ParamNormalizer()
 
@@ -35,7 +46,6 @@ def to_standard_params(params: Union[StandardParams, Dict[str, Any]]) -> Standar
     # 组装严格格式
     return StandardParams(
         symbol=symbol_norm,
-        date=date_data.get('date'),
         start_date=date_data.get('start_date'),
         end_date=date_data.get('end_date'),
         start_time=time_data.get('start_time'),

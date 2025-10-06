@@ -4,7 +4,6 @@ Akshare适配器实现
 """
 
 from typing import Any, Dict, Optional
-from core.data.extractor.config_loader import ConfigLoader
 from .base import TransformContext, TransformChain, ValidationChain
 from .transformers import (
     ValueMapper, SymbolTransformer, DateTransformer, 
@@ -24,13 +23,10 @@ class AkshareStockParamAdapter:
     Akshare 参数适配器
     """
     
-    def __init__(self, config_loader: Optional[ConfigLoader] = None) -> None:
-        """初始化适配器，可选传入配置加载器"""
-        self.config_loader = config_loader
-        
+    def __init__(self, interface_mappings: Optional[Dict[str, Any]] = None) -> None:
+        """初始化适配器，可选传入接口映射配置"""
         # 初始化参数映射器
-        if config_loader:
-            interface_mappings = config_loader.get_parameter_mappings()
+        if interface_mappings:
             self.parameter_mapper = ParameterMapper(interface_mappings)
         else:
             self.parameter_mapper = ParameterMapper()
@@ -91,7 +87,7 @@ class AkshareStockParamAdapter:
     def _adapt_without_cache(self, interface_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
         """不带缓存的参数适配"""
         # 1. 检查是否为映射接口
-        if self.config_loader and self.parameter_mapper.is_mapping_interface(interface_name):
+        if self.parameter_mapper and self.parameter_mapper.is_mapping_interface(interface_name):
             return self._handle_mapping_interface(interface_name, params)
         
         # 2. 使用基础适配逻辑处理

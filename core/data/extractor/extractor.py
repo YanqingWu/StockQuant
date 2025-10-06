@@ -42,7 +42,8 @@ class Extractor:
         self.config = self.config_loader.load_config()
         
         # 初始化参数适配器
-        self.param_adapter = AkshareStockParamAdapter(self.config_loader)
+        interface_mappings = self.config.get_parameter_mappings() if hasattr(self.config, 'get_parameter_mappings') else None
+        self.param_adapter = AkshareStockParamAdapter(interface_mappings)
         
         # 初始化task manager和executor
         self.provider_manager = get_api_provider_manager()

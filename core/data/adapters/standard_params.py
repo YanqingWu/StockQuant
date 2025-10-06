@@ -33,7 +33,7 @@ class StandardParams:
     def __init__(
         self,
         *,
-        symbol: Optional[Union[StockSymbol]] = None,
+        symbol: Optional[Union[StockSymbol, str]] = None,
         # 时间参数：使用 start_date/end_date 替代单一的 date
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
@@ -54,7 +54,14 @@ class StandardParams:
         limit: Optional[int] = None,
         extra: Optional[Dict[str, Any]] = None,
     ) -> None:
-        self.symbol = symbol
+        # 处理 symbol 参数：如果是字符串，转换为 StockSymbol 对象
+        if symbol is not None:
+            if isinstance(symbol, str):
+                self.symbol = StockSymbol.parse(symbol)
+            else:
+                self.symbol = symbol
+        else:
+            self.symbol = None
         self.start_date = start_date
         self.end_date = end_date
         self.start_time = start_time
@@ -76,13 +83,31 @@ class StandardParams:
 
     def _validate_params(self) -> None:
         """验证参数的有效性和一致性"""
+        # 验证 symbol 类型（如果提供了）
+        if self.symbol is not None and not isinstance(self.symbol, StockSymbol):
+            raise ValueError(f"symbol 必须是 StockSymbol 类型，实际: {type(self.symbol)}")
+        
         # 验证分页参数：不能同时使用 page/page_size 和 offset/limit
         if (self.page is not None or self.page_size is not None) and (self.offset is not None or self.limit is not None):
             raise ValueError("不能同时使用 page/page_size 和 offset/limit 分页参数")
         
+        # 验证日期格式（如果提供了）
+        if self.start_date and not self._is_valid_date_format(self.start_date):
+            raise ValueError(f"start_date 格式错误: {self.start_date}，期望 YYYY-MM-DD 格式")
+        
+        if self.end_date and not self._is_valid_date_format(self.end_date):
+            raise ValueError(f"end_date 格式错误: {self.end_date}，期望 YYYY-MM-DD 格式")
+        
         # 验证日期参数：start_date 不能晚于 end_date
         if self.start_date and self.end_date and self.start_date > self.end_date:
             raise ValueError("start_date 不能晚于 end_date")
+        
+        # 验证时间格式（如果提供了）
+        if self.start_time and not self._is_valid_time_format(self.start_time):
+            raise ValueError(f"start_time 格式错误: {self.start_time}，期望 HH:MM:SS 格式")
+        
+        if self.end_time and not self._is_valid_time_format(self.end_time):
+            raise ValueError(f"end_time 格式错误: {self.end_time}，期望 HH:MM:SS 格式")
         
         # 验证时间参数：start_time 不能晚于 end_time
         if self.start_time and self.end_time and self.start_time > self.end_time:
@@ -95,6 +120,45 @@ class StandardParams:
         ]:
             if value is not None and value < 0:
                 raise ValueError(f"{param_name} 不能为负数")
+        
+        # 验证字符串参数不能为空字符串
+        for param_name, value in [
+            ("start_date", self.start_date), ("end_date", self.end_date),
+            ("start_time", self.start_time), ("end_time", self.end_time),
+            ("period", self.period), ("adjust", self.adjust),
+            ("market", self.market), ("exchange", self.exchange),
+            ("keyword", self.keyword), ("ranking_type", self.ranking_type)
+        ]:
+            if value is not None and isinstance(value, str) and not value.strip():
+                raise ValueError(f"{param_name} 不能为空字符串")
+    
+    def _is_valid_date_format(self, date_str: str) -> bool:
+        """验证日期格式 YYYY-MM-DD"""
+        import re
+        pattern = r'^\d{4}-\d{2}-\d{2}$'
+        if not re.match(pattern, date_str):
+            return False
+        
+        try:
+            from datetime import datetime
+            datetime.strptime(date_str, '%Y-%m-%d')
+            return True
+        except ValueError:
+            return False
+    
+    def _is_valid_time_format(self, time_str: str) -> bool:
+        """验证时间格式 HH:MM:SS"""
+        import re
+        pattern = r'^\d{2}:\d{2}:\d{2}$'
+        if not re.match(pattern, time_str):
+            return False
+        
+        try:
+            from datetime import datetime
+            datetime.strptime(time_str, '%H:%M:%S')
+            return True
+        except ValueError:
+            return False
 
     @staticmethod
     def _maybe_strip(v: Any) -> Any:
