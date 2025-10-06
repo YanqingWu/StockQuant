@@ -171,301 +171,308 @@ class Extractor:
             logger.error(f"后处理器执行失败: {e}")
             return data  # 失败时返回原数据
     
+    # ==================== 数据处理子函数 ====================
+    
+    def _validate_raw_data(self, raw_data: Any, interface_name: str) -> ExtractionResult:
+        """验证原始数据"""
+        if DataValidator.is_empty_data(raw_data):
+            return self._create_error_result(interface_name, "接口返回空数据")
+        return self._create_success_result(None, interface_name)
+    
+    def _convert_to_dataframe(self, raw_data: Any, interface_name: str) -> Union[pd.DataFrame, ExtractionResult]:
+        """将原始数据转换为DataFrame"""
+        try:
+            if isinstance(raw_data, pd.DataFrame):
+                return raw_data.copy()
+            elif isinstance(raw_data, list):
+                return pd.DataFrame(raw_data)
+            elif isinstance(raw_data, dict):
+                return pd.DataFrame([raw_data])
+            elif isinstance(raw_data, str):
+                return self._convert_string_to_dataframe(raw_data)
+            else:
+                return self._create_error_result(interface_name, f"不支持的数据类型: {type(raw_data)}")
+        except Exception as e:
+            return self._create_error_result(interface_name, f"DataFrame转换失败: {e}")
+    
+    def _convert_string_to_dataframe(self, raw_data: str) -> pd.DataFrame:
+        """将字符串转换为DataFrame"""
+        if not raw_data or len(raw_data) < ExtractorConstants.MIN_SYMBOL_LENGTH:
+            return pd.DataFrame([{"raw_value": raw_data}])
+        
+        # 尝试解析为股票代码格式
+        if raw_data.startswith(ExtractorConstants.STOCK_CODE_PREFIXES):
+            market = raw_data[:2].upper()
+            code = raw_data[2:]
+            return pd.DataFrame([{
+                "symbol": f"{code}.{market}",
+                "code": code,
+                "market": market,
+                "raw_value": raw_data
+            }])
+        else:
+            return pd.DataFrame([{
+                "symbol": raw_data,
+                "raw_value": raw_data
+            }])
+    
+    def _map_and_deduplicate_columns(self, df: pd.DataFrame, interface_name: str) -> pd.DataFrame:
+        """列名映射和重复列处理"""
+        try:
+            # 列名映射
+            col_mapping = {col: self.config.get_field_mapping(col) for col in df.columns}
+            df = df.rename(columns=col_mapping)
+            
+            # 处理重复列名
+            df = self._handle_duplicate_columns(df)
+            
+            return df
+        except Exception as e:
+            logger.debug(f"列名映射失败，继续使用原列名: {e}")
+            return df
+    
+    def _handle_duplicate_columns(self, df: pd.DataFrame) -> pd.DataFrame:
+        """处理重复列名"""
+        if len(df.columns) == len(set(df.columns)):
+            return df
+        
+        duplicate_cols = [col for col in df.columns if list(df.columns).count(col) > 1]
+        logger.warning(f"检测到重复列名: {duplicate_cols}")
+        
+        for dup_col in set(duplicate_cols):
+            dup_indices = [i for i, col in enumerate(df.columns) if col == dup_col]
+            if len(dup_indices) > 1:
+                # 合并重复列的数据
+                merged_series = df.iloc[:, dup_indices[0]].copy()
+                for idx in dup_indices[1:]:
+                    mask = merged_series.isna() | (merged_series == '')
+                    merged_series = merged_series.where(~mask, df.iloc[:, idx])
+                
+                # 删除重复列，保留第一列并更新其数据
+                df = df.drop(df.columns[dup_indices[1:]], axis=1)
+                df.iloc[:, dup_indices[0]] = merged_series
+                
+                logger.info(f"已合并重复列 '{dup_col}'，保留 {len(dup_indices)} 列中的最佳数据")
+        
+        return df
+    
+    def _filter_standard_fields(self, df: pd.DataFrame, category: str, data_type: str, interface_name: str) -> pd.DataFrame:
+        """标准字段过滤"""
+        try:
+            standard_fields = self.config.get_standard_fields(category, data_type)
+            if not standard_fields:
+                logger.warning(f"未找到 {category}.{data_type} 的标准字段定义")
+                return df
+            
+            # 保留存在的标准字段
+            keep_cols = [c for c in df.columns if c in standard_fields]
+            if keep_cols:
+                df = df[keep_cols]
+            else:
+                # 如果没有匹配的列，创建一个空的DataFrame但保留原有行数
+                df = pd.DataFrame(index=df.index)
+            
+            # 为所有缺失的标准字段添加空列
+            missing_fields = [f for f in standard_fields if f not in df.columns]
+            for field in missing_fields:
+                df[field] = None
+            
+            # 按标准字段顺序重新排列列
+            df = df[standard_fields]
+            
+            return df
+        except Exception as e:
+            logger.debug(f"标准字段过滤失败，保留原列: {e}")
+            return df
+    
+    def _convert_field_formats(self, df: pd.DataFrame, interface_name: str) -> pd.DataFrame:
+        """转换字段格式"""
+        if df is None or df.empty:
+            return df
+        
+        # 转换symbol字段
+        df = self._convert_symbol_field(df, interface_name)
+        
+        # 转换date字段
+        df = self._convert_date_field(df, interface_name)
+        
+        return df
+    
+    def _convert_symbol_field(self, df: pd.DataFrame, interface_name: str) -> pd.DataFrame:
+        """转换symbol字段为统一格式"""
+        if 'symbol' not in df.columns:
+            logger.info(f"DataFrame中没有symbol列，当前列名: {list(df.columns)}")
+            return df
+        
+        try:
+            logger.info(f"开始转换symbol字段，原始类型: {type(df['symbol'].iloc[0])}, 原始值: {df['symbol'].iloc[0]}")
+            
+            df['symbol'] = df['symbol'].apply(self._convert_single_symbol)
+            
+            logger.info(f"已将symbol字段转换为统一格式，转换后类型: {type(df['symbol'].iloc[0])}, 转换后值: {df['symbol'].iloc[0]}")
+        except Exception as e:
+            logger.error(f"symbol字段转换失败，保持原格式: {e}")
+        
+        return df
+    
+    def _convert_single_symbol(self, symbol_value) -> str:
+        """转换单个symbol值"""
+        if pd.isna(symbol_value) or symbol_value is None:
+            return None
+        
+        # 如果已经是StockSymbol对象，直接转换为dot格式
+        if isinstance(symbol_value, StockSymbol):
+            return symbol_value.to_dot()
+        
+        # 如果是字符串，尝试解析为StockSymbol
+        if isinstance(symbol_value, str):
+            code = symbol_value.strip()
+            try:
+                parsed_symbol = StockSymbol.parse(code, hint_market=None)
+                return parsed_symbol.to_dot() if parsed_symbol else code
+            except Exception:
+                return code
+        
+        # 其他类型，转换为字符串后尝试解析
+        try:
+            str_value = str(symbol_value).strip()
+            parsed_symbol = StockSymbol.parse(str_value, hint_market=None)
+            return parsed_symbol.to_dot() if parsed_symbol else str_value
+        except Exception:
+            return symbol_value
+    
+    def _convert_date_field(self, df: pd.DataFrame, interface_name: str) -> pd.DataFrame:
+        """转换date字段为统一格式"""
+        if 'date' not in df.columns:
+            logger.info(f"DataFrame中没有date列，当前列名: {list(df.columns)}")
+            return df
+        
+        try:
+            logger.info(f"开始转换date字段，原始类型: {type(df['date'].iloc[0])}, 原始值: {df['date'].iloc[0]}")
+            
+            df['date'] = df['date'].apply(self._convert_single_date)
+            
+            logger.info(f"已将date字段转换为统一格式，转换后类型: {type(df['date'].iloc[0])}, 转换后值: {df['date'].iloc[0]}")
+        except Exception as e:
+            logger.error(f"date字段转换失败，保持原格式: {e}")
+        
+        return df
+    
+    def _convert_single_date(self, date_value) -> date:
+        """转换单个date值"""
+        if pd.isna(date_value) or date_value is None:
+            return date_value
+        
+        # 如果已经是date对象，直接返回
+        if isinstance(date_value, date):
+            return date_value
+        
+        # 如果已经是datetime对象，转换为date
+        if isinstance(date_value, datetime):
+            return date_value.date()
+        
+        # 如果是字符串，尝试解析
+        if isinstance(date_value, str):
+            return self._parse_date_string(str(date_value).strip())
+        
+        # 其他类型，尝试转换为字符串后解析
+        try:
+            str_value = str(date_value).strip()
+            return self._parse_date_string(str_value)
+        except Exception:
+            return date_value
+    
+    def _parse_date_string(self, date_str: str) -> date:
+        """解析日期字符串"""
+        # 处理各种日期格式
+        if len(date_str) == 8 and date_str.isdigit():  # 20230922 格式
+            try:
+                return datetime.strptime(date_str, '%Y%m%d').date()
+            except ValueError:
+                pass
+        
+        # 处理其他常见格式
+        for fmt in ExtractorConstants.SUPPORTED_DATE_FORMATS:
+            try:
+                return datetime.strptime(date_str, fmt).date()
+            except ValueError:
+                continue
+        
+        # 尝试pandas自动解析
+        try:
+            parsed_date = pd.to_datetime(date_str)
+            return parsed_date.date()
+        except:
+            pass
+        
+        # 如果都无法解析，保持原值
+        return date_str
+    
+    def _create_final_result(self, df: pd.DataFrame, interface_name: str) -> ExtractionResult:
+        """创建最终结果"""
+        if df is None or df.empty:
+            return self._create_error_result(interface_name, "空数据")
+        
+        return self._create_success_result(df, interface_name)
+    
+    def _create_success_result(self, data: Optional[pd.DataFrame], interface_name: str, 
+                              extracted_fields: List[str] = None) -> ExtractionResult:
+        """创建成功结果"""
+        return ExtractionResult(
+            success=True,
+            data=data,
+            interface_name=interface_name,
+            source_interface=interface_name,
+            extracted_fields=extracted_fields or (list(data.columns) if data is not None else [])
+        )
+    
+    def _create_error_result(self, interface_name: str, error: str) -> ExtractionResult:
+        """创建错误结果"""
+        return ExtractionResult(
+            success=False,
+            data=None,
+            interface_name=interface_name,
+            error=error,
+            source_interface=interface_name
+        )
+    
+    def _handle_processing_error(self, error: Exception, interface_name: str) -> ExtractionResult:
+        """处理处理过程中的错误"""
+        return ExtractionErrorHandler.handle_data_processing_error(error, interface_name)
+    
     def _process_extraction_result(self, raw_data: Any, category: str, data_type: str, 
                                  interface_name: str) -> ExtractionResult:
         """
-        处理提取结果，统一返回 pandas.DataFrame：
-        - 对列名应用字段映射
-        - 按标准字段进行列过滤
+        处理提取结果，统一返回 pandas.DataFrame
         """
-        # 开始处理提取结果
         try:
-            if DataValidator.is_empty_data(raw_data):
-                return ExtractionResult(
-                    success=False,
-                    data=None,
-                    interface_name=interface_name,
-                    error="接口返回空数据",
-                    source_interface=interface_name
-                )
+            # 1. 数据验证
+            validation_result = self._validate_raw_data(raw_data, interface_name)
+            if not validation_result.success:
+                return validation_result
 
-            # 统一转换为 DataFrame
-            df: Optional[pd.DataFrame] = None
-            if isinstance(raw_data, pd.DataFrame):
-                df = raw_data.copy()
-            elif isinstance(raw_data, list):
-                try:
-                    df = pd.DataFrame(raw_data)
-                except Exception as _e:
-                    return ExtractionResult(
-                        success=False,
-                        data=None,
-                        interface_name=interface_name,
-                        error=f"无法将列表数据转换为DataFrame: {_e}",
-                        source_interface=interface_name
-                    )
-            elif isinstance(raw_data, dict):
-                try:
-                    df = pd.DataFrame([raw_data])
-                except Exception as _e:
-                    return ExtractionResult(
-                        success=False,
-                        data=None,
-                        interface_name=interface_name,
-                        error=f"无法将字典数据转换为DataFrame: {_e}",
-                        source_interface=interface_name
-                    )
-            elif isinstance(raw_data, str):
-                # 处理字符串类型数据，尝试解析为更有意义的结构
-                try:
-                    # 对于字符串，尝试解析为股票代码格式
-                    if raw_data and len(raw_data) >= ExtractorConstants.MIN_SYMBOL_LENGTH:
-                        # 尝试解析为股票代码格式 (如 "sz000300")
-                        if raw_data.startswith(ExtractorConstants.STOCK_CODE_PREFIXES):
-                            market = raw_data[:2].upper()
-                            code = raw_data[2:]
-                            df = pd.DataFrame([{
-                                "symbol": f"{code}.{market}",
-                                "code": code,
-                                "market": market,
-                                "raw_value": raw_data
-                            }])
-                        else:
-                            # 其他字符串，创建基本结构
-                            df = pd.DataFrame([{
-                                "symbol": raw_data,
-                                "raw_value": raw_data
-                            }])
-                    else:
-                        # 空字符串或太短的字符串
-                        df = pd.DataFrame([{"raw_value": raw_data}])
-                except Exception as _e:
-                    return ExtractionResult(
-                        success=False,
-                        data=None,
-                        interface_name=interface_name,
-                        error=f"无法将字符串数据转换为DataFrame: {_e}",
-                        source_interface=interface_name
-                    )
-            else:
-                return ExtractionResult(
-                    success=False,
-                    data=None,
-                    interface_name=interface_name,
-                    error=f"不支持的数据类型: {type(raw_data)}",
-                    source_interface=interface_name
-                )
+            # 2. 转换为DataFrame
+            df = self._convert_to_dataframe(raw_data, interface_name)
+            if isinstance(df, ExtractionResult):
+                return df
 
-            # 判空
-            # 数据检查通过
-            if df is None or df.empty:
-                # 接口返回空数据
-                return ExtractionResult(
-                    success=False,
-                    data=None,
-                    interface_name=interface_name,
-                    error="空数据",
-                    source_interface=interface_name
-                )
-            
-            # 原始数据形状: {df.shape}
-
-            # 应用后处理器（在列名映射之前）
+            # 3. 应用后处理器
             df = self._apply_post_processor(df, category, data_type, interface_name)
 
-            # 列名映射
-            try:
-                col_mapping = {col: self.config.get_field_mapping(col) for col in df.columns}
-                df = df.rename(columns=col_mapping)
-                
-                # 检查并处理重复列名
-                if len(df.columns) != len(set(df.columns)):
-                    duplicate_cols = [col for col in df.columns if list(df.columns).count(col) > 1]
-                    logger.warning(f"检测到重复列名: {duplicate_cols}")
-                    
-                    # 合并重复列的数据，优先保留非空值
-                    for dup_col in set(duplicate_cols):
-                        # 获取所有同名列的索引
-                        dup_indices = [i for i, col in enumerate(df.columns) if col == dup_col]
-                        if len(dup_indices) > 1:
-                            # 合并这些列的数据
-                            merged_series = df.iloc[:, dup_indices[0]].copy()
-                            for idx in dup_indices[1:]:
-                                # 用非空值填充（0值是有意义的，不应该被过滤）
-                                mask = merged_series.isna() | (merged_series == '')
-                                merged_series = merged_series.where(~mask, df.iloc[:, idx])
-                            
-                            # 删除重复列，保留第一列并更新其数据
-                            df = df.drop(df.columns[dup_indices[1:]], axis=1)
-                            df.iloc[:, dup_indices[0]] = merged_series
-                            
-                            logger.info(f"已合并重复列 '{dup_col}'，保留 {len(dup_indices)} 列中的最佳数据")
-                            
-            except Exception as _e:
-                logger.debug(f"列名映射失败，继续使用原列名: {_e}")
+            # 4. 列名映射和重复列处理
+            df = self._map_and_deduplicate_columns(df, interface_name)
 
-            # 列过滤（标准字段）
-            try:
-                # 标准字段过滤：确保所有标准字段都存在，即使数据为空也创建空列
-                standard_fields = self.config.get_standard_fields(category, data_type)
-                if standard_fields:
-                    # 保留存在的标准字段
-                    keep_cols = [c for c in df.columns if c in standard_fields]
-                    if keep_cols:
-                        df = df[keep_cols]
-                    else:
-                        # 如果没有匹配的列，创建一个空的DataFrame但保留原有行数
-                        df = pd.DataFrame(index=df.index)
-                    
-                    # 为所有缺失的标准字段添加空列
-                    missing_fields = [f for f in standard_fields if f not in df.columns]
-                    for field in missing_fields:
-                        df[field] = None  # 或者使用 pd.NA
-                    
-                    # 按标准字段顺序重新排列列
-                    df = df[standard_fields]
-                    
-                    # 标准字段处理完成
-            except Exception as _e:
-                logger.debug(f"标准字段过滤失败，保留原列: {_e}")
+            # 5. 标准字段过滤
+            df = self._filter_standard_fields(df, category, data_type, interface_name)
 
-            # 转换symbol字段为统一格式
-            try:
-                if 'symbol' in df.columns:
-                    logger.info(f"开始转换symbol字段，原始类型: {type(df['symbol'].iloc[0])}, 原始值: {df['symbol'].iloc[0]}")
-                    def convert_symbol_to_unified_format(symbol_value):
-                        """将symbol字段转换为统一的StockSymbol格式"""
-                        if pd.isna(symbol_value) or symbol_value is None:
-                            # 对于个股历史数据接口，如果symbol为None，返回None
-                            return None
-                        
-                        # 如果已经是StockSymbol对象，直接转换为dot格式
-                        if isinstance(symbol_value, StockSymbol):
-                            return symbol_value.to_dot()
-                        
-                        # 如果是字符串，尝试解析为StockSymbol
-                        if isinstance(symbol_value, str):
-                            code = symbol_value.strip()
-                            
-                            # 获取市场提示（简化处理）
-                            hint_market = None
-                            
-                            try:
-                                parsed_symbol = StockSymbol.parse(code, hint_market=hint_market)
-                                if parsed_symbol:
-                                    return parsed_symbol.to_dot()
-                                else:
-                                    # 如果无法解析，保持原值
-                                    return code
-                            except Exception as e:
-                                # 对于B股代码等无法解析的情况，保持原值
-                                return code
-                        
-                        # 其他类型，转换为字符串后尝试解析
-                        try:
-                            str_value = str(symbol_value).strip()
-                            
-                            # 获取市场提示（简化处理）
-                            hint_market = None
-                            
-                            parsed_symbol = StockSymbol.parse(str_value, hint_market=hint_market)
-                            if parsed_symbol:
-                                return parsed_symbol.to_dot()
-                            else:
-                                return str_value
-                        except Exception:
-                            return symbol_value
-                    
-                    # 应用转换函数到symbol列
-                    df['symbol'] = df['symbol'].apply(convert_symbol_to_unified_format)
-                    logger.info(f"已将symbol字段转换为统一格式，转换后类型: {type(df['symbol'].iloc[0])}, 转换后值: {df['symbol'].iloc[0]}")
-                else:
-                    logger.info(f"DataFrame中没有symbol列，当前列名: {list(df.columns)}")
-            except Exception as _e:
-                logger.error(f"symbol字段转换失败，保持原格式: {_e}")
+            # 6. 字段格式转换
+            df = self._convert_field_formats(df, interface_name)
 
-            # 转换date字段为统一格式
-            try:
-                if 'date' in df.columns:
-                    logger.info(f"开始转换date字段，原始类型: {type(df['date'].iloc[0])}, 原始值: {df['date'].iloc[0]}")
-                    
-                    def convert_date_to_unified_format(date_value):
-                        """将date字段转换为统一的datetime.date格式"""
-                        if pd.isna(date_value) or date_value is None:
-                            return date_value
-                        
-                        # 如果已经是date对象，直接返回
-                        if isinstance(date_value, date):
-                            return date_value
-                        
-                        # 如果已经是datetime对象，转换为date
-                        if isinstance(date_value, datetime):
-                            return date_value.date()
-                        
-                        # 如果是字符串，尝试解析
-                        if isinstance(date_value, str):
-                            date_str = str(date_value).strip()
-                            
-                            # 处理各种日期格式
-                            if len(date_str) == 8 and date_str.isdigit():  # 20230922 格式
-                                try:
-                                    return datetime.strptime(date_str, '%Y%m%d').date()
-                                except ValueError:
-                                    pass
-                            
-                            # 处理其他常见格式
-                            for fmt in ExtractorConstants.SUPPORTED_DATE_FORMATS:
-                                try:
-                                    return datetime.strptime(date_str, fmt).date()
-                                except ValueError:
-                                    continue
-                            
-                            # 尝试pandas自动解析
-                            try:
-                                parsed_date = pd.to_datetime(date_str)
-                                return parsed_date.date()
-                            except:
-                                pass
-                            
-                            # 如果都无法解析，保持原值
-                            return date_value
-                        
-                        # 其他类型，尝试转换为字符串后解析
-                        try:
-                            str_value = str(date_value).strip()
-                            return convert_date_to_unified_format(str_value)
-                        except Exception:
-                            return date_value
-                    
-                    # 应用转换函数到date列
-                    df['date'] = df['date'].apply(convert_date_to_unified_format)
-                    logger.info(f"已将date字段转换为统一格式，转换后类型: {type(df['date'].iloc[0])}, 转换后值: {df['date'].iloc[0]}")
-                else:
-                    logger.info(f"DataFrame中没有date列，当前列名: {list(df.columns)}")
-            except Exception as e:
-                logger.error(f"date字段转换失败，保持原格式: {e}")
-
-            # 若无数据（空 DataFrame），则判定失败；仅列不匹配不视为失败
-            if df is None or df.empty:
-                return ExtractionResult(
-                    success=False,
-                    data=None,
-                    interface_name=interface_name,
-                    error="空数据",
-                    source_interface=interface_name
-                )
-
-            # 处理完成
-            return ExtractionResult(
-                success=True,
-                data=df,
-                interface_name=interface_name,
-                source_interface=interface_name,
-                extracted_fields=list(df.columns)
-            )
-
+            # 7. 最终验证和返回
+            return self._create_final_result(df, interface_name)
+            
         except Exception as e:
-            return ExtractionErrorHandler.handle_data_processing_error(e, interface_name)
+            return self._handle_processing_error(e, interface_name)
     
     def _execute_interface_with_batch(self, category: str, data_type: str, 
                                      params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
