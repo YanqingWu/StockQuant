@@ -13,7 +13,7 @@ class StandardParams:
     标准参数类，统一参数格式
     
     核心参数：
-    - symbol: StockSymbol 对象或列表
+    - symbol: StockSymbol
     - start_date/end_date: "YYYY-MM-DD" 格式的日期范围
     - start_time/end_time: "HH:MM:SS" 格式的时间范围
     - period: daily/1min/5min/15min/30min/60min
