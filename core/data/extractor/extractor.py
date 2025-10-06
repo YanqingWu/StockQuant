@@ -173,27 +173,22 @@ class Extractor:
     
     # ==================== 数据处理子函数 ====================
     
-    def _validate_raw_data(self, raw_data: Any, interface_name: str) -> ExtractionResult:
+    def _validate_raw_data(self, raw_data: Any) -> bool:
         """验证原始数据"""
-        if DataValidator.is_empty_data(raw_data):
-            return self._create_error_result(interface_name, "接口返回空数据")
-        return self._create_success_result(None, interface_name)
+        return not DataValidator.is_empty_data(raw_data)
     
-    def _convert_to_dataframe(self, raw_data: Any, interface_name: str) -> Union[pd.DataFrame, ExtractionResult]:
+    def _convert_to_dataframe(self, raw_data: Any) -> pd.DataFrame:
         """将原始数据转换为DataFrame"""
-        try:
-            if isinstance(raw_data, pd.DataFrame):
-                return raw_data.copy()
-            elif isinstance(raw_data, list):
-                return pd.DataFrame(raw_data)
-            elif isinstance(raw_data, dict):
-                return pd.DataFrame([raw_data])
-            elif isinstance(raw_data, str):
-                return self._convert_string_to_dataframe(raw_data)
-            else:
-                return self._create_error_result(interface_name, f"不支持的数据类型: {type(raw_data)}")
-        except Exception as e:
-            return self._create_error_result(interface_name, f"DataFrame转换失败: {e}")
+        if isinstance(raw_data, pd.DataFrame):
+            return raw_data.copy()
+        elif isinstance(raw_data, list):
+            return pd.DataFrame(raw_data)
+        elif isinstance(raw_data, dict):
+            return pd.DataFrame([raw_data])
+        elif isinstance(raw_data, str):
+            return self._convert_string_to_dataframe(raw_data)
+        else:
+            raise ValueError(f"不支持的数据类型: {type(raw_data)}")
     
     def _convert_string_to_dataframe(self, raw_data: str) -> pd.DataFrame:
         """将字符串转换为DataFrame"""
@@ -216,20 +211,6 @@ class Extractor:
                 "raw_value": raw_data
             }])
     
-    def _map_and_deduplicate_columns(self, df: pd.DataFrame, interface_name: str) -> pd.DataFrame:
-        """列名映射和重复列处理"""
-        try:
-            # 列名映射
-            col_mapping = {col: self.config.get_field_mapping(col) for col in df.columns}
-            df = df.rename(columns=col_mapping)
-            
-            # 处理重复列名
-            df = self._handle_duplicate_columns(df)
-            
-            return df
-        except Exception as e:
-            logger.debug(f"列名映射失败，继续使用原列名: {e}")
-            return df
     
     def _handle_duplicate_columns(self, df: pd.DataFrame) -> pd.DataFrame:
         """处理重复列名"""
@@ -256,49 +237,21 @@ class Extractor:
         
         return df
     
-    def _filter_standard_fields(self, df: pd.DataFrame, category: str, data_type: str, interface_name: str) -> pd.DataFrame:
-        """标准字段过滤"""
-        try:
-            standard_fields = self.config.get_standard_fields(category, data_type)
-            if not standard_fields:
-                logger.warning(f"未找到 {category}.{data_type} 的标准字段定义")
-                return df
-            
-            # 保留存在的标准字段
-            keep_cols = [c for c in df.columns if c in standard_fields]
-            if keep_cols:
-                df = df[keep_cols]
-            else:
-                # 如果没有匹配的列，创建一个空的DataFrame但保留原有行数
-                df = pd.DataFrame(index=df.index)
-            
-            # 为所有缺失的标准字段添加空列
-            missing_fields = [f for f in standard_fields if f not in df.columns]
-            for field in missing_fields:
-                df[field] = None
-            
-            # 按标准字段顺序重新排列列
-            df = df[standard_fields]
-            
-            return df
-        except Exception as e:
-            logger.debug(f"标准字段过滤失败，保留原列: {e}")
-            return df
     
-    def _convert_field_formats(self, df: pd.DataFrame, interface_name: str) -> pd.DataFrame:
+    def _convert_field_formats(self, df: pd.DataFrame) -> pd.DataFrame:
         """转换字段格式"""
         if df is None or df.empty:
             return df
         
         # 转换symbol字段
-        df = self._convert_symbol_field(df, interface_name)
+        df = self._convert_symbol_field(df)
         
         # 转换date字段
-        df = self._convert_date_field(df, interface_name)
+        df = self._convert_date_field(df)
         
         return df
     
-    def _convert_symbol_field(self, df: pd.DataFrame, interface_name: str) -> pd.DataFrame:
+    def _convert_symbol_field(self, df: pd.DataFrame) -> pd.DataFrame:
         """转换symbol字段为统一格式"""
         if 'symbol' not in df.columns:
             logger.info(f"DataFrame中没有symbol列，当前列名: {list(df.columns)}")
@@ -341,7 +294,7 @@ class Extractor:
         except Exception:
             return symbol_value
     
-    def _convert_date_field(self, df: pd.DataFrame, interface_name: str) -> pd.DataFrame:
+    def _convert_date_field(self, df: pd.DataFrame) -> pd.DataFrame:
         """转换date字段为统一格式"""
         if 'date' not in df.columns:
             logger.info(f"DataFrame中没有date列，当前列名: {list(df.columns)}")
@@ -440,36 +393,127 @@ class Extractor:
         """处理处理过程中的错误"""
         return ExtractionErrorHandler.handle_data_processing_error(error, interface_name)
     
+    def _create_standard_dataframe_structure(self, category: str, data_type: str) -> Union[pd.DataFrame, ExtractionResult]:
+        """创建标准字段DataFrame结构"""
+        try:
+            standard_fields = self.config.get_standard_fields(category, data_type)
+            if not standard_fields:
+                logger.warning(f"未找到 {category}.{data_type} 的标准字段定义")
+                return self._create_error_result(None, f"未找到 {category}.{data_type} 的标准字段定义")
+            
+            # 创建包含所有标准字段的空DataFrame
+            standard_df = pd.DataFrame(columns=standard_fields)
+            logger.debug(f"创建标准字段DataFrame结构: {category}.{data_type}, 字段: {standard_fields}")
+            
+            return standard_df
+        except Exception as e:
+            logger.error(f"创建标准字段DataFrame结构失败: {e}")
+            return self._create_error_result(None, f"创建标准字段结构失败: {e}")
+    
+    def _fill_standard_fields_from_data(self, standard_df: pd.DataFrame, raw_df: pd.DataFrame) -> pd.DataFrame:
+        """将原始数据填充到标准字段结构中"""
+        try:
+            if raw_df is None or raw_df.empty:
+                logger.warning("原始数据为空，返回标准字段结构")
+                return standard_df
+            
+            # 获取标准字段列表
+            standard_fields = list(standard_df.columns)
+            
+            # 对原始数据进行列名映射
+            mapped_df = self._map_column_names(raw_df)
+            
+            # 批量处理：先收集所有行数据，然后一次性创建DataFrame
+            rows_data = []
+            
+            for idx, row in mapped_df.iterrows():
+                new_row = {}
+                
+                # 为每个标准字段填充数据
+                for field in standard_fields:
+                    # 查找映射后的列名
+                    mapped_field = self._find_mapped_field(field, mapped_df.columns)
+                    if mapped_field and mapped_field in mapped_df.columns:
+                        new_row[field] = row[mapped_field]
+                    else:
+                        new_row[field] = None  # 标准字段没有对应数据时填充None
+                
+                rows_data.append(new_row)
+            
+            # 一次性创建结果DataFrame，避免循环中的concat操作
+            if rows_data:
+                result_df = pd.DataFrame(rows_data, columns=standard_fields)
+            else:
+                result_df = standard_df.copy()
+            
+            logger.debug(f"数据填充完成: 原始数据 {len(raw_df)} 行 -> 标准字段 {len(result_df)} 行")
+            return result_df
+            
+        except Exception as e:
+            logger.error(f"填充标准字段数据失败: {e}")
+            return standard_df  # 失败时返回标准结构
+    
+    def _map_column_names(self, df: pd.DataFrame) -> pd.DataFrame:
+        """映射列名"""
+        try:
+            col_mapping = {col: self.config.get_field_mapping(col) for col in df.columns}
+            mapped_df = df.rename(columns=col_mapping)
+            
+            # 处理重复列名
+            mapped_df = self._handle_duplicate_columns(mapped_df)
+            
+            return mapped_df
+        except Exception as e:
+            logger.debug(f"列名映射失败，使用原列名: {e}")
+            return df
+    
+    def _find_mapped_field(self, standard_field: str, available_columns: List[str]) -> Optional[str]:
+        """查找标准字段对应的映射列名"""
+        # 直接匹配
+        if standard_field in available_columns:
+            return standard_field
+        
+        # 查找可能的映射关系
+        for col in available_columns:
+            # 检查是否有反向映射
+            if self.config.get_field_mapping(col) == standard_field:
+                return col
+        
+        return None
+    
     def _process_extraction_result(self, raw_data: Any, category: str, data_type: str, 
                                  interface_name: str) -> ExtractionResult:
         """
         处理提取结果，统一返回 pandas.DataFrame
+        优化流程：先建立标准字段结构，再从接口数据中填充
         """
         try:
             # 1. 数据验证
-            validation_result = self._validate_raw_data(raw_data, interface_name)
-            if not validation_result.success:
-                return validation_result
+            if not self._validate_raw_data(raw_data):
+                return self._create_error_result(interface_name, "接口返回空数据")
 
-            # 2. 转换为DataFrame
-            df = self._convert_to_dataframe(raw_data, interface_name)
-            if isinstance(df, ExtractionResult):
-                return df
+            # 2. 创建标准字段DataFrame结构
+            standard_df = self._create_standard_dataframe_structure(category, data_type)
+            if isinstance(standard_df, ExtractionResult):
+                return standard_df
 
-            # 3. 应用后处理器
-            df = self._apply_post_processor(df, category, data_type, interface_name)
+            # 3. 转换原始数据为DataFrame
+            try:
+                raw_df = self._convert_to_dataframe(raw_data)
+            except Exception as e:
+                return self._create_error_result(interface_name, f"DataFrame转换失败: {e}")
 
-            # 4. 列名映射和重复列处理
-            df = self._map_and_deduplicate_columns(df, interface_name)
+            # 4. 应用后处理器
+            raw_df = self._apply_post_processor(raw_df, category, data_type, interface_name)
 
-            # 5. 标准字段过滤
-            df = self._filter_standard_fields(df, category, data_type, interface_name)
+            # 5. 将原始数据填充到标准字段结构中
+            filled_df = self._fill_standard_fields_from_data(standard_df, raw_df)
 
             # 6. 字段格式转换
-            df = self._convert_field_formats(df, interface_name)
+            filled_df = self._convert_field_formats(filled_df)
 
             # 7. 最终验证和返回
-            return self._create_final_result(df, interface_name)
+            return self._create_final_result(filled_df, interface_name)
             
         except Exception as e:
             return self._handle_processing_error(e, interface_name)
