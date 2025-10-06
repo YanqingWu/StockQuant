@@ -33,7 +33,7 @@ class StandardParams:
     def __init__(
         self,
         *,
-        symbol: Optional[Union[StockSymbol, List[StockSymbol]]] = None,
+        symbol: Optional[Union[StockSymbol]] = None,
         # 时间参数：使用 start_date/end_date 替代单一的 date
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
