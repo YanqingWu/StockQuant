@@ -9,7 +9,7 @@ import pandas as pd
 from datetime import datetime, date
 from .config_loader import ConfigLoader
 from ..adapters import to_standard_params, StandardParams, AkshareStockParamAdapter, StockSymbol
-from ..interfaces.executor import TaskManager, InterfaceExecutor, CallTask, ExecutionContext, ExecutorConfig, RetryConfig
+from ..interfaces.executor import TaskManager, InterfaceExecutor, CallTask, ExecutionContext, ExecutorConfig, RetryConfig, BatchResult
 from ..cache.persistent_cache import PersistentCacheConfig
 from ..interfaces.base import get_api_provider_manager
 from core.logging import get_logger
@@ -469,7 +469,7 @@ class Extractor:
     
     def _execute_interface(self, category: str, data_type: str, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
         """
-        执行指定数据类型的接口，使用标准参数和task manager，支持多接口数据合并
+        执行指定数据类型的接口（重构版）
         
         Args:
             category: 数据分类
@@ -479,168 +479,32 @@ class Extractor:
         Returns:
             提取结果
         """
-        # 使用上下文管理器避免实例变量污染
-        with ExtractionContext(params) as extraction_context:
-            extraction_context.set_extraction_info(category, data_type)
+        try:
+            # 1. 准备执行参数
+            standard_params, params_dict, market = self._prepare_execution_params(params)
             
-            # 标准化参数
-            try:
-                standard_params = to_standard_params(params)
-                params_dict = standard_params.to_dict()
-                logger.debug(f"参数标准化成功: {category}.{data_type}")
-            except Exception as e:
-                logger.error(f"参数标准化失败: {e}")
-                # 回退到原始参数
-                if isinstance(params, dict):
-                    params_dict = params
-                else:
-                    params_dict = {}
-                # 创建默认的StandardParams对象
-                standard_params = StandardParams()
+            # 2. 选择接口
+            interfaces = self._select_interfaces(category, data_type, market)
             
-            # 从参数中提取市场信息用于接口筛选
-            market = self._extract_market_from_params(standard_params)
+            # 3. 构建任务
+            tasks = self._build_interface_tasks(interfaces, params_dict)
             
-            # 获取启用的接口列表，根据市场进行筛选
-            interfaces = self.config.get_enabled_interfaces(category, data_type, market)
-            if not interfaces:
-                market_info = f" (市场: {market})" if market else ""
-                logger.warning(f"未找到启用的接口: {category}.{data_type}{market_info}")
-                return ExtractionResult(
-                    success=False,
-                    data=None,
-                    error=f"未找到启用的接口: {category}.{data_type}{market_info}"
-                )
-            
-            logger.info(f"找到 {len(interfaces)} 个可用接口: {[i.name for i in interfaces]}")
-            
-            # 使用全局参数适配器
-            param_adapter = self.param_adapter
-            
-            # 构造执行上下文
+            # 4. 执行任务
             context = ExecutionContext(
                 cache_enabled=bool(self.config.global_config.enable_cache),
                 user_data={"category": category, "data_type": data_type}
             )
+            batch_result = self._execute_interface_tasks(tasks, context)
             
-            # 使用全局 TaskManager 批量构建并执行任务（按接口优先级）
-            # 先为每个接口构建任务并入队
-            for interface in interfaces:
-                try:
-                    logger.info(f"准备加入批量任务: {interface.name}")
-                    try:
-                        # 统一通过适配器执行参数适配，隐藏具体映射细节
-                        # 进行参数适配
-                        adapted_params = param_adapter.adapt(interface.name, params_dict)
-                        logger.debug(f"参数适配成功: {interface.name}")
-                    except Exception as _e:
-                        # 参数适配失败，回退原始参数
-                        logger.warning(f"参数适配失败: {interface.name}, 错误: {_e}")
-                        adapted_params = params_dict
-                    task = CallTask(interface_name=interface.name, params=adapted_params)
-                    self.task_manager.add_task(task)
-                except Exception as e:
-                    logger.error(f"构建接口 {interface.name} 任务时发生错误: {e}")
-                    continue
-
-            # 智能选择执行模式
-            use_async = self._should_use_async_execution(len(interfaces))
-            execution_mode = "异步" if use_async else "同步"
-            logger.info(f"使用{execution_mode}执行模式，接口数量: {len(interfaces)}")
+            # 5. 处理结果
+            successful_results = self._process_execution_results(batch_result, interfaces, category, data_type)
             
-            # 批量执行
-            if use_async:
-                # 使用异步执行
-                import asyncio
-                batch_result = asyncio.run(self.task_manager.execute_all_async(context=context))
-            else:
-                # 使用同步执行
-                batch_result = self.task_manager.execute_all(context=context)
+            # 6. 合并结果
+            return self._merge_execution_results(successful_results, standard_params, category, data_type)
             
-            logger.info(f"批量执行完成，成功: {batch_result.successful_tasks}/{batch_result.total_tasks}")
-
-            # 收集所有成功的结果进行数据合并
-            successful_results = []
-            # 处理批量执行结果
-            if batch_result and batch_result.results:
-                for interface in interfaces:
-                    # 查找该接口的结果
-                    matched = [r for r in batch_result.results if r.interface_name == interface.name]
-                    if not matched:
-                        logger.warning(f"接口 {interface.name} 未返回结果")
-                        continue
-                    result = matched[0]
-                    if result.success:
-                        extraction_result = self._process_extraction_result(result.data, category, data_type, interface.name)
-                        if extraction_result.success:
-                            logger.info(f"接口 {interface.name} 执行成功")
-                            successful_results.append((interface, extraction_result))
-                        else:
-                            logger.warning(f"接口 {interface.name} 数据处理失败: {extraction_result.error}")
-                    else:
-                        logger.warning(f"接口 {interface.name} 执行失败: {result.error}")
-            
-            # 如果没有成功的结果，返回空的标准字段DataFrame
-            if not successful_results:
-                # 没有成功的结果，返回空的标准字段DataFrame
-                empty_df = self._create_empty_standard_dataframe(category, data_type)
-                return ExtractionResult(
-                    success=True,
-                    data=empty_df,
-                    interface_name=None,
-                    error=None
-                )
-            
-            # 如果只有一个成功结果，应用日期过滤后直接返回
-            if len(successful_results) == 1:
-                logger.debug("=== 处理单个接口结果 ===")
-                single_result = successful_results[0][1]
-                logger.debug(f"单个接口结果处理: {single_result.interface_name}, 数据形状: {single_result.data.shape if single_result.data is not None else 'None'}")
-                
-                # 应用股票代码过滤
-                if single_result.data is not None and not single_result.data.empty and 'symbol' in single_result.data.columns:
-                    target_symbol = standard_params.symbol
-                    if target_symbol:
-                        logger.debug(f"应用股票代码过滤: {target_symbol.to_dot()}")
-                        original_count = len(single_result.data)
-                        single_result.data = single_result.data[single_result.data['symbol'] == target_symbol.to_dot()]
-                        logger.debug(f"股票代码过滤结果: {original_count} -> {len(single_result.data)} 行")
-                        if single_result.data.empty:
-                            logger.debug("股票代码过滤后数据为空")
-                            empty_df = self._create_empty_standard_dataframe(category, data_type)
-                            return ExtractionResult(
-                                success=True,
-                                data=empty_df,
-                                error=None,
-                                interface_name=single_result.interface_name
-                            )
-                
-                # 应用日期过滤
-                if single_result.data is not None and not single_result.data.empty:
-                    logger.debug("开始应用日期过滤")
-                    merge_config = self._get_merge_strategy(category, data_type)
-                    filtered_data = self._apply_date_filter(single_result.data, standard_params, merge_config)
-                    if not filtered_data.empty:
-                        single_result.data = filtered_data
-                        logger.debug(f"日期过滤后数据形状: {single_result.data.shape}")
-                    else:
-                        logger.debug("日期过滤后数据为空")
-                        # 创建空的标准字段DataFrame而不是返回None
-                        empty_df = self._create_empty_standard_dataframe(category, data_type)
-                        return ExtractionResult(
-                            success=True,  # 改为True，因为这是正常的空数据情况
-                            data=empty_df,
-                            error=None,
-                            interface_name=single_result.interface_name
-                        )
-                logger.debug(f"单个接口结果处理完成，最终数据形状: {single_result.data.shape if single_result.data is not None else 'None'}")
-                return single_result
-            
-            # 多个成功结果，进行数据合并
-            logger.info(f"开始合并 {len(successful_results)} 个接口的数据")
-            merged_result = self._merge_interface_results(successful_results, standard_params, category, data_type)
-            
-            return merged_result
+        except Exception as e:
+            logger.error(f"接口执行失败: {e}")
+            return ExtractionResult(success=False, error=str(e))
     
     def _extract_market_from_params(self, standard_params: StandardParams) -> Optional[str]:
         """从参数中提取市场信息"""
@@ -660,6 +524,165 @@ class Extractor:
         except Exception as e:
             logger.error(f"提取市场信息失败: {e}")
             return None
+    
+    def _prepare_execution_params(self, params: Union[StandardParams, Dict[str, Any]]) -> Tuple[StandardParams, Dict[str, Any], Optional[str]]:
+        """准备执行参数"""
+        # 参数标准化
+        try:
+            standard_params = to_standard_params(params)
+            params_dict = standard_params.to_dict()
+            logger.debug(f"参数标准化成功")
+        except Exception as e:
+            logger.error(f"参数标准化失败: {e}")
+            # 回退到原始参数
+            if isinstance(params, dict):
+                params_dict = params
+            else:
+                params_dict = {}
+            # 创建默认的StandardParams对象
+            standard_params = StandardParams()
+        
+        # 市场信息提取
+        market = self._extract_market_from_params(standard_params)
+        
+        return standard_params, params_dict, market
+    
+    def _select_interfaces(self, category: str, data_type: str, market: Optional[str]) -> List[Any]:
+        """选择启用的接口"""
+        interfaces = self.config.get_enabled_interfaces(category, data_type, market)
+        if not interfaces:
+            market_info = f" (市场: {market})" if market else ""
+            raise ValueError(f"未找到启用的接口: {category}.{data_type}{market_info}")
+        
+        logger.info(f"找到 {len(interfaces)} 个可用接口: {[i.name for i in interfaces]}")
+        return interfaces
+    
+    def _build_interface_tasks(self, interfaces: List[Any], params_dict: Dict[str, Any]) -> List[CallTask]:
+        """构建接口任务列表"""
+        tasks = []
+        param_adapter = self.param_adapter
+        
+        for interface in interfaces:
+            try:
+                logger.info(f"准备加入批量任务: {interface.name}")
+                try:
+                    # 统一通过适配器执行参数适配，隐藏具体映射细节
+                    adapted_params = param_adapter.adapt(interface.name, params_dict)
+                    logger.debug(f"参数适配成功: {interface.name}")
+                except Exception as e:
+                    # 参数适配失败，回退原始参数
+                    logger.warning(f"参数适配失败: {interface.name}, 错误: {e}")
+                    adapted_params = params_dict
+                
+                task = CallTask(interface_name=interface.name, params=adapted_params)
+                tasks.append(task)
+            except Exception as e:
+                logger.error(f"构建接口 {interface.name} 任务时发生错误: {e}")
+                continue
+        
+        return tasks
+    
+    def _execute_interface_tasks(self, tasks: List[CallTask], context: ExecutionContext) -> BatchResult:
+        """执行接口任务"""
+        # 添加到任务管理器
+        for task in tasks:
+            self.task_manager.add_task(task)
+        
+        # 选择执行模式
+        use_async = self._should_use_async_execution(len(tasks))
+        execution_mode = "异步" if use_async else "同步"
+        logger.info(f"使用{execution_mode}执行模式，接口数量: {len(tasks)}")
+        
+        # 执行任务
+        if use_async:
+            import asyncio
+            batch_result = asyncio.run(self.task_manager.execute_all_async(context=context))
+        else:
+            batch_result = self.task_manager.execute_all(context=context)
+        
+        logger.info(f"批量执行完成，成功: {batch_result.successful_tasks}/{batch_result.total_tasks}")
+        return batch_result
+    
+    def _process_execution_results(self, batch_result: BatchResult, interfaces: List[Any], 
+                                 category: str, data_type: str) -> List[Tuple[Any, ExtractionResult]]:
+        """处理执行结果"""
+        successful_results = []
+        
+        if batch_result and batch_result.results:
+            for interface in interfaces:
+                # 查找该接口的结果
+                matched = [r for r in batch_result.results if r.interface_name == interface.name]
+                if not matched:
+                    logger.warning(f"接口 {interface.name} 未返回结果")
+                    continue
+                
+                result = matched[0]
+                if result.success:
+                    extraction_result = self._process_extraction_result(result.data, category, data_type, interface.name)
+                    if extraction_result.success:
+                        logger.info(f"接口 {interface.name} 执行成功")
+                        successful_results.append((interface, extraction_result))
+                    else:
+                        logger.warning(f"接口 {interface.name} 数据处理失败: {extraction_result.error}")
+                else:
+                    logger.warning(f"接口 {interface.name} 执行失败: {result.error}")
+        
+        return successful_results
+    
+    def _create_empty_result(self, category: str, data_type: str) -> ExtractionResult:
+        """创建空结果"""
+        empty_df = self._create_empty_standard_dataframe(category, data_type)
+        return ExtractionResult(
+            success=True,
+            data=empty_df,
+            interface_name=None,
+            error=None
+        )
+    
+    def _process_single_result(self, single_result: ExtractionResult, standard_params: StandardParams, 
+                             category: str, data_type: str) -> ExtractionResult:
+        """处理单个接口结果"""
+        logger.debug("=== 处理单个接口结果 ===")
+        logger.debug(f"单个接口结果处理: {single_result.interface_name}, 数据形状: {single_result.data.shape if single_result.data is not None else 'None'}")
+        
+        # 应用股票代码过滤
+        if single_result.data is not None and not single_result.data.empty and 'symbol' in single_result.data.columns:
+            target_symbol = standard_params.symbol
+            if target_symbol:
+                logger.debug(f"应用股票代码过滤: {target_symbol.to_dot()}")
+                original_count = len(single_result.data)
+                single_result.data = single_result.data[single_result.data['symbol'] == target_symbol.to_dot()]
+                logger.debug(f"股票代码过滤结果: {original_count} -> {len(single_result.data)} 行")
+                if single_result.data.empty:
+                    logger.debug("股票代码过滤后数据为空")
+                    return self._create_empty_result(category, data_type)
+        
+        # 应用日期过滤
+        if single_result.data is not None and not single_result.data.empty:
+            logger.debug("开始应用日期过滤")
+            merge_config = self._get_merge_strategy(category, data_type)
+            filtered_data = self._apply_date_filter(single_result.data, standard_params, merge_config)
+            if not filtered_data.empty:
+                single_result.data = filtered_data
+                logger.debug(f"日期过滤后数据形状: {single_result.data.shape}")
+            else:
+                logger.debug("日期过滤后数据为空")
+                return self._create_empty_result(category, data_type)
+        
+        logger.debug(f"单个接口结果处理完成，最终数据形状: {single_result.data.shape if single_result.data is not None else 'None'}")
+        return single_result
+    
+    def _merge_execution_results(self, successful_results: List[Tuple[Any, ExtractionResult]], 
+                               standard_params: StandardParams, category: str, data_type: str) -> ExtractionResult:
+        """合并执行结果"""
+        if not successful_results:
+            return self._create_empty_result(category, data_type)
+        
+        if len(successful_results) == 1:
+            return self._process_single_result(successful_results[0][1], standard_params, category, data_type)
+        else:
+            logger.info(f"开始合并 {len(successful_results)} 个接口的数据")
+            return self._merge_interface_results(successful_results, standard_params, category, data_type)
     
     def _merge_interface_results(self, successful_results: List[Tuple[Any, ExtractionResult]], 
                                 standard_params: StandardParams, category: str, data_type: str) -> ExtractionResult:
