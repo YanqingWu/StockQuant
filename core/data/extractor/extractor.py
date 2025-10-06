@@ -47,7 +47,7 @@ class Extractor:
         # 初始化task manager和executor
         self.provider_manager = get_api_provider_manager()
         
-        # 从全局配置注入执行器配置（缓存/重试/超时）
+        # 从全局配置注入执行器配置（缓存/重试/超时/异步执行）
         global_cfg = self.config.global_config
         self.executor_config = ExecutorConfig(
             cache_config=PersistentCacheConfig(
@@ -56,6 +56,8 @@ class Extractor:
             retry_config=RetryConfig(
                 max_retries=int(global_cfg.retry_count)
             ),
+            # 异步执行配置
+            async_max_concurrency=int(getattr(global_cfg, 'async_max_concurrency', 10)),
         )
         # 仅在配置中提供了正数超时时才覆盖默认值
         try:
@@ -541,9 +543,20 @@ class Extractor:
                     logger.error(f"构建接口 {interface.name} 任务时发生错误: {e}")
                     continue
 
+            # 智能选择执行模式
+            use_async = self._should_use_async_execution(len(interfaces))
+            execution_mode = "异步" if use_async else "同步"
+            logger.info(f"使用{execution_mode}执行模式，接口数量: {len(interfaces)}")
+            
             # 批量执行
-            logger.info(f"开始批量执行，接口数量: {len(interfaces)}")
-            batch_result = self.task_manager.execute_all(context=context)
+            if use_async:
+                # 使用异步执行
+                import asyncio
+                batch_result = asyncio.run(self.task_manager.execute_all_async(context=context))
+            else:
+                # 使用同步执行
+                batch_result = self.task_manager.execute_all(context=context)
+            
             logger.info(f"批量执行完成，成功: {batch_result.successful_tasks}/{batch_result.total_tasks}")
 
             # 收集所有成功的结果进行数据合并
@@ -1517,3 +1530,21 @@ class Extractor:
         """重新加载配置文件"""
         self.config = self.config_loader.reload()
         logger.info("配置文件已重新加载")
+    
+    def _should_use_async_execution(self, interface_count: int) -> bool:
+        """判断是否应该使用异步执行"""
+        # 检查是否启用异步执行
+        if not getattr(self.config.global_config, 'enable_async_execution', True):
+            return False
+        
+        # 检查接口数量阈值
+        async_threshold = getattr(self.config.global_config, 'async_execution_threshold', 2)
+        if interface_count < async_threshold:
+            return False
+        
+        # 检查最大并发数配置
+        max_concurrency = getattr(self.config.global_config, 'async_max_concurrency', 10)
+        if max_concurrency <= 0:
+            return False
+        
+        return True

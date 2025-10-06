@@ -8,6 +8,10 @@ global_config:
   retry_count: 3
   enable_cache: true
   log_level: "INFO"
+  # 异步执行配置
+  enable_async_execution: true          # 是否启用异步执行（默认开启）
+  async_execution_threshold: 2          # 异步执行阈值：接口数量超过此值时使用异步执行
+  async_max_concurrency: 10             # 异步执行最大并发数
 
 
 standard_fields:
