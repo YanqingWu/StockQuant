@@ -860,38 +860,6 @@ class Extractor:
             error=None
         )
     
-    def _process_single_result(self, single_result: ExtractionResult, standard_params: StandardParams, 
-                             category: str, data_type: str) -> ExtractionResult:
-        """处理单个接口结果"""
-        logger.debug("=== 处理单个接口结果 ===")
-        logger.debug(f"单个接口结果处理: {single_result.interface_name}, 数据形状: {single_result.data.shape if single_result.data is not None else 'None'}")
-        
-        # 应用股票代码过滤
-        if single_result.data is not None and not single_result.data.empty and 'symbol' in single_result.data.columns:
-            target_symbol = standard_params.symbol
-            if target_symbol:
-                logger.debug(f"应用股票代码过滤: {target_symbol.to_dot()}")
-                original_count = len(single_result.data)
-                single_result.data = single_result.data[single_result.data['symbol'] == target_symbol.to_dot()]
-                logger.debug(f"股票代码过滤结果: {original_count} -> {len(single_result.data)} 行")
-                if single_result.data.empty:
-                    logger.debug("股票代码过滤后数据为空")
-                    return self._create_empty_result(category, data_type)
-        
-        # 应用日期过滤
-        if single_result.data is not None and not single_result.data.empty:
-            logger.debug("开始应用日期过滤")
-            merge_config = self._get_merge_strategy(category, data_type)
-            filtered_data = self._apply_date_filter(single_result.data, standard_params, merge_config)
-            if not filtered_data.empty:
-                single_result.data = filtered_data
-                logger.debug(f"日期过滤后数据形状: {single_result.data.shape}")
-            else:
-                logger.debug("日期过滤后数据为空")
-                return self._create_empty_result(category, data_type)
-        
-        logger.debug(f"单个接口结果处理完成，最终数据形状: {single_result.data.shape if single_result.data is not None else 'None'}")
-        return single_result
     
     def _merge_execution_results(self, successful_results: List[Tuple[Any, ExtractionResult]], 
                                standard_params: StandardParams, category: str, data_type: str) -> ExtractionResult:
@@ -900,7 +868,7 @@ class Extractor:
             return self._create_empty_result(category, data_type)
         
         if len(successful_results) == 1:
-            return self._process_single_result(successful_results[0][1], standard_params, category, data_type)
+            return successful_results[0][1]  # 直接返回单个结果
         else:
             logger.info(f"开始合并 {len(successful_results)} 个接口的数据")
             return self._merge_interface_results(successful_results, standard_params, category, data_type)
