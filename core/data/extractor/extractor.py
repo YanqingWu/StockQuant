@@ -4,7 +4,6 @@
 
 from typing import Dict, List, Any, Optional, Union, Tuple
 from pathlib import Path
-from dataclasses import dataclass
 import pandas as pd
 from datetime import datetime, date
 from .config_loader import ConfigLoader
@@ -15,7 +14,7 @@ from ..interfaces.base import get_api_provider_manager
 from core.logging import get_logger
 from .exceptions import ExtractionErrorHandler, DataValidator
 from .types import ExtractionResult
-from .constants import ExtractorConstants, ExtractionContext, get_default_config_path
+from .constants import ExtractorConstants, get_default_config_path
 
 logger = get_logger(__name__)
 
@@ -468,6 +467,109 @@ class Extractor:
         except Exception as e:
             return ExtractionErrorHandler.handle_data_processing_error(e, interface_name)
     
+    def _execute_interface_with_batch(self, category: str, data_type: str, 
+                                     params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
+        """
+        支持批量执行的接口执行器
+        
+        Args:
+            category: 数据分类
+            data_type: 数据类型
+            params: 接口参数（支持单个参数或参数列表）
+            
+        Returns:
+            单个结果或结果列表
+        """
+        if isinstance(params, list):
+            return self._execute_interface_batch(category, data_type, params)
+        else:
+            return self._execute_interface(category, data_type, params)
+    
+    def _execute_interface_batch(self, category: str, data_type: str, 
+                                params_list: List[Union[StandardParams, Dict[str, Any]]]) -> List[ExtractionResult]:
+        """
+        批量执行接口
+        
+        Args:
+            category: 数据分类
+            data_type: 数据类型
+            params_list: 参数列表
+            
+        Returns:
+            结果列表，与输入参数顺序对应
+        """
+        try:
+            if not params_list:
+                logger.warning("批量执行参数列表为空")
+                return []
+            
+            logger.info(f"开始批量执行 {category}.{data_type}，参数数量: {len(params_list)}")
+            
+            # 1. 批量参数标准化和验证
+            standardized_params = []
+            param_tasks = []
+            call_mapping = {}  # task_id -> param_index 映射
+            
+            for i, params in enumerate(params_list):
+                try:
+                    # 标准化参数
+                    standard_params, params_dict, market = self._prepare_execution_params(params)
+                    standardized_params.append(standard_params)
+                    
+                    # 选择接口
+                    interfaces = self._select_interfaces(category, data_type, market)
+                    
+                    # 构建任务
+                    tasks = self._build_interface_tasks(interfaces, params_dict)
+                    
+                    # 为每个任务添加参数索引到metadata
+                    for task in tasks:
+                        task.metadata['param_index'] = i
+                        task.metadata['standard_params'] = standard_params
+                        call_mapping[task.task_id] = i
+                        param_tasks.append(task)
+                    
+                except Exception as e:
+                    logger.error(f"参数 {i} 标准化失败: {e}")
+                    # 为失败的参数创建空结果
+                    standardized_params.append(None)
+            
+            if not param_tasks:
+                logger.warning("没有有效的任务可以执行")
+                return [ExtractionResult(success=False, error="参数标准化失败") for _ in params_list]
+            
+            # 2. 执行批量任务
+            context = ExecutionContext(
+                cache_enabled=bool(self.config.global_config.enable_cache),
+                user_data={"category": category, "data_type": data_type, "batch_mode": True}
+            )
+            
+            # 清空任务队列并添加新任务
+            self.task_manager.clear_queue()
+            for task in param_tasks:
+                self.task_manager.add_task(task)
+            
+            # 选择执行模式
+            use_async = self._should_use_async_execution(len(param_tasks))
+            execution_mode = "异步" if use_async else "同步"
+            logger.info(f"批量执行使用{execution_mode}模式，任务数量: {len(param_tasks)}")
+            
+            # 执行任务
+            if use_async:
+                import asyncio
+                batch_result = asyncio.run(self.task_manager.execute_all_async(context=context))
+            else:
+                batch_result = self.task_manager.execute_all(context=context)
+            
+            logger.info(f"批量执行完成，成功: {batch_result.successful_tasks}/{batch_result.total_tasks}")
+            
+            # 3. 处理批量结果
+            return self._process_batch_results(batch_result, call_mapping, standardized_params, category, data_type)
+            
+        except Exception as e:
+            logger.error(f"批量执行失败: {e}")
+            return [ExtractionResult(success=False, error=f"批量执行失败: {e}") for _ in params_list]
+
     def _execute_interface(self, category: str, data_type: str, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
         """
         执行指定数据类型的接口（重构版）
@@ -506,6 +608,73 @@ class Extractor:
         except Exception as e:
             logger.error(f"接口执行失败: {e}")
             return ExtractionResult(success=False, error=str(e))
+    
+    def _process_batch_results(self, batch_result: BatchResult, call_mapping: Dict[str, int], 
+                              standardized_params: List[Optional[StandardParams]], 
+                              category: str, data_type: str) -> List[ExtractionResult]:
+        """处理批量执行结果
+        
+        Args:
+            batch_result: 批量执行结果
+            call_mapping: 任务ID -> 参数索引映射
+            standardized_params: 标准化参数列表
+            category: 数据分类
+            data_type: 数据类型
+            
+        Returns:
+            结果列表，与输入顺序对应
+        """
+        from collections import defaultdict
+        
+        # 按参数索引分组结果
+        param_results = defaultdict(list)
+        
+        for result in batch_result.results:
+            param_index = call_mapping.get(result.task_id)
+            if param_index is not None and result.success:
+                # 处理提取结果
+                extraction_result = self._process_extraction_result(
+                    result.data,
+                    category,
+                    data_type,
+                    result.interface_name
+                )
+                if extraction_result.success:
+                    param_results[param_index].append((None, extraction_result))
+        
+        # 为每个参数创建结果
+        results = []
+        for i, standard_params in enumerate(standardized_params):
+            if i in param_results and param_results[i]:
+                # 合并该参数的所有结果
+                successful_results = param_results[i]
+                if standard_params is not None:
+                    merged_result = self._merge_execution_results(
+                        successful_results,
+                        standard_params,
+                        category,
+                        data_type
+                    )
+                    results.append(merged_result)
+                else:
+                    # 参数标准化失败的情况
+                    results.append(ExtractionResult(
+                        success=False,
+                        error="参数标准化失败",
+                        data=None
+                    ))
+            else:
+                # 没有结果或参数标准化失败
+                if standard_params is not None:
+                    results.append(self._create_empty_result(category, data_type))
+                else:
+                    results.append(ExtractionResult(
+                        success=False,
+                        error="参数标准化失败",
+                        data=None
+                    ))
+        
+        return results
     
     def _extract_market_from_params(self, standard_params: StandardParams) -> Optional[str]:
         """从参数中提取市场信息"""
@@ -776,7 +945,10 @@ class Extractor:
             if result.data is not None and not result.data.empty:
                 # 注意：日期过滤已经在单个结果处理时完成，这里直接使用数据
                 all_data.append(result.data)
-                interface_names.append(interface.name)
+                if interface is not None:
+                    interface_names.append(interface.name)
+                else:
+                    interface_names.append(result.interface_name or "unknown")
         
         if not all_data:
             # 创建空的标准字段DataFrame而不是返回None
@@ -905,10 +1077,14 @@ class Extractor:
                 if target_row is not None:
                     if merged_data is None:
                         merged_data = target_row.copy()
-                        interface_names.append(interface.name)
+                        if interface is not None:
+                            interface_names.append(interface.name)
+                        else:
+                            interface_names.append(result.interface_name or "unknown")
                     else:
-                        merged_data = self._merge_stock_data(merged_data, target_row, interface.name)
-                        interface_names.append(interface.name)
+                        interface_name = interface.name if interface is not None else (result.interface_name or "unknown")
+                        merged_data = self._merge_stock_data(merged_data, target_row, interface_name)
+                        interface_names.append(interface_name)
         
         if merged_data is None:
             # 创建空的标准字段DataFrame而不是返回None
@@ -954,7 +1130,10 @@ class Extractor:
                 
                 if not target_data.empty:
                     all_data.append(target_data)
-                    interface_names.append(interface.name)
+                    if interface is not None:
+                        interface_names.append(interface.name)
+                    else:
+                        interface_names.append(result.interface_name or "unknown")
         
         if not all_data:
             # 创建空的标准字段DataFrame而不是返回None
@@ -1008,7 +1187,10 @@ class Extractor:
         
         for interface, extraction_result in successful_results:
             interface_data = extraction_result.data
-            merged_interface_names.append(interface.name)
+            if interface is not None:
+                merged_interface_names.append(interface.name)
+            else:
+                merged_interface_names.append(extraction_result.interface_name or "unknown")
             
             if interface_data is None or interface_data.empty:
                 continue
@@ -1020,12 +1202,15 @@ class Extractor:
                 if merged_data is None:
                     # 第一个有效数据作为基础
                     merged_data = target_row.copy()
-                    logger.info(f"使用接口 {interface.name} 作为基础数据")
+                    interface_name = interface.name if interface is not None else (extraction_result.interface_name or "unknown")
+                    logger.info(f"使用接口 {interface_name} 作为基础数据")
                 else:
                     # 合并数据，优先保留已有数据，补充缺失字段
-                    merged_data = self._merge_stock_data(merged_data, target_row, interface.name)
+                    interface_name = interface.name if interface is not None else (extraction_result.interface_name or "unknown")
+                    merged_data = self._merge_stock_data(merged_data, target_row, interface_name)
             else:
-                logger.warning(f"接口 {interface.name} 中未找到目标股票 {target_symbol} 的数据")
+                interface_name = interface.name if interface is not None else (extraction_result.interface_name or "unknown")
+                logger.warning(f"接口 {interface_name} 中未找到目标股票 {target_symbol} 的数据")
         
         if merged_data is None:
             # 创建空的标准字段DataFrame而不是返回None
@@ -1309,217 +1494,217 @@ class Extractor:
         
         return merged
 
-    # ==================== 股票相关接口 (STOCK) ====================
+    # ==================== 个股相关接口 (STOCK) ====================
     
     # 股票基础信息
-    def get_stock_profile(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_stock_profile(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取股票基础信息"""
-        return self._execute_interface("stock", "profile", params)
+        return self._execute_interface_with_batch("stock", "profile", params)
     
     # 股票行情数据
-    def get_stock_daily_quote(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_stock_daily_quote(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取股票日行情数据"""
-        return self._execute_interface("stock", "daily_market.quote", params)
+        return self._execute_interface_with_batch("stock", "daily_market.quote", params)
     
-    def get_stock_financing_data(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_stock_financing_data(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取融资融券数据"""
-        return self._execute_interface("stock", "daily_market.financing", params)
+        return self._execute_interface_with_batch("stock", "daily_market.financing", params)
     
-    def get_stock_cost_distribution(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_stock_cost_distribution(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取成本分布数据"""
-        return self._execute_interface("stock", "daily_market.cost_distribution", params)
+        return self._execute_interface_with_batch("stock", "daily_market.cost_distribution", params)
     
-    def get_stock_fund_flow(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_stock_fund_flow(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取股票资金流向数据"""
-        return self._execute_interface("stock", "daily_market.fund_flow", params)
+        return self._execute_interface_with_batch("stock", "daily_market.fund_flow", params)
     
-    def get_stock_dragon_tiger(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_stock_dragon_tiger(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取龙虎榜数据"""
-        return self._execute_interface("stock", "daily_market.dragon_tiger", params)
+        return self._execute_interface_with_batch("stock", "daily_market.dragon_tiger", params)
     
-    def get_stock_sentiment(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_stock_sentiment(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取股票情绪数据"""
-        return self._execute_interface("stock", "daily_market.sentiment", params)
+        return self._execute_interface_with_batch("stock", "daily_market.sentiment", params)
     
-    def get_stock_news(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_stock_news(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取股票新闻数据"""
-        return self._execute_interface("stock", "daily_market.news", params)
+        return self._execute_interface_with_batch("stock", "daily_market.news", params)
     
     # 股票财务数据
-    def get_stock_basic_indicators(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_stock_basic_indicators(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取基础财务指标"""
-        return self._execute_interface("stock", "financials.basic_indicators", params)
+        return self._execute_interface_with_batch("stock", "financials.basic_indicators", params)
     
-    def get_stock_balance_sheet(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_stock_balance_sheet(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取资产负债表"""
-        return self._execute_interface("stock", "financials.detailed_financials.balance_sheet", params)
+        return self._execute_interface_with_batch("stock", "financials.detailed_financials.balance_sheet", params)
     
-    def get_stock_income_statement(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_stock_income_statement(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取利润表"""
-        return self._execute_interface("stock", "financials.detailed_financials.income_statement", params)
+        return self._execute_interface_with_batch("stock", "financials.detailed_financials.income_statement", params)
     
-    def get_stock_cash_flow(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_stock_cash_flow(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取现金流量表"""
-        return self._execute_interface("stock", "financials.detailed_financials.cash_flow", params)
+        return self._execute_interface_with_batch("stock", "financials.detailed_financials.cash_flow", params)
     
-    def get_stock_dividend(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_stock_dividend(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取分红数据"""
-        return self._execute_interface("stock", "financials.dividend", params)
+        return self._execute_interface_with_batch("stock", "financials.dividend", params)
     
     # 股票持仓数据
-    def get_stock_institutional_holdings(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_stock_institutional_holdings(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取机构持仓数据（包含基金、保险、券商等大资金）"""
-        return self._execute_interface("stock", "holdings.institutional_holdings", params)
+        return self._execute_interface_with_batch("stock", "holdings.institutional_holdings", params)
     
-    def get_stock_hsgt_holdings(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_stock_hsgt_holdings(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取沪深港通持仓数据"""
-        return self._execute_interface("stock", "holdings.hsgt_holdings", params)
+        return self._execute_interface_with_batch("stock", "holdings.hsgt_holdings", params)
     
     # 股票研究分析数据
-    def get_stock_research_reports(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_stock_research_reports(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取研报数据"""
-        return self._execute_interface("stock", "research_and_analyst.research_reports", params)
+        return self._execute_interface_with_batch("stock", "research_and_analyst.research_reports", params)
     
-    def get_stock_forecast_consensus(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_stock_forecast_consensus(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取预测共识数据"""
-        return self._execute_interface("stock", "research_and_analyst.forecast_consensus", params)
+        return self._execute_interface_with_batch("stock", "research_and_analyst.forecast_consensus", params)
     
-    def get_stock_opinions(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_stock_opinions(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取机构观点数据"""
-        return self._execute_interface("stock", "research_and_analyst.opinions", params)
+        return self._execute_interface_with_batch("stock", "research_and_analyst.opinions", params)
     
     # 股票技术分析
-    def get_innovation_high_ranking(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_innovation_high_ranking(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取创新高股票排名"""
-        return self._execute_interface("stock", "technical_analysis.innovation_high", params)
+        return self._execute_interface_with_batch("stock", "technical_analysis.innovation_high", params)
     
-    def get_innovation_low_ranking(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_innovation_low_ranking(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取创新低股票排名"""
-        return self._execute_interface("stock", "technical_analysis.innovation_low", params)
+        return self._execute_interface_with_batch("stock", "technical_analysis.innovation_low", params)
     
-    def get_volume_price_rise_ranking(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_volume_price_rise_ranking(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取量价齐升股票排名"""
-        return self._execute_interface("stock", "technical_analysis.volume_price_rise", params)
+        return self._execute_interface_with_batch("stock", "technical_analysis.volume_price_rise", params)
     
-    def get_continuous_rise_ranking(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_continuous_rise_ranking(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取连续上涨股票排名"""
-        return self._execute_interface("stock", "technical_analysis.continuous_rise", params)
+        return self._execute_interface_with_batch("stock", "technical_analysis.continuous_rise", params)
     
-    def get_volume_price_fall_ranking(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_volume_price_fall_ranking(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取量价齐跌股票排名"""
-        return self._execute_interface("stock", "technical_analysis.volume_price_fall", params)
+        return self._execute_interface_with_batch("stock", "technical_analysis.volume_price_fall", params)
     
-    def get_volume_shrink_ranking(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_volume_shrink_ranking(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取创新缩量股票排名"""
-        return self._execute_interface("stock", "technical_analysis.volume_shrink", params)
+        return self._execute_interface_with_batch("stock", "technical_analysis.volume_shrink", params)
 
-    def get_stock_valuation(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_stock_valuation(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取个股估值数据"""
-        return self._execute_interface("stock", "valuation", params)
+        return self._execute_interface_with_batch("stock", "valuation", params)
     
     # 股票ESG数据
-    def get_stock_esg_rating(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_stock_esg_rating(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取股票ESG评级数据"""
-        return self._execute_interface("stock", "esg_data.esg_rating", params)
+        return self._execute_interface_with_batch("stock", "esg_data.esg_rating", params)
     
     # 股票事件数据
-    def get_stock_major_contracts(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_stock_major_contracts(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取重大合同事件数据"""
-        return self._execute_interface("stock", "events.major_contracts", params)
+        return self._execute_interface_with_batch("stock", "events.major_contracts", params)
     
-    def get_stock_suspension(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_stock_suspension(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取停牌事件数据"""
-        return self._execute_interface("stock", "events.suspension", params)
+        return self._execute_interface_with_batch("stock", "events.suspension", params)
     
     # 股票新股数据
-    def get_stock_ipo_data(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_stock_ipo_data(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取新股发行数据"""
-        return self._execute_interface("stock", "new_stock.ipo_data", params)
+        return self._execute_interface_with_batch("stock", "new_stock.ipo_data", params)
     
-    def get_stock_ipo_performance(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_stock_ipo_performance(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取新股表现数据"""
-        return self._execute_interface("stock", "new_stock.performance", params)
+        return self._execute_interface_with_batch("stock", "new_stock.performance", params)
     
     # 股票回购数据
-    def get_stock_repurchase_plan(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_stock_repurchase_plan(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取回购计划数据"""
-        return self._execute_interface("stock", "repurchase.repurchase_plan", params)
+        return self._execute_interface_with_batch("stock", "repurchase.repurchase_plan", params)
     
-    def get_stock_repurchase_progress(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_stock_repurchase_progress(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取回购进度数据"""
-        return self._execute_interface("stock", "repurchase.repurchase_progress", params)
+        return self._execute_interface_with_batch("stock", "repurchase.repurchase_progress", params)
     
     # 股票大宗交易数据
-    def get_stock_block_trading(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_stock_block_trading(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取个股大宗交易数据"""
-        return self._execute_interface("stock", "block_trading", params)
+        return self._execute_interface_with_batch("stock", "block_trading", params)
 
     # ==================== 市场相关接口 (MARKET) ====================
     
     # 市场基础数据
-    def get_stock_list(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_stock_list(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取市场股票列表"""
-        return self._execute_interface("market", "stock_list", params)
+        return self._execute_interface_with_batch("market", "stock_list", params)
     
-    def get_market_overview(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_market_overview(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取市场概览数据"""
-        return self._execute_interface("market", "market_overview", params)
+        return self._execute_interface_with_batch("market", "market_overview", params)
     
-    def get_market_indices(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_market_indices(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取市场指数数据"""
-        return self._execute_interface("market", "market_indices", params)
+        return self._execute_interface_with_batch("market", "market_indices", params)
     
-    def get_market_activity(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_market_activity(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取市场活跃度数据"""
-        return self._execute_interface("market", "market_activity", params)
+        return self._execute_interface_with_batch("market", "market_activity", params)
     
-    def get_market_sentiment(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_market_sentiment(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取市场情绪数据"""
-        return self._execute_interface("market", "market_sentiment", params)
+        return self._execute_interface_with_batch("market", "market_sentiment", params)
     
     # 市场资金流向数据
-    def get_market_fund_flow(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_market_fund_flow(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取市场级别资金流向数据"""
-        return self._execute_interface("market", "fund_flow.market_level", params)
+        return self._execute_interface_with_batch("market", "fund_flow.market_level", params)
     
-    def get_hsgt_fund_flow(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_hsgt_fund_flow(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取沪深港通资金流向数据"""
-        return self._execute_interface("market", "fund_flow.hsgt_flow", params)
+        return self._execute_interface_with_batch("market", "fund_flow.hsgt_flow", params)
     
-    def get_big_deal_tracking(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_big_deal_tracking(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取大单追踪数据"""
-        return self._execute_interface("market", "fund_flow.big_deal_tracking", params)
+        return self._execute_interface_with_batch("market", "fund_flow.big_deal_tracking", params)
 
     # 市场大宗交易数据
-    def get_market_block_trading(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_market_block_trading(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取市场大宗交易统计数据"""
-        return self._execute_interface("market", "block_trading", params)
+        return self._execute_interface_with_batch("market", "block_trading", params)
     
     # 市场板块数据
-    def get_sector_quote(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_sector_quote(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取行业板块行情数据"""
-        return self._execute_interface("market", "sector_data.sector_quote", params)
+        return self._execute_interface_with_batch("market", "sector_data.sector_quote", params)
     
-    def get_sector_constituent_quotes(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_sector_constituent_quotes(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取行业板块成分股行情数据"""
-        return self._execute_interface("market", "sector_data.constituent_quotes", params)
+        return self._execute_interface_with_batch("market", "sector_data.constituent_quotes", params)
     
-    def get_sector_fund_flow(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_sector_fund_flow(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取行业板块资金流向数据"""
-        return self._execute_interface("market", "sector_data.sector_fund_flow", params)
+        return self._execute_interface_with_batch("market", "sector_data.sector_fund_flow", params)
     
     # 市场概念数据
-    def get_concept_quote(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_concept_quote(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取概念板块行情数据"""
-        return self._execute_interface("market", "concept_data.concept_quote", params)
+        return self._execute_interface_with_batch("market", "concept_data.concept_quote", params)
     
-    def get_concept_constituent_quotes(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_concept_constituent_quotes(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取概念板块成分股行情数据"""
-        return self._execute_interface("market", "concept_data.constituent_quotes", params)
+        return self._execute_interface_with_batch("market", "concept_data.constituent_quotes", params)
     
-    def get_concept_fund_flow(self, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
+    def get_concept_fund_flow(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取概念板块资金流向数据"""
-        return self._execute_interface("market", "concept_data.concept_fund_flow", params)
+        return self._execute_interface_with_batch("market", "concept_data.concept_fund_flow", params)
     
     # ==================== 工具方法 ====================
     
