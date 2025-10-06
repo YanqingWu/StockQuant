@@ -851,14 +851,43 @@ class Extractor:
         return successful_results
     
     def _create_empty_result(self, category: str, data_type: str) -> ExtractionResult:
-        """创建空结果"""
-        empty_df = self._create_empty_standard_dataframe(category, data_type)
-        return ExtractionResult(
-            success=True,
-            data=empty_df,
-            interface_name=None,
-            error=None
-        )
+        """
+        创建空结果，包含标准字段结构
+        
+        Args:
+            category: 数据分类
+            data_type: 数据类型
+            
+        Returns:
+            包含空标准字段DataFrame的ExtractionResult
+        """
+        try:
+            # 从配置中获取标准字段
+            standard_fields = self.config.get_standard_fields(category, data_type)
+            
+            if not standard_fields:
+                logger.warning(f"未找到标准字段定义: {category}.{data_type}")
+                empty_df = pd.DataFrame()
+            else:
+                # 创建空DataFrame，包含所有标准字段
+                empty_df = pd.DataFrame(columns=standard_fields)
+                logger.debug(f"创建空标准字段DataFrame: {category}.{data_type}, 字段: {standard_fields}")
+            
+            return ExtractionResult(
+                success=True,
+                data=empty_df,
+                interface_name=None,
+                error=None
+            )
+            
+        except Exception as e:
+            logger.error(f"创建空结果失败: {e}")
+            return ExtractionResult(
+                success=False,
+                data=None,
+                interface_name=None,
+                error=f"创建空结果失败: {e}"
+            )
     
     
     def _merge_execution_results(self, successful_results: List[Tuple[Any, ExtractionResult]], 
@@ -891,14 +920,7 @@ class Extractor:
             # 检查是否有成功的结果
             if not successful_results:
                 # 创建空的标准字段DataFrame而不是返回None
-                empty_df = self._create_empty_standard_dataframe(category, data_type)
-                return ExtractionResult(
-                    success=True,
-                    data=empty_df,
-                    error=None,
-                    interface_name=None,
-                    source_interface=None
-                )
+                return self._create_empty_result(category, data_type)
             
             # 获取合并策略配置
             merge_config = self._get_merge_strategy(category, data_type)
@@ -920,14 +942,7 @@ class Extractor:
                 return successful_results[0][1]
             else:
                 # 创建空的标准字段DataFrame而不是返回None
-                empty_df = self._create_empty_standard_dataframe(category, data_type)
-                return ExtractionResult(
-                    success=True,
-                    data=empty_df,
-                    error=None,
-                    interface_name=None,
-                    source_interface=None
-                )
+                return self._create_empty_result(category, data_type)
 
     def _get_merge_strategy(self, category: str, data_type: str) -> Dict[str, Any]:
         """
@@ -971,8 +986,7 @@ class Extractor:
         
         if not all_data:
             # 创建空的标准字段DataFrame而不是返回None
-            empty_df = self._create_empty_standard_dataframe(category, data_type)
-            return ExtractionResult(success=True, data=empty_df, error=None)
+            return self._create_empty_result(category, data_type)
         
         # 2. 合并所有数据
         merged_data = pd.concat(all_data, ignore_index=True)
@@ -1107,8 +1121,7 @@ class Extractor:
         
         if merged_data is None:
             # 创建空的标准字段DataFrame而不是返回None
-            empty_df = self._create_empty_standard_dataframe(category, data_type)
-            return ExtractionResult(success=True, data=empty_df, error=None)
+            return self._create_empty_result(category, data_type)
         
         return ExtractionResult(
             success=True,
@@ -1156,8 +1169,7 @@ class Extractor:
         
         if not all_data:
             # 创建空的标准字段DataFrame而不是返回None
-            empty_df = self._create_empty_standard_dataframe(category, data_type)
-            return ExtractionResult(success=True, data=empty_df, error=None)
+            return self._create_empty_result(category, data_type)
         
         # 2. 合并所有数据
         merged_data = pd.concat(all_data, ignore_index=True)
@@ -1233,13 +1245,7 @@ class Extractor:
         
         if merged_data is None:
             # 创建空的标准字段DataFrame而不是返回None
-            empty_df = self._create_empty_standard_dataframe(category, data_type)
-            return ExtractionResult(
-                success=True,
-                data=empty_df,
-                interface_name=None,
-                error=None
-            )
+            return self._create_empty_result(category, data_type)
         
         # 将合并后的单行数据转换为DataFrame
         if isinstance(merged_data, pd.Series):
@@ -1257,35 +1263,41 @@ class Extractor:
         )
 
     def _apply_date_filter(self, data: pd.DataFrame, standard_params: StandardParams, 
-                          merge_config: Dict[str, Any]) -> pd.DataFrame:
+                          merge_config: Dict[str, Any] = None) -> pd.DataFrame:
         """
-        应用日期过滤
+        应用日期过滤，支持多种配置方式
         
         Args:
             data: 数据DataFrame
             standard_params: 标准化参数
-            merge_config: 合并策略配置
+            merge_config: 合并策略配置，用于获取日期列名
             
         Returns:
             过滤后的DataFrame
         """
+        if data is None or data.empty:
+            return data
+        
+        # 确定日期列名
+        date_column = "date"  # 默认列名
+        if merge_config and "date_column" in merge_config:
+            date_column = merge_config["date_column"]
+        
+        if date_column not in data.columns:
+            logger.debug(f"数据中没有 {date_column} 列，跳过日期过滤")
+            return data
+        
+        # 检查是否有日期范围参数
         if not standard_params.start_date and not standard_params.end_date:
             return data
         
-        date_column = merge_config.get("date_column", "date")
-        if date_column not in data.columns:
-            return data
-        
         try:
-            import pandas as pd
-            from datetime import datetime
-            
             # 确保日期列是datetime类型
             if not pd.api.types.is_datetime64_any_dtype(data[date_column]):
                 data = data.copy()  # 创建副本避免修改原数据
                 data[date_column] = pd.to_datetime(data[date_column])
             
-            # 过滤数据 - 直接使用字符串日期进行比较
+            # 构建过滤条件
             mask = pd.Series([True] * len(data), index=data.index)
             
             if standard_params.start_date:
@@ -1305,34 +1317,6 @@ class Extractor:
             logger.warning(f"日期过滤失败: {e}，返回原数据")
             return data
 
-    def _create_empty_standard_dataframe(self, category: str, data_type: str) -> pd.DataFrame:
-        """
-        创建包含标准字段的空DataFrame
-        
-        Args:
-            category: 数据分类
-            data_type: 数据类型
-            
-        Returns:
-            包含标准字段的空DataFrame
-        """
-        try:
-            # 从配置中获取标准字段
-            standard_fields = self.config.get_standard_fields(category, data_type)
-            
-            if not standard_fields:
-                logger.warning(f"未找到标准字段定义: {category}.{data_type}")
-                return pd.DataFrame()
-            
-            # 创建空DataFrame，包含所有标准字段
-            empty_df = pd.DataFrame(columns=standard_fields)
-            logger.info(f"创建空标准字段DataFrame: {category}.{data_type}, 字段: {standard_fields}")
-            
-            return empty_df
-            
-        except Exception as e:
-            logger.error(f"创建空标准字段DataFrame失败: {e}")
-            return pd.DataFrame()
 
     def _find_target_stock_data(self, data: pd.DataFrame, target_symbol: StockSymbol) -> Optional[pd.Series]:
         """
@@ -1430,59 +1414,6 @@ class Extractor:
         logger.debug(f"未找到目标股票 {target_symbol_str} 的数据 - 这可能是正常的，因为某些接口只覆盖特定股票")
         return None
     
-    def _filter_data_by_date(self, data: pd.DataFrame, standard_params: StandardParams) -> pd.DataFrame:
-        """
-        根据参数中的日期范围过滤数据
-        
-        Args:
-            data: 数据DataFrame
-            standard_params: 标准化参数对象，包含start_date和end_date
-            
-        Returns:
-            过滤后的DataFrame
-        """
-        if 'date' not in data.columns:
-            return data
-        
-        try:
-            from datetime import datetime
-            
-            # 获取日期范围
-            start_date = None
-            end_date = None
-            
-            if standard_params.start_date:
-                start_date = datetime.strptime(standard_params.start_date, '%Y-%m-%d').date()
-            
-            if standard_params.end_date:
-                end_date = datetime.strptime(standard_params.end_date, '%Y-%m-%d').date()
-            
-            # 如果没有指定日期范围，返回原数据
-            if start_date is None and end_date is None:
-                return data
-            
-            # 过滤数据
-            mask = pd.Series([True] * len(data), index=data.index)
-            
-            # 将DataFrame中的日期列转换为date类型以便比较
-            date_series = pd.to_datetime(data['date'])
-            
-            if start_date is not None:
-                start_timestamp = pd.Timestamp(start_date)
-                mask &= (date_series >= start_timestamp)
-            
-            if end_date is not None:
-                end_timestamp = pd.Timestamp(end_date)
-                mask &= (date_series <= end_timestamp)
-            
-            filtered_data = data[mask]
-            logger.debug(f"日期过滤: 原始 {len(data)} 行 -> 过滤后 {len(filtered_data)} 行")
-            
-            return filtered_data
-            
-        except Exception as e:
-            logger.warning(f"日期过滤失败: {e}，返回原数据")
-            return data
     
     def _merge_stock_data(self, base_data: pd.Series, new_data: pd.Series, interface_name: str) -> pd.Series:
         """
