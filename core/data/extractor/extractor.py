@@ -13,19 +13,11 @@ from ..interfaces.executor import TaskManager, InterfaceExecutor, CallTask, Exec
 from ..cache.persistent_cache import PersistentCacheConfig
 from ..interfaces.base import get_api_provider_manager
 from core.logging import get_logger
+from .exceptions import ExtractionErrorHandler, DataValidator
+from .types import ExtractionResult
+from .constants import ExtractorConstants, ExtractionContext, get_default_config_path
 
 logger = get_logger(__name__)
-
-
-@dataclass
-class ExtractionResult:
-    """提取结果"""
-    success: bool
-    data: Any
-    error: Optional[str] = None
-    interface_name: Optional[str] = None
-    source_interface: Optional[str] = None
-    extracted_fields: Optional[List[str]] = None
 
 
 class Extractor:
@@ -41,14 +33,12 @@ class Extractor:
         Args:
             config_path: 配置文件路径，如果不提供则使用默认路径
         """
-        self.config_loader = ConfigLoader()
-        
-        # 加载配置文件
+        # 确定配置文件路径
         if config_path is None:
-            # 使用默认配置文件路径
-            current_dir = Path(__file__).parent
-            config_path = current_dir / "extraction_config.yaml"
+            config_path = str(get_default_config_path())
         
+        # 使用指定路径创建ConfigLoader
+        self.config_loader = ConfigLoader(Path(config_path))
         self.config = self.config_loader.load_config()
         
         # 初始化参数适配器
@@ -72,10 +62,19 @@ class Extractor:
             _cfg_timeout = float(getattr(global_cfg, "timeout", 0))
             if _cfg_timeout > 0:
                 self.executor_config.default_timeout = _cfg_timeout
-        except Exception:
-            pass
-        self.executor = InterfaceExecutor(self.provider_manager, self.executor_config)
-        self.task_manager = TaskManager(self.executor)
+                logger.info(f"设置超时时间: {_cfg_timeout}秒")
+        except (ValueError, TypeError) as e:
+            logger.warning(f"timeout配置无效: {e}，使用默认值")
+        except Exception as e:
+            logger.error(f"处理timeout配置时发生错误: {e}")
+        # 验证关键组件是否成功初始化
+        try:
+            self.executor = InterfaceExecutor(self.provider_manager, self.executor_config)
+            self.task_manager = TaskManager(self.executor)
+            logger.debug("执行器和任务管理器初始化成功")
+        except Exception as e:
+            logger.error(f"组件初始化失败: {e}")
+            raise
         
         logger.info(f"Extractor 初始化完成，配置版本: {self.config.version}")
     
@@ -179,7 +178,7 @@ class Extractor:
         """
         # 开始处理提取结果
         try:
-            if raw_data is None:
+            if DataValidator.is_empty_data(raw_data):
                 return ExtractionResult(
                     success=False,
                     data=None,
@@ -218,9 +217,9 @@ class Extractor:
                 # 处理字符串类型数据，尝试解析为更有意义的结构
                 try:
                     # 对于字符串，尝试解析为股票代码格式
-                    if raw_data and len(raw_data) >= 6:
+                    if raw_data and len(raw_data) >= ExtractorConstants.MIN_SYMBOL_LENGTH:
                         # 尝试解析为股票代码格式 (如 "sz000300")
-                        if raw_data.startswith(('sz', 'sh', 'bj')):
+                        if raw_data.startswith(ExtractorConstants.STOCK_CODE_PREFIXES):
                             market = raw_data[:2].upper()
                             code = raw_data[2:]
                             df = pd.DataFrame([{
@@ -335,10 +334,8 @@ class Extractor:
                     def convert_symbol_to_unified_format(symbol_value):
                         """将symbol字段转换为统一的StockSymbol格式"""
                         if pd.isna(symbol_value) or symbol_value is None:
-                            # 对于个股历史数据接口，如果symbol为None，尝试从参数中获取
-                            if hasattr(self, '_current_params') and self._current_params and hasattr(self._current_params, 'symbol'):
-                                return self._current_params.symbol.to_dot()
-                            return symbol_value
+                            # 对于个股历史数据接口，如果symbol为None，返回None
+                            return None
                         
                         # 如果已经是StockSymbol对象，直接转换为dot格式
                         if isinstance(symbol_value, StockSymbol):
@@ -348,13 +345,8 @@ class Extractor:
                         if isinstance(symbol_value, str):
                             code = symbol_value.strip()
                             
-                            # 获取市场提示
+                            # 获取市场提示（简化处理）
                             hint_market = None
-                            if hasattr(self, '_current_params') and self._current_params:
-                                if hasattr(self._current_params, 'market') and self._current_params.market:
-                                    hint_market = self._current_params.market
-                                elif hasattr(self._current_params, 'symbol') and self._current_params.symbol:
-                                    hint_market = self._current_params.symbol.market
                             
                             try:
                                 parsed_symbol = StockSymbol.parse(code, hint_market=hint_market)
@@ -371,13 +363,8 @@ class Extractor:
                         try:
                             str_value = str(symbol_value).strip()
                             
-                            # 获取市场提示
+                            # 获取市场提示（简化处理）
                             hint_market = None
-                            if hasattr(self, '_current_params') and self._current_params:
-                                if hasattr(self._current_params, 'market') and self._current_params.market:
-                                    hint_market = self._current_params.market
-                                elif hasattr(self._current_params, 'symbol') and self._current_params.symbol:
-                                    hint_market = self._current_params.symbol.market
                             
                             parsed_symbol = StockSymbol.parse(str_value, hint_market=hint_market)
                             if parsed_symbol:
@@ -425,7 +412,7 @@ class Extractor:
                                     pass
                             
                             # 处理其他常见格式
-                            for fmt in ['%Y-%m-%d', '%Y/%m/%d', '%Y.%m.%d', '%m/%d/%Y', '%d/%m/%Y']:
+                            for fmt in ExtractorConstants.SUPPORTED_DATE_FORMATS:
                                 try:
                                     return datetime.strptime(date_str, fmt).date()
                                 except ValueError:
@@ -476,14 +463,7 @@ class Extractor:
             )
 
         except Exception as e:
-            logger.error(f"处理提取结果时发生错误: {e}")
-            return ExtractionResult(
-                success=False,
-                data=None,
-                interface_name=interface_name,
-                error=str(e),
-                source_interface=interface_name
-            )
+            return ExtractionErrorHandler.handle_data_processing_error(e, interface_name)
     
     def _execute_interface(self, category: str, data_type: str, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
         """
@@ -497,144 +477,149 @@ class Extractor:
         Returns:
             提取结果
         """
-        # 标准化参数
-        standard_params = to_standard_params(params)
-        params_dict = standard_params.to_dict()
-        
-        # 从参数中提取市场信息用于接口筛选
-        market = None
-        if standard_params.symbol and hasattr(standard_params.symbol, 'market'):
-            market = standard_params.symbol.market
-        elif standard_params.market:
-            market = standard_params.market
-        
-        # 获取启用的接口列表，根据市场进行筛选
-        interfaces = self.config.get_enabled_interfaces(category, data_type, market)
-        if not interfaces:
-            market_info = f" (市场: {market})" if market else ""
-            return ExtractionResult(
-                success=False,
-                data=None,
-                error=f"未找到启用的接口: {category}.{data_type}{market_info}"
-            )
-        
-        # 使用全局参数适配器
-        param_adapter = self.param_adapter
-        
-        # 设置当前参数，用于symbol字段转换
-        self._current_params = params
-        
-        # 构造执行上下文
-        context = ExecutionContext(
-            cache_enabled=bool(self.config.global_config.enable_cache),
-            user_data={"category": category, "data_type": data_type}
-        )
-        
-        # 使用全局 TaskManager 批量构建并执行任务（按接口优先级）
-        # 先为每个接口构建任务并入队
-        for interface in interfaces:
-            try:
-                logger.info(f"准备加入批量任务: {interface.name}")
-                try:
-                    # 统一通过适配器执行参数适配，隐藏具体映射细节
-                    # 进行参数适配
-                    adapted_params = param_adapter.adapt(interface.name, params_dict)
-                except Exception as _e:
-                    # 参数适配失败，回退原始参数
-                    adapted_params = params_dict
-                task = CallTask(interface_name=interface.name, params=adapted_params)
-                self.task_manager.add_task(task)
-            except Exception as e:
-                logger.error(f"构建接口 {interface.name} 任务时发生错误: {e}")
-                continue
-
-        # 批量执行
-        logger.info(f"开始批量执行，接口数量: {len(interfaces)}")
-        batch_result = self.task_manager.execute_all(context=context)
-        logger.info(f"批量执行完成，成功: {batch_result.successful_tasks}/{batch_result.total_tasks}")
-
-        # 收集所有成功的结果进行数据合并
-        successful_results = []
-        # 处理批量执行结果
-        if batch_result and batch_result.results:
-            for interface in interfaces:
-                # 查找该接口的结果
-                matched = [r for r in batch_result.results if r.interface_name == interface.name]
-                if not matched:
-                    logger.warning(f"接口 {interface.name} 未返回结果")
-                    continue
-                result = matched[0]
-                if result.success:
-                    extraction_result = self._process_extraction_result(result.data, category, data_type, interface.name)
-                    if extraction_result.success:
-                        logger.info(f"接口 {interface.name} 执行成功")
-                        successful_results.append((interface, extraction_result))
-                    else:
-                        logger.warning(f"接口 {interface.name} 数据处理失败: {extraction_result.error}")
-                else:
-                    logger.warning(f"接口 {interface.name} 执行失败: {result.error}")
-        
-        # 如果没有成功的结果，返回空的标准字段DataFrame
-        if not successful_results:
-            # 没有成功的结果，返回空的标准字段DataFrame
-            empty_df = self._create_empty_standard_dataframe(category, data_type)
-            return ExtractionResult(
-                success=True,
-                data=empty_df,
-                interface_name=None,
-                error=None
-            )
-        
-        # 如果只有一个成功结果，应用日期过滤后直接返回
-        if len(successful_results) == 1:
-            logger.debug("=== 处理单个接口结果 ===")
-            single_result = successful_results[0][1]
-            logger.debug(f"单个接口结果处理: {single_result.interface_name}, 数据形状: {single_result.data.shape if single_result.data is not None else 'None'}")
+        # 使用上下文管理器避免实例变量污染
+        with ExtractionContext(params) as extraction_context:
+            extraction_context.set_extraction_info(category, data_type)
             
-            # 应用股票代码过滤
-            if single_result.data is not None and not single_result.data.empty and 'symbol' in single_result.data.columns:
-                target_symbol = standard_params.symbol
-                if target_symbol:
-                    logger.debug(f"应用股票代码过滤: {target_symbol.to_dot()}")
-                    original_count = len(single_result.data)
-                    single_result.data = single_result.data[single_result.data['symbol'] == target_symbol.to_dot()]
-                    logger.debug(f"股票代码过滤结果: {original_count} -> {len(single_result.data)} 行")
-                    if single_result.data.empty:
-                        logger.debug("股票代码过滤后数据为空")
+            # 标准化参数
+            standard_params = to_standard_params(params)
+            params_dict = standard_params.to_dict()
+            
+            # 从参数中提取市场信息用于接口筛选
+            market = self._extract_market_from_params(standard_params)
+            
+            # 获取启用的接口列表，根据市场进行筛选
+            interfaces = self.config.get_enabled_interfaces(category, data_type, market)
+            if not interfaces:
+                market_info = f" (市场: {market})" if market else ""
+                return ExtractionResult(
+                    success=False,
+                    data=None,
+                    error=f"未找到启用的接口: {category}.{data_type}{market_info}"
+                )
+            
+            # 使用全局参数适配器
+            param_adapter = self.param_adapter
+            
+            # 构造执行上下文
+            context = ExecutionContext(
+                cache_enabled=bool(self.config.global_config.enable_cache),
+                user_data={"category": category, "data_type": data_type}
+            )
+            
+            # 使用全局 TaskManager 批量构建并执行任务（按接口优先级）
+            # 先为每个接口构建任务并入队
+            for interface in interfaces:
+                try:
+                    logger.info(f"准备加入批量任务: {interface.name}")
+                    try:
+                        # 统一通过适配器执行参数适配，隐藏具体映射细节
+                        # 进行参数适配
+                        adapted_params = param_adapter.adapt(interface.name, params_dict)
+                    except Exception as _e:
+                        # 参数适配失败，回退原始参数
+                        adapted_params = params_dict
+                    task = CallTask(interface_name=interface.name, params=adapted_params)
+                    self.task_manager.add_task(task)
+                except Exception as e:
+                    logger.error(f"构建接口 {interface.name} 任务时发生错误: {e}")
+                    continue
+
+            # 批量执行
+            logger.info(f"开始批量执行，接口数量: {len(interfaces)}")
+            batch_result = self.task_manager.execute_all(context=context)
+            logger.info(f"批量执行完成，成功: {batch_result.successful_tasks}/{batch_result.total_tasks}")
+
+            # 收集所有成功的结果进行数据合并
+            successful_results = []
+            # 处理批量执行结果
+            if batch_result and batch_result.results:
+                for interface in interfaces:
+                    # 查找该接口的结果
+                    matched = [r for r in batch_result.results if r.interface_name == interface.name]
+                    if not matched:
+                        logger.warning(f"接口 {interface.name} 未返回结果")
+                        continue
+                    result = matched[0]
+                    if result.success:
+                        extraction_result = self._process_extraction_result(result.data, category, data_type, interface.name)
+                        if extraction_result.success:
+                            logger.info(f"接口 {interface.name} 执行成功")
+                            successful_results.append((interface, extraction_result))
+                        else:
+                            logger.warning(f"接口 {interface.name} 数据处理失败: {extraction_result.error}")
+                    else:
+                        logger.warning(f"接口 {interface.name} 执行失败: {result.error}")
+            
+            # 如果没有成功的结果，返回空的标准字段DataFrame
+            if not successful_results:
+                # 没有成功的结果，返回空的标准字段DataFrame
+                empty_df = self._create_empty_standard_dataframe(category, data_type)
+                return ExtractionResult(
+                    success=True,
+                    data=empty_df,
+                    interface_name=None,
+                    error=None
+                )
+            
+            # 如果只有一个成功结果，应用日期过滤后直接返回
+            if len(successful_results) == 1:
+                logger.debug("=== 处理单个接口结果 ===")
+                single_result = successful_results[0][1]
+                logger.debug(f"单个接口结果处理: {single_result.interface_name}, 数据形状: {single_result.data.shape if single_result.data is not None else 'None'}")
+                
+                # 应用股票代码过滤
+                if single_result.data is not None and not single_result.data.empty and 'symbol' in single_result.data.columns:
+                    target_symbol = standard_params.symbol
+                    if target_symbol:
+                        logger.debug(f"应用股票代码过滤: {target_symbol.to_dot()}")
+                        original_count = len(single_result.data)
+                        single_result.data = single_result.data[single_result.data['symbol'] == target_symbol.to_dot()]
+                        logger.debug(f"股票代码过滤结果: {original_count} -> {len(single_result.data)} 行")
+                        if single_result.data.empty:
+                            logger.debug("股票代码过滤后数据为空")
+                            empty_df = self._create_empty_standard_dataframe(category, data_type)
+                            return ExtractionResult(
+                                success=True,
+                                data=empty_df,
+                                error=None,
+                                interface_name=single_result.interface_name
+                            )
+                
+                # 应用日期过滤
+                if single_result.data is not None and not single_result.data.empty:
+                    logger.debug("开始应用日期过滤")
+                    merge_config = self._get_merge_strategy(category, data_type)
+                    filtered_data = self._apply_date_filter(single_result.data, standard_params, merge_config)
+                    if not filtered_data.empty:
+                        single_result.data = filtered_data
+                        logger.debug(f"日期过滤后数据形状: {single_result.data.shape}")
+                    else:
+                        logger.debug("日期过滤后数据为空")
+                        # 创建空的标准字段DataFrame而不是返回None
                         empty_df = self._create_empty_standard_dataframe(category, data_type)
                         return ExtractionResult(
-                            success=True,
+                            success=True,  # 改为True，因为这是正常的空数据情况
                             data=empty_df,
                             error=None,
                             interface_name=single_result.interface_name
                         )
+                logger.debug(f"单个接口结果处理完成，最终数据形状: {single_result.data.shape if single_result.data is not None else 'None'}")
+                return single_result
             
-            # 应用日期过滤
-            if single_result.data is not None and not single_result.data.empty:
-                logger.debug("开始应用日期过滤")
-                merge_config = self._get_merge_strategy(category, data_type)
-                filtered_data = self._apply_date_filter(single_result.data, standard_params, merge_config)
-                if not filtered_data.empty:
-                    single_result.data = filtered_data
-                    logger.debug(f"日期过滤后数据形状: {single_result.data.shape}")
-                else:
-                    logger.debug("日期过滤后数据为空")
-                    # 创建空的标准字段DataFrame而不是返回None
-                    empty_df = self._create_empty_standard_dataframe(category, data_type)
-                    return ExtractionResult(
-                        success=True,  # 改为True，因为这是正常的空数据情况
-                        data=empty_df,
-                        error=None,
-                        interface_name=single_result.interface_name
-                    )
-            logger.debug(f"单个接口结果处理完成，最终数据形状: {single_result.data.shape if single_result.data is not None else 'None'}")
-            return single_result
-        
-        # 多个成功结果，进行数据合并
-        logger.info(f"开始合并 {len(successful_results)} 个接口的数据")
-        merged_result = self._merge_interface_results(successful_results, standard_params, category, data_type)
-        
-        return merged_result
+            # 多个成功结果，进行数据合并
+            logger.info(f"开始合并 {len(successful_results)} 个接口的数据")
+            merged_result = self._merge_interface_results(successful_results, standard_params, category, data_type)
+            
+            return merged_result
+    
+    def _extract_market_from_params(self, standard_params: StandardParams) -> Optional[str]:
+        """从参数中提取市场信息"""
+        if standard_params.symbol and hasattr(standard_params.symbol, 'market'):
+            return standard_params.symbol.market
+        elif standard_params.market:
+            return standard_params.market
+        return None
     
     def _merge_interface_results(self, successful_results: List[Tuple[Any, ExtractionResult]], 
                                 standard_params: StandardParams, category: str, data_type: str) -> ExtractionResult:
@@ -948,8 +933,7 @@ class Extractor:
         if not target_symbol:
             return successful_results[0][1]
         
-        # 设置当前参数，用于日期过滤
-        self._current_params = standard_params
+        # 移除实例变量污染，使用参数传递
         
         # 按接口优先级排序
         successful_results.sort(key=lambda x: x[0].priority)
@@ -1114,16 +1098,12 @@ class Extractor:
             if data['symbol'].isna().all():
                 logger.debug(f"symbol列全为None，可能是个股历史数据接口")
                 # 进行日期过滤
-                if 'date' in data.columns and hasattr(self, '_current_params') and self._current_params:
-                    filtered_data = self._filter_data_by_date(data, self._current_params)
-                    if not filtered_data.empty:
-                        logger.debug(f"根据日期范围过滤后找到 {len(filtered_data)} 行数据")
-                        return filtered_data.iloc[0]  # 返回第一行（最新的数据）
-                    else:
-                        logger.debug(f"日期范围内没有数据，返回最新的一行")
-                        return data.iloc[0]  # 如果没有匹配的日期，返回第一行
+                if 'date' in data.columns:
+                    # 简化处理，直接返回第一行
+                    logger.debug(f"没有参数信息，返回第一行作为代表")
+                    return data.iloc[0]
                 else:
-                    logger.debug(f"没有日期列或参数，返回第一行作为代表")
+                    logger.debug(f"没有日期列，返回第一行作为代表")
                     return data.iloc[0]
             else:
                 # 正常的symbol列匹配
@@ -1171,28 +1151,24 @@ class Extractor:
             logger.debug(f"没有symbol列且有多行数据，可能是个股历史数据")
             
             # 检查是否有日期列，如果有则进行日期过滤
-            if 'date' in data.columns and hasattr(self, '_current_params') and self._current_params:
-                filtered_data = self._filter_data_by_date(data, self._current_params)
-                if not filtered_data.empty:
-                    logger.debug(f"根据日期范围过滤后找到 {len(filtered_data)} 行数据")
-                    return filtered_data.iloc[0]  # 返回第一行（最新的数据）
-                else:
-                    logger.debug(f"日期范围内没有数据，返回最新的一行")
-                    return data.iloc[0]  # 如果没有匹配的日期，返回第一行
+            if 'date' in data.columns:
+                # 简化处理，直接返回第一行
+                logger.debug(f"没有参数信息，返回第一行作为代表")
+                return data.iloc[0]
             else:
-                logger.debug(f"没有日期列或参数，返回第一行作为代表")
+                logger.debug(f"没有日期列，返回第一行作为代表")
                 return data.iloc[0]
         
         logger.debug(f"未找到目标股票 {target_symbol_str} 的数据 - 这可能是正常的，因为某些接口只覆盖特定股票")
         return None
     
-    def _filter_data_by_date(self, data: pd.DataFrame, params) -> pd.DataFrame:
+    def _filter_data_by_date(self, data: pd.DataFrame, standard_params: StandardParams) -> pd.DataFrame:
         """
         根据参数中的日期范围过滤数据
         
         Args:
             data: 数据DataFrame
-            params: 参数对象，包含start_date和end_date
+            standard_params: 标准化参数对象，包含start_date和end_date
             
         Returns:
             过滤后的DataFrame
@@ -1207,11 +1183,11 @@ class Extractor:
             start_date = None
             end_date = None
             
-            if hasattr(params, 'start_date') and params.start_date:
-                start_date = datetime.strptime(params.start_date, '%Y-%m-%d').date()
+            if standard_params.start_date:
+                start_date = datetime.strptime(standard_params.start_date, '%Y-%m-%d').date()
             
-            if hasattr(params, 'end_date') and params.end_date:
-                end_date = datetime.strptime(params.end_date, '%Y-%m-%d').date()
+            if standard_params.end_date:
+                end_date = datetime.strptime(standard_params.end_date, '%Y-%m-%d').date()
             
             # 如果没有指定日期范围，返回原数据
             if start_date is None and end_date is None:
