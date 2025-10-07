@@ -89,6 +89,8 @@ class DataService:
                 # 为每个股票创建参数，保留其他所有参数
                 return [self._create_single_params(**{**kwargs, 'symbol': s}) for s in symbols]
             else:
+                # 单个股票，添加symbol参数
+                kwargs['symbol'] = symbols
                 return self._create_single_params(**kwargs)
         else:
             return self._create_single_params(**kwargs)
@@ -103,6 +105,10 @@ class DataService:
         Returns:
             StandardParams对象
         """
+        # 处理 symbols -> symbol 的参数映射
+        if 'symbols' in kwargs and 'symbol' not in kwargs:
+            kwargs['symbol'] = kwargs.pop('symbols')
+        
         # 直接使用to_standard_params，它会处理所有转换和校验
         return to_standard_params(kwargs)
     
