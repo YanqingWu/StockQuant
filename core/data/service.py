@@ -130,22 +130,28 @@ class DataService:
         params = self._build_standard_params(
             symbols=symbols,
             start_date=start_date,
-            end_date=end_date
+            end_date=end_date,
+            date=start_date
         )
         return self.extractor.get_stock_financing_data(params)
     
     def get_stock_cost_distribution(self,
-                                   symbols: Symbols) -> Union[ExtractionResult, List[ExtractionResult]]:
+                                   symbols: Symbols,
+                                   adjust: str = "qfq") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取成本分布数据
         
         Args:
-            symbols: 股票代码
+            symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
+            adjust: 复权类型，默认"qfq"，支持 none/qfq/hfq
         
         Returns:
             成本分布数据
         """
-        params = self._build_standard_params(symbols=symbols)
+        params = self._build_standard_params(
+            symbols=symbols,
+            adjust=adjust
+        )
         return self.extractor.get_stock_cost_distribution(params)
     
     def get_stock_fund_flow(self,
