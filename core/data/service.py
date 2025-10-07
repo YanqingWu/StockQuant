@@ -50,10 +50,10 @@ class StandardParameterOptions:
     # 市场代码选项
     MARKET_OPTIONS = ["SZ", "SH", "BJ", "HK", "US"]
     
-    # 数据周期选项
-    PERIOD_OPTIONS = ["daily", "1min", "5min", "15min", "30min", "60min"]
+    # 数据周期选项 - 基于实际接口支持的值
+    PERIOD_OPTIONS = ["daily", "weekly", "monthly"]
     
-    # 复权类型选项
+    # 复权类型选项 - 基于实际接口支持的值
     ADJUST_OPTIONS = ["none", "qfq", "hfq"]
 
 

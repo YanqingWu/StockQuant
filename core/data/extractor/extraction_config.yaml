@@ -3441,3 +3441,201 @@ parameter_mappings:
         indicator:
           required: true
           valid_values: ["按报告期", "年度", "年报", "按年度", "按季度", "按半年"]
+    
+    # ==================== 行情数据接口参数映射配置 ====================
+    
+    # A股历史行情接口
+    stock_zh_a_hist:
+      parameter_mapping:
+        symbol: "symbol"
+        start_date: "start_date"
+        end_date: "end_date"
+        period: "period"
+        adjust: "adjust"
+      value_mapping:
+        adjust:
+          "none": ""        # 不复权映射为空字符串
+          "qfq": "qfq"      # 前复权
+          "hfq": "hfq"      # 后复权
+      defaults:
+        period: "daily"
+        adjust: "qfq"
+      validation:
+        symbol:
+          required: true
+        period:
+          valid_values: ["daily", "weekly", "monthly"]
+        adjust:
+          valid_values: ["none", "qfq", "hfq"]
+    
+    # A股日行情接口
+    stock_zh_a_daily:
+      parameter_mapping:
+        symbol: "symbol"
+        start_date: "start_date"
+        end_date: "end_date"
+        adjust: "adjust"
+      value_mapping:
+        adjust:
+          "none": ""        # 不复权映射为空字符串
+          "qfq": "qfq"      # 前复权
+          "hfq": "hfq"      # 后复权
+      defaults:
+        adjust: "qfq"
+      validation:
+        symbol:
+          required: true
+        adjust:
+          valid_values: ["none", "qfq", "hfq"]
+    
+    # A股腾讯历史行情接口
+    stock_zh_a_hist_tx:
+      parameter_mapping:
+        symbol: "symbol"
+        start_date: "start_date"
+        end_date: "end_date"
+        adjust: "adjust"
+      value_mapping:
+        adjust:
+          "none": ""        # 不复权映射为空字符串
+          "qfq": "qfq"      # 前复权
+          "hfq": "hfq"      # 后复权
+      defaults:
+        adjust: "qfq"
+      validation:
+        symbol:
+          required: true
+        adjust:
+          valid_values: ["none", "qfq", "hfq"]
+    
+    # 科创板日行情接口
+    stock_zh_kcb_daily:
+      parameter_mapping:
+        symbol: "symbol"
+        adjust: "adjust"
+      value_mapping:
+        adjust:
+          "none": ""        # 不复权映射为空字符串
+          "qfq": "qfq"      # 前复权
+          "hfq": "hfq"      # 后复权
+      defaults:
+        adjust: "qfq"
+      validation:
+        symbol:
+          required: true
+        adjust:
+          valid_values: ["none", "qfq", "hfq"]
+    
+    # B股日行情接口
+    stock_zh_b_daily:
+      parameter_mapping:
+        symbol: "symbol"
+        start_date: "start_date"
+        end_date: "end_date"
+        adjust: "adjust"
+      value_mapping:
+        adjust:
+          "none": ""        # 不复权映射为空字符串
+          "qfq": "qfq"      # 前复权
+          "hfq": "hfq"      # 后复权
+      defaults:
+        adjust: "qfq"
+      validation:
+        symbol:
+          required: true
+        adjust:
+          valid_values: ["none", "qfq", "hfq"]
+    
+    # A股CDR日行情接口
+    stock_zh_a_cdr_daily:
+      parameter_mapping:
+        symbol: "symbol"
+        start_date: "start_date"
+        end_date: "end_date"
+      validation:
+        symbol:
+          required: true
+    
+    # 港股日行情接口
+    stock_hk_daily:
+      parameter_mapping:
+        symbol: "symbol"
+        adjust: "adjust"
+      value_mapping:
+        adjust:
+          "none": ""        # 不复权映射为空字符串
+          "qfq": "qfq"      # 前复权
+          "hfq": "hfq"      # 后复权
+      defaults:
+        adjust: "qfq"
+      validation:
+        symbol:
+          required: true
+        adjust:
+          valid_values: ["none", "qfq", "hfq"]
+    
+    # 港股历史行情接口
+    stock_hk_hist:
+      parameter_mapping:
+        symbol: "symbol"
+        start_date: "start_date"
+        end_date: "end_date"
+        period: "period"
+        adjust: "adjust"
+      value_mapping:
+        adjust:
+          "none": ""        # 不复权映射为空字符串
+          "qfq": "1"        # 港股接口使用"1"表示前复权
+          "hfq": "2"        # 港股接口使用"2"表示后复权
+      defaults:
+        period: "daily"
+        adjust: "qfq"
+      validation:
+        symbol:
+          required: true
+        period:
+          valid_values: ["daily", "weekly", "monthly"]
+        adjust:
+          valid_values: ["none", "qfq", "hfq"]
+    
+    # 美股日行情接口
+    stock_us_daily:
+      parameter_mapping:
+        symbol: "symbol"
+        adjust: "adjust"
+      value_mapping:
+        adjust:
+          "none": ""        # 不复权映射为空字符串
+          "qfq": "qfq"      # 前复权
+          "hfq": "hfq"      # 后复权
+      defaults:
+        adjust: "qfq"
+      validation:
+        symbol:
+          required: true
+        adjust:
+          valid_values: ["none", "qfq", "hfq"]
+    
+    # 美股历史行情接口
+    stock_us_hist:
+      parameter_mapping:
+        symbol: "symbol"
+        start_date: "start_date"
+        end_date: "end_date"
+        period: "period"
+        adjust: "adjust"
+      value_mapping:
+        adjust:
+          "none": ""        # 不复权映射为空字符串
+          "qfq": "1"        # 美股接口使用"1"表示前复权
+          "hfq": "2"        # 美股接口使用"2"表示后复权
+      defaults:
+        period: "daily"
+        adjust: "qfq"
+      validation:
+        symbol:
+          required: true
+        period:
+          valid_values: ["daily", "weekly", "monthly"]
+        adjust:
+          valid_values: ["none", "qfq", "hfq"]
