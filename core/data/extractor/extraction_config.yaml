@@ -3107,3 +3107,52 @@ parameter_mappings:
         ranking_type:
           valid_values: ["本周新增", "最热门"]
           default_value: "最热门"
+    
+    # 市场指数接口参数映射 - 将index_code映射为symbol
+    stock_zh_index_spot_sina:
+      parameter_mapping:
+        index_code: "symbol"  # 将 index_code 映射为 symbol
+      validation:
+        index_code:
+          required: false
+          type: string
+    
+    stock_zh_index_daily:
+      parameter_mapping:
+        index_code: "symbol"  # 将 index_code 映射为 symbol
+      validation:
+        index_code:
+          required: false
+          type: string
+    
+    stock_zh_index_daily_tx:
+      parameter_mapping:
+        index_code: "symbol"  # 将 index_code 映射为 symbol
+      validation:
+        index_code:
+          required: false
+          type: string
+    
+    stock_zh_index_hist_csindex:
+      parameter_mapping:
+        index_code: "symbol"  # 将 index_code 映射为 symbol
+      validation:
+        index_code:
+          required: false
+          type: string
+    
+    stock_zh_index_daily_em:
+      parameter_mapping:
+        index_code: "symbol"  # 将 index_code 映射为 symbol
+      validation:
+        index_code:
+          required: false
+          type: string
+    
+    stock_zh_index_value_csindex:
+      parameter_mapping:
+        index_code: "symbol"  # 将 index_code 映射为 symbol
+      validation:
+        index_code:
+          required: false
+          type: string

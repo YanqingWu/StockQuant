@@ -688,14 +688,26 @@ class DataService:
         params = self._build_standard_params(date=date)
         return self.extractor.get_market_overview(params)
     
-    def get_market_indices(self) -> ExtractionResult:
+    def get_market_indices(self,
+                          index_code: Optional[str] = None,
+                          start_date: Optional[DateRange] = None,
+                          end_date: Optional[DateRange] = None) -> ExtractionResult:
         """
         获取市场指数数据
+        
+        Args:
+            index_code: 指数代码，如 "000001.SH", "399001.SZ" 等
+            start_date: 开始日期，格式 "2023-01-01"
+            end_date: 结束日期，格式 "2023-01-01"
         
         Returns:
             市场指数数据
         """
-        params = self._build_standard_params()
+        params = self._build_standard_params(
+            index_code=index_code,
+            start_date=start_date,
+            end_date=end_date
+        )
         return self.extractor.get_market_indices(params)
     
     def get_market_activity(self) -> ExtractionResult:

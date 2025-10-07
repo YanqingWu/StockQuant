@@ -22,6 +22,7 @@ class StandardParams:
     - indicator: 财务指标类型 (财务数据接口使用)
     - date: 单日期参数 (部分接口使用)
     - market: 市场代码 (可选，优先从symbol推断，支持SZ/SH/BJ/HK/US)
+    - index_code: 指数代码 (市场指数接口使用)
     
     其他参数通过extra传递，保持向后兼容性
     """
@@ -40,6 +41,7 @@ class StandardParams:
         indicator: Optional[str] = None,
         date: Optional[str] = None,
         market: Optional[str] = None,
+        index_code: Optional[str] = None,
         
         # 其他参数通过extra传递，保持向后兼容性
         **extra
@@ -65,6 +67,7 @@ class StandardParams:
         self.indicator = indicator
         self.date = date
         self.market = market
+        self.index_code = index_code
         
         # 其他参数
         self.extra = extra
@@ -186,6 +189,8 @@ class StandardParams:
             d["date"] = self._maybe_strip(self.date)
         if self.market is not None:
             d["market"] = self._maybe_strip(self.market)
+        if self.index_code is not None:
+            d["index_code"] = self._maybe_strip(self.index_code)
 
         # 透传额外键（不覆盖标准键）
         for k, v in self.extra.items():
@@ -200,7 +205,7 @@ class StandardParams:
         """
         known_keys = {
             "symbol", "start_date", "end_date", "period", "adjust",
-            "indicator", "date", "market"
+            "indicator", "date", "market", "index_code"
         }
         std_kwargs = {k: data[k] for k in known_keys if k in data}
         
