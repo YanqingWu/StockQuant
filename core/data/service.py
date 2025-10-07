@@ -465,17 +465,17 @@ class DataService:
         return self.extractor.get_innovation_low_ranking(params)
     
     def get_volume_price_rise_ranking(self,
-                                     limit: Optional[int] = 100) -> ExtractionResult:
+                                     symbols: Symbols) -> ExtractionResult:
         """
         获取量价齐升股票排名
         
         Args:
-            limit: 返回数量限制，默认100
+            symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
         
         Returns:
             量价齐升股票排名数据
         """
-        params = self._build_standard_params(limit=limit)
+        params = self._build_standard_params(symbols=symbols)
         return self.extractor.get_volume_price_rise_ranking(params)
     
     def get_continuous_rise_ranking(self,
