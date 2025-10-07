@@ -3264,3 +3264,173 @@ parameter_mappings:
         indicator:
           required: true
           valid_values: ["按报告期", "年度", "年报", "按年度", "按季度", "按半年"]
+    
+    # 资产负债表接口参数值映射配置
+    stock_financial_report_sina:
+      parameter_mapping:
+        indicator: "indicator"
+      value_mapping:
+        indicator:
+          "按报告期": "按报告期"
+          "年度": "年度"
+          "年报": "年报"
+          "按年度": "按年度"
+          "按季度": "按季度"
+          "按半年": "按半年"
+      defaults:
+        indicator: "按报告期"
+      validation:
+        indicator:
+          required: true
+          valid_values: ["按报告期", "年度", "年报", "按年度", "按季度", "按半年"]
+    
+    stock_balance_sheet_by_report_em:
+      parameter_mapping:
+        indicator: "indicator"
+      value_mapping:
+        indicator:
+          "按报告期": "按报告期"
+          "年度": "年度"
+          "年报": "年报"
+          "按年度": "按年度"
+          "按季度": "按季度"
+          "按半年": "按半年"
+      defaults:
+        indicator: "按报告期"
+      validation:
+        indicator:
+          required: true
+          valid_values: ["按报告期", "年度", "年报", "按年度", "按季度", "按半年"]
+    
+    # 现金流量表接口参数值映射配置
+    stock_cash_flow_sheet_by_report_em:
+      parameter_mapping:
+        indicator: "indicator"
+      value_mapping:
+        indicator:
+          "按报告期": "按报告期"
+          "年度": "年度"
+          "年报": "年报"
+          "按年度": "按年度"
+          "按季度": "按季度"
+          "按半年": "按半年"
+      defaults:
+        indicator: "按报告期"
+      validation:
+        indicator:
+          required: true
+          valid_values: ["按报告期", "年度", "年报", "按年度", "按季度", "按半年"]
+    
+    # 利润表接口参数值映射配置
+    stock_profit_sheet_by_report_em:
+      parameter_mapping:
+        indicator: "indicator"
+      value_mapping:
+        indicator:
+          "按报告期": "按报告期"
+          "年度": "年度"
+          "年报": "年报"
+          "按年度": "按年度"
+          "按季度": "按季度"
+          "按半年": "按半年"
+      defaults:
+        indicator: "按报告期"
+      validation:
+        indicator:
+          required: true
+          valid_values: ["按报告期", "年度", "年报", "按年度", "按季度", "按半年"]
+    
+    # 分红数据接口参数值映射配置
+    stock_dividend_detail_em:
+      parameter_mapping:
+        indicator: "indicator"
+      value_mapping:
+        indicator:
+          "按报告期": "按报告期"
+          "年度": "年度"
+          "年报": "年报"
+          "按年度": "按年度"
+          "按季度": "按季度"
+          "按半年": "按半年"
+      defaults:
+        indicator: "按报告期"
+      validation:
+        indicator:
+          required: true
+          valid_values: ["按报告期", "年度", "年报", "按年度", "按季度", "按半年"]
+    
+    # 机构持仓接口参数值映射配置
+    stock_institutional_holdings_em:
+      parameter_mapping:
+        indicator: "indicator"
+      value_mapping:
+        indicator:
+          "按报告期": "按报告期"
+          "年度": "年度"
+          "年报": "年报"
+          "按年度": "按年度"
+          "按季度": "按季度"
+          "按半年": "按半年"
+      defaults:
+        indicator: "按报告期"
+      validation:
+        indicator:
+          required: true
+          valid_values: ["按报告期", "年度", "年报", "按年度", "按季度", "按半年"]
+    
+    # 沪深港通持仓接口参数值映射配置
+    stock_hsgt_holdings_em:
+      parameter_mapping:
+        indicator: "indicator"
+      value_mapping:
+        indicator:
+          "按报告期": "按报告期"
+          "年度": "年度"
+          "年报": "年报"
+          "按年度": "按年度"
+          "按季度": "按季度"
+          "按半年": "按半年"
+      defaults:
+        indicator: "按报告期"
+      validation:
+        indicator:
+          required: true
+          valid_values: ["按报告期", "年度", "年报", "按年度", "按季度", "按半年"]
+    
+    # 研报数据接口参数值映射配置
+    stock_research_reports_em:
+      parameter_mapping:
+        indicator: "indicator"
+      value_mapping:
+        indicator:
+          "按报告期": "按报告期"
+          "年度": "年度"
+          "年报": "年报"
+          "按年度": "按年度"
+          "按季度": "按季度"
+          "按半年": "按半年"
+      defaults:
+        indicator: "按报告期"
+      validation:
+        indicator:
+          required: true
+          valid_values: ["按报告期", "年度", "年报", "按年度", "按季度", "按半年"]
+    
+    # 预测共识接口参数值映射配置
+    stock_forecast_consensus_em:
+      parameter_mapping:
+        indicator: "indicator"
+      value_mapping:
+        indicator:
+          "按报告期": "按报告期"
+          "年度": "年度"
+          "年报": "年报"
+          "按年度": "按年度"
+          "按季度": "按季度"
+          "按半年": "按半年"
+      defaults:
+        indicator: "按报告期"
+      validation:
+        indicator:
+          required: true
+          valid_values: ["按报告期", "年度", "年报", "按年度", "按季度", "按半年"]

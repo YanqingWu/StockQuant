@@ -283,17 +283,21 @@ class DataService:
     
     def get_stock_balance_sheet(self,
                                symbols: Symbols,
-                               indicator: str = "debt") -> Union[ExtractionResult, List[ExtractionResult]]:
+                               indicator: str = "按报告期") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取资产负债表
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
-            indicator: 财务指标类型，默认"debt"（债务相关指标）
+            indicator: 财务指标类型，可选值：按报告期、年度、年报、按年度、按季度、按半年
         
         Returns:
             资产负债表数据
         """
+        # 参数验证
+        if indicator not in StandardParameterOptions.INDICATOR_OPTIONS:
+            raise ValueError(f"不支持的indicator值: {indicator}，支持的值: {StandardParameterOptions.INDICATOR_OPTIONS}")
+        
         params = self._build_standard_params(
             symbols=symbols,
             indicator=indicator
@@ -303,18 +307,22 @@ class DataService:
     def get_stock_income_statement(self,
                                   symbols: Symbols,
                                   date: DateRange,
-                                  indicator: str = "benefit") -> Union[ExtractionResult, List[ExtractionResult]]:
+                                  indicator: str = "按报告期") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取利润表
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
             date: 指定日期，格式 "2023-01-01" 或 date(2023, 1, 1)
-            indicator: 财务指标类型，默认"benefit"（盈利相关指标）
+            indicator: 财务指标类型，可选值：按报告期、年度、年报、按年度、按季度、按半年
         
         Returns:
             利润表数据
         """
+        # 参数验证
+        if indicator not in StandardParameterOptions.INDICATOR_OPTIONS:
+            raise ValueError(f"不支持的indicator值: {indicator}，支持的值: {StandardParameterOptions.INDICATOR_OPTIONS}")
+        
         params = self._build_standard_params(
             symbols=symbols,
             indicator=indicator,
@@ -325,18 +333,22 @@ class DataService:
     def get_stock_cash_flow(self,
                            symbols: Symbols,
                            date: DateRange,
-                           indicator: str = "cash") -> Union[ExtractionResult, List[ExtractionResult]]:
+                           indicator: str = "按报告期") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取现金流量表
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
             date: 指定日期，格式 "2023-01-01" 或 date(2023, 1, 1)
-            indicator: 财务指标类型，默认"cash"（现金流相关指标）
+            indicator: 财务指标类型，可选值：按报告期、年度、年报、按年度、按季度、按半年
         
         Returns:
             现金流量表数据
         """
+        # 参数验证
+        if indicator not in StandardParameterOptions.INDICATOR_OPTIONS:
+            raise ValueError(f"不支持的indicator值: {indicator}，支持的值: {StandardParameterOptions.INDICATOR_OPTIONS}")
+        
         params = self._build_standard_params(
             symbols=symbols,
             indicator=indicator,
@@ -347,18 +359,22 @@ class DataService:
     def get_stock_dividend(self,
                           symbols: Symbols,
                           date: DateRange,
-                          indicator: str = "dividend") -> Union[ExtractionResult, List[ExtractionResult]]:
+                          indicator: str = "按报告期") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取分红数据
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
             date: 指定日期，格式 "2023-01-01" 或 date(2023, 1, 1)
-            indicator: 财务指标类型，默认"dividend"（分红相关指标）
+            indicator: 财务指标类型，可选值：按报告期、年度、年报、按年度、按季度、按半年
         
         Returns:
             分红数据
         """
+        # 参数验证
+        if indicator not in StandardParameterOptions.INDICATOR_OPTIONS:
+            raise ValueError(f"不支持的indicator值: {indicator}，支持的值: {StandardParameterOptions.INDICATOR_OPTIONS}")
+        
         params = self._build_standard_params(
             symbols=symbols,
             indicator=indicator,
@@ -370,19 +386,26 @@ class DataService:
     
     def get_stock_institutional_holdings(self,
                                         symbols: Symbols,
-                                        date: DateRange) -> Union[ExtractionResult, List[ExtractionResult]]:
+                                        date: DateRange,
+                                        indicator: str = "按报告期") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取机构持仓数据
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
             date: 指定日期，格式 "2023-01-01" 或 date(2023, 1, 1)
+            indicator: 财务指标类型，可选值：按报告期、年度、年报、按年度、按季度、按半年
         
         Returns:
             机构持仓数据
         """
+        # 参数验证
+        if indicator not in StandardParameterOptions.INDICATOR_OPTIONS:
+            raise ValueError(f"不支持的indicator值: {indicator}，支持的值: {StandardParameterOptions.INDICATOR_OPTIONS}")
+        
         params = self._build_standard_params(
             symbols=symbols,
+            indicator=indicator,
             date=date
         )
         return self.extractor.get_stock_institutional_holdings(params)
@@ -392,7 +415,7 @@ class DataService:
                                start_date: DateRange,
                                end_date: DateRange,
                                market: str = "SZ",
-                               indicator: str = "hold") -> Union[ExtractionResult, List[ExtractionResult]]:
+                               indicator: str = "按报告期") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取沪深港通持仓数据
         
@@ -401,11 +424,15 @@ class DataService:
             start_date: 开始日期，格式 "2023-01-01" 或 date(2023, 1, 1)
             end_date: 结束日期，格式 "2023-12-31" 或 date(2023, 12, 31)
             market: 市场代码，默认"SZ"（深市）
-            indicator: 指标类型，默认"hold"（持仓相关指标）
+            indicator: 财务指标类型，可选值：按报告期、年度、年报、按年度、按季度、按半年
         
         Returns:
             沪深港通持仓数据
         """
+        # 参数验证
+        if indicator not in StandardParameterOptions.INDICATOR_OPTIONS:
+            raise ValueError(f"不支持的indicator值: {indicator}，支持的值: {StandardParameterOptions.INDICATOR_OPTIONS}")
+        
         params = self._build_standard_params(
             symbols=symbols,
             start_date=start_date,
@@ -419,19 +446,23 @@ class DataService:
     
     def get_stock_research_reports(self,
                                   symbols: Symbols,
-                                  indicator: str = "rating",
+                                  indicator: str = "按报告期",
                                   year: str = "2023") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取研报数据
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
-            indicator: 指标类型，默认"rating"（评级相关指标）
+            indicator: 财务指标类型，可选值：按报告期、年度、年报、按年度、按季度、按半年
             year: 年份，默认"2023"
         
         Returns:
             研报数据
         """
+        # 参数验证
+        if indicator not in StandardParameterOptions.INDICATOR_OPTIONS:
+            raise ValueError(f"不支持的indicator值: {indicator}，支持的值: {StandardParameterOptions.INDICATOR_OPTIONS}")
+        
         params = self._build_standard_params(
             symbols=symbols,
             indicator=indicator,
@@ -442,18 +473,22 @@ class DataService:
     def get_stock_forecast_consensus(self,
                                     symbols: Symbols,
                                     date: DateRange,
-                                    indicator: str = "profit") -> Union[ExtractionResult, List[ExtractionResult]]:
+                                    indicator: str = "按报告期") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取预测共识数据
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
             date: 指定日期，格式 "2023-01-01" 或 date(2023, 1, 1)
-            indicator: 指标类型，默认"profit"（盈利预测相关指标）
+            indicator: 财务指标类型，可选值：按报告期、年度、年报、按年度、按季度、按半年
         
         Returns:
             预测共识数据
         """
+        # 参数验证
+        if indicator not in StandardParameterOptions.INDICATOR_OPTIONS:
+            raise ValueError(f"不支持的indicator值: {indicator}，支持的值: {StandardParameterOptions.INDICATOR_OPTIONS}")
+        
         params = self._build_standard_params(
             symbols=symbols,
             indicator=indicator,
