@@ -343,23 +343,20 @@ class DataService:
     
     def get_stock_institutional_holdings(self,
                                         symbols: Symbols,
-                                        start_date: Optional[DateRange] = None,
-                                        end_date: Optional[DateRange] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
+                                        date: Optional[str] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取机构持仓数据
         
         Args:
-            symbols: 股票代码
-            start_date: 开始日期
-            end_date: 结束日期
+            symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
+            date: 指定日期，格式 "2023-01-01"
         
         Returns:
             机构持仓数据
         """
         params = self._build_standard_params(
             symbols=symbols,
-            start_date=start_date,
-            end_date=end_date
+            date=date
         )
         return self.extractor.get_stock_institutional_holdings(params)
     
