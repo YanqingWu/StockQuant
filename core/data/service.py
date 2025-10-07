@@ -448,7 +448,7 @@ class DataService:
             创新高股票排名数据
         """
         params = self._build_standard_params(symbols=symbols)
-        return self.extractor.get_innovation_high_ranking(params)
+        return self.extractor.get_stock_innovation_high_ranking(params)
     
     def get_stock_innovation_low_ranking(self,
                                   symbols: Symbols) -> ExtractionResult:
@@ -462,7 +462,7 @@ class DataService:
             创新低股票排名数据
         """
         params = self._build_standard_params(symbols=symbols)
-        return self.extractor.get_innovation_low_ranking(params)
+        return self.extractor.get_stock_innovation_low_ranking(params)
     
     def get_stock_volume_price_rise_ranking(self,
                                      symbols: Symbols) -> ExtractionResult:
@@ -476,7 +476,7 @@ class DataService:
             量价齐升股票排名数据
         """
         params = self._build_standard_params(symbols=symbols)
-        return self.extractor.get_volume_price_rise_ranking(params)
+        return self.extractor.get_stock_volume_price_rise_ranking(params)
     
     def get_stock_continuous_rise_ranking(self,
                                    symbols: Symbols) -> ExtractionResult:
@@ -490,7 +490,7 @@ class DataService:
             连续上涨股票排名数据
         """
         params = self._build_standard_params(symbols=symbols)
-        return self.extractor.get_continuous_rise_ranking(params)
+        return self.extractor.get_stock_continuous_rise_ranking(params)
     
     def get_stock_volume_price_fall_ranking(self,
                                      symbols: Symbols) -> ExtractionResult:
@@ -504,7 +504,7 @@ class DataService:
             量价齐跌股票排名数据
         """
         params = self._build_standard_params(symbols=symbols)
-        return self.extractor.get_volume_price_fall_ranking(params)
+        return self.extractor.get_stock_volume_price_fall_ranking(params)
     
     def get_stock_volume_shrink_ranking(self,
                                        symbols: Symbols) -> ExtractionResult:
@@ -518,7 +518,7 @@ class DataService:
             创新缩量股票排名数据
         """
         params = self._build_standard_params(symbols=symbols)
-        return self.extractor.get_volume_shrink_ranking(params)
+        return self.extractor.get_stock_volume_shrink_ranking(params)
     
     def get_stock_valuation(self,
                            symbols: Symbols) -> Union[ExtractionResult, List[ExtractionResult]]:
@@ -553,17 +553,25 @@ class DataService:
     # ==================== 股票事件数据 ====================
     
     def get_stock_major_contracts(self,
-                                 symbols: Symbols) -> Union[ExtractionResult, List[ExtractionResult]]:
+                                 symbols: Symbols,
+                                 start_date: Optional[DateRange] = None,
+                                 end_date: Optional[DateRange] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取重大合同事件数据
         
         Args:
-            symbols: 股票代码
+            symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
+            start_date: 开始日期，格式 "2023-01-01"
+            end_date: 结束日期，格式 "2023-01-01"
         
         Returns:
             重大合同事件数据
         """
-        params = self._build_standard_params(symbols=symbols)
+        params = self._build_standard_params(
+            symbols=symbols,
+            start_date=start_date,
+            end_date=end_date
+        )
         return self.extractor.get_stock_major_contracts(params)
     
     def get_stock_suspension(self,
