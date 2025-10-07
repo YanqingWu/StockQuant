@@ -17,6 +17,29 @@ Symbols = Union[str, List[str]]  # 股票代码，支持单个或批量
 DateRange = Union[date, str]     # 日期，支持date对象或字符串
 
 
+class StandardParameterOptions:
+    """标准参数选项定义 - 服务层用户输入的有效值"""
+    
+    # 财务指标类型选项 - 基于实际业务含义
+    INDICATOR_OPTIONS = [
+        "按报告期",    # 按报告期统计
+        "年度",        # 年度数据
+        "年报",        # 年报数据
+        "按年度",      # 按年度统计
+        "按季度",      # 按季度统计
+        "按半年"       # 按半年统计
+    ]
+    
+    # 市场代码选项
+    MARKET_OPTIONS = ["SZ", "SH", "BJ", "HK", "US"]
+    
+    # 数据周期选项
+    PERIOD_OPTIONS = ["daily", "1min", "5min", "15min", "30min", "60min"]
+    
+    # 复权类型选项
+    ADJUST_OPTIONS = ["none", "qfq", "hfq"]
+
+
 class DataService:
     """数据服务 - 用户友好的接口"""
     
@@ -237,17 +260,21 @@ class DataService:
     
     def get_stock_basic_indicators(self,
                                   symbols: Symbols,
-                                  indicator: str = "roe") -> Union[ExtractionResult, List[ExtractionResult]]:
+                                  indicator: str = "按报告期") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取基础财务指标
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
-            indicator: 财务指标类型，默认"roe"（净资产收益率）
+            indicator: 财务指标类型，可选值：按报告期、年度、年报、按年度、按季度、按半年
         
         Returns:
             基础财务指标数据
         """
+        # 参数验证
+        if indicator not in StandardParameterOptions.INDICATOR_OPTIONS:
+            raise ValueError(f"不支持的indicator值: {indicator}，支持的值: {StandardParameterOptions.INDICATOR_OPTIONS}")
+        
         params = self._build_standard_params(
             symbols=symbols,
             indicator=indicator

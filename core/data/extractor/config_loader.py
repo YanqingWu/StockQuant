@@ -188,6 +188,30 @@ class ExtractionConfig:
         """获取参数映射配置"""
         return self.parameter_mappings.get("interface_mappings", {})
     
+    def get_interface_parameter_mapping(self, interface_name: str) -> Dict[str, str]:
+        """获取接口的参数名映射配置"""
+        mappings = self.get_parameter_mappings()
+        interface_mapping = mappings.get(interface_name, {})
+        return interface_mapping.get("parameter_mapping", {})
+    
+    def get_interface_value_mapping(self, interface_name: str) -> Dict[str, Dict[str, str]]:
+        """获取接口的参数值映射配置"""
+        mappings = self.get_parameter_mappings()
+        interface_mapping = mappings.get(interface_name, {})
+        return interface_mapping.get("value_mapping", {})
+    
+    def get_interface_defaults(self, interface_name: str) -> Dict[str, Any]:
+        """获取接口的默认值配置"""
+        mappings = self.get_parameter_mappings()
+        interface_mapping = mappings.get(interface_name, {})
+        return interface_mapping.get("defaults", {})
+    
+    def get_interface_validation(self, interface_name: str) -> Dict[str, Dict[str, Any]]:
+        """获取接口的参数验证配置"""
+        mappings = self.get_parameter_mappings()
+        interface_mapping = mappings.get(interface_name, {})
+        return interface_mapping.get("validation", {})
+    
     def has_field_mapping(self, field_name: str) -> bool:
         """检查是否存在字段映射"""
         return field_name in self.field_mappings

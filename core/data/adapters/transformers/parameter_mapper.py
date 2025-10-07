@@ -21,36 +21,48 @@ class ParameterMapper:
     def map_parameters(self, interface_name: str, params: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
         """映射参数到目标接口"""
         if interface_name not in self.mappings:
-            # 无映射配置的接口，直接返回空参数
-            logger.debug(f"接口 {interface_name} 无映射配置，返回空参数")
-            return interface_name, {}
+            logger.debug(f"接口 {interface_name} 无映射配置，返回原参数")
+            return interface_name, params
         
         mapping_config = self.mappings[interface_name]
         if not mapping_config:
-            # 映射配置为空，直接返回空参数
-            logger.debug(f"接口 {interface_name} 映射配置为空，返回空参数")
-            return interface_name, {}
+            logger.debug(f"接口 {interface_name} 映射配置为空，返回原参数")
+            return interface_name, params
         
         target_interface = interface_name
-        parameter_mapping = mapping_config["parameter_mapping"]
+        parameter_mapping = mapping_config.get("parameter_mapping", {})
+        value_mapping = mapping_config.get("value_mapping", {})
+        defaults = mapping_config.get("defaults", {})
         validation = mapping_config.get("validation", {})
         
         # 1. 验证参数
         self._validate_parameters(params, validation)
         
-        # 2. 映射参数
+        # 2. 映射参数名
         mapped_params = {}
         for source_param, target_param in parameter_mapping.items():
             if source_param in params:
                 mapped_params[target_param] = params[source_param]
         
-        # 3. 应用默认值
-        self._apply_default_values(mapped_params, validation)
+        # 3. 映射参数值
+        self._map_parameter_values(mapped_params, value_mapping)
         
-        # 4. 特殊处理逻辑
+        # 4. 应用默认值
+        self._apply_default_values(mapped_params, defaults)
+        
+        # 5. 特殊处理逻辑
         self._apply_special_handling(interface_name, mapped_params, params)
         
         return target_interface, mapped_params
+    
+    def _map_parameter_values(self, params: Dict[str, Any], value_mapping: Dict[str, Dict[str, str]]) -> None:
+        """映射参数值"""
+        for param_name, value_map in value_mapping.items():
+            if param_name in params and params[param_name] in value_map:
+                original_value = params[param_name]
+                mapped_value = value_map[original_value]
+                logger.debug(f"参数 {param_name} 值映射: {original_value} -> {mapped_value}")
+                params[param_name] = mapped_value
     
     def _validate_parameters(self, params: Dict[str, Any], validation: Dict[str, Any]) -> None:
         """验证参数"""
@@ -74,11 +86,12 @@ class ParameterMapper:
                 else:
                     raise ValueError(f"参数 {param_name} 的值 {value} 不在有效范围内: {valid_values}，且无默认值")
     
-    def _apply_default_values(self, params: Dict[str, Any], validation: Dict[str, Any]) -> None:
+    def _apply_default_values(self, params: Dict[str, Any], defaults: Dict[str, Any]) -> None:
         """应用默认值"""
-        for param_name, param_config in validation.items():
-            if param_name not in params and "default_value" in param_config:
-                params[param_name] = param_config["default_value"]
+        for param_name, default_value in defaults.items():
+            if param_name not in params or params[param_name] is None:
+                logger.debug(f"为参数 {param_name} 应用默认值: {default_value}")
+                params[param_name] = default_value
     
     def _apply_special_handling(self, interface_name: str, mapped_params: Dict[str, Any], original_params: Dict[str, Any]) -> None:
         """应用特殊处理逻辑 - 基于参数特征智能处理，避免硬编码接口名称"""
