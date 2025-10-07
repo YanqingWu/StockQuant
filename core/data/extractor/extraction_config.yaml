@@ -1489,6 +1489,10 @@ interfaces_config:
           priority: 6
           markets: ["SH", "SZ"]
           post_processor: "convert_field_mapping"
+          cache_strategy:
+            type: "time_based"
+            granularity: "day"
+            description: "市场级别资金流向按天缓存"
 
     market_indices:
       description: "市场指数"
@@ -1565,6 +1569,10 @@ interfaces_config:
             enabled: true
             priority: 1
             markets: ["SH", "SZ"]
+            cache_strategy:
+              type: "time_based"
+              granularity: "day"
+              description: "市场级别资金流向按天缓存"
 
       hsgt_flow:
         description: "沪深港通资金流向"
@@ -1573,6 +1581,10 @@ interfaces_config:
             enabled: true
             priority: 1
             markets: ["SH", "SZ"]
+            cache_strategy:
+              type: "time_based"
+              granularity: "day"
+              description: "沪深港通资金流向按天缓存"
 
       big_deal_tracking:
         description: "大单追踪"
@@ -1581,6 +1593,10 @@ interfaces_config:
             enabled: true
             priority: 1
             markets: ["SH", "SZ"]
+            cache_strategy:
+              type: "time_based"
+              granularity: "day"
+              description: "大单追踪按天缓存"
 
     sector_data:
       sector_quote:
@@ -1635,6 +1651,10 @@ interfaces_config:
           enabled: true
           priority: 1
           markets: ["SH", "SZ"]
+          cache_strategy:
+            type: "time_based"
+            granularity: "day"
+            description: "市场大宗交易统计按天缓存"
 
 field_mappings:
 
