@@ -413,17 +413,25 @@ class DataService:
         return self.extractor.get_stock_research_reports(params)
     
     def get_stock_forecast_consensus(self,
-                                    symbols: Symbols) -> Union[ExtractionResult, List[ExtractionResult]]:
+                                    symbols: Symbols,
+                                    indicator: Optional[str] = None,
+                                    date: Optional[str] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取预测共识数据
         
         Args:
-            symbols: 股票代码
+            symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
+            indicator: 指标类型，如 "profit" 等
+            date: 指定日期，格式 "2023-01-01"
         
         Returns:
             预测共识数据
         """
-        params = self._build_standard_params(symbols=symbols)
+        params = self._build_standard_params(
+            symbols=symbols,
+            indicator=indicator,
+            date=date
+        )
         return self.extractor.get_stock_forecast_consensus(params)
     
     def get_stock_opinions(self,
