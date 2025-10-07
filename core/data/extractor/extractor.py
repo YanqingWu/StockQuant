@@ -1617,11 +1617,11 @@ class Extractor:
         """获取市场级别资金流向数据"""
         return self._execute_interface_with_batch("market", "fund_flow.market_level", params)
     
-    def get_hsgt_fund_flow(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
+    def get_market_hsgt_fund_flow(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取沪深港通资金流向数据"""
         return self._execute_interface_with_batch("market", "fund_flow.hsgt_flow", params)
     
-    def get_big_deal_tracking(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
+    def get_market_big_deal_tracking(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取大单追踪数据"""
         return self._execute_interface_with_batch("market", "fund_flow.big_deal_tracking", params)
 

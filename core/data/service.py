@@ -720,16 +720,6 @@ class DataService:
         params = self._build_standard_params()
         return self.extractor.get_market_activity(params)
     
-    def get_market_sentiment(self) -> ExtractionResult:
-        """
-        获取市场情绪数据
-        
-        Returns:
-            市场情绪数据
-        """
-        params = self._build_standard_params()
-        return self.extractor.get_market_sentiment(params)
-    
     # ==================== 市场资金流向数据 ====================
     
     def get_market_fund_flow(self) -> ExtractionResult:
@@ -742,7 +732,7 @@ class DataService:
         params = self._build_standard_params()
         return self.extractor.get_market_fund_flow(params)
     
-    def get_hsgt_fund_flow(self) -> ExtractionResult:
+    def get_market_hsgt_fund_flow(self) -> ExtractionResult:
         """
         获取沪深港通资金流向数据
         
@@ -750,9 +740,9 @@ class DataService:
             沪深港通资金流向数据
         """
         params = self._build_standard_params()
-        return self.extractor.get_hsgt_fund_flow(params)
+        return self.extractor.get_market_hsgt_fund_flow(params)
     
-    def get_big_deal_tracking(self) -> ExtractionResult:
+    def get_market_big_deal_tracking(self) -> ExtractionResult:
         """
         获取大单追踪数据
         
@@ -760,7 +750,7 @@ class DataService:
             大单追踪数据
         """
         params = self._build_standard_params()
-        return self.extractor.get_big_deal_tracking(params)
+        return self.extractor.get_market_big_deal_tracking(params)
     
     # ==================== 市场大宗交易数据 ====================
     
