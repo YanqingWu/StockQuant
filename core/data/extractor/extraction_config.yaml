@@ -926,12 +926,6 @@ interfaces_config:
             markets: ["SH", "SZ", "BJ"]
             description: "盘口异动数据"
           
-          - name: "stock_hot_search_baidu"
-            enabled: false
-            priority: 10
-            markets: ["SH", "SZ", "BJ"]
-            description: "百度搜索热度"
-          
           - name: "stock_hot_keyword_em"
             enabled: true
             priority: 11
