@@ -237,64 +237,61 @@ class DataService:
     
     def get_stock_basic_indicators(self,
                                   symbols: Symbols,
-                                  period: Optional[str] = "latest") -> Union[ExtractionResult, List[ExtractionResult]]:
+                                  indicator: Optional[str] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取基础财务指标
         
         Args:
-            symbols: 股票代码
-            period: 报告期，如 "2023Q3" 或 "latest"
+            symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
+            indicator: 财务指标类型，如 "roe", "pe" 等
         
         Returns:
             基础财务指标数据
         """
         params = self._build_standard_params(
             symbols=symbols,
-            period=period
+            indicator=indicator
         )
         return self.extractor.get_stock_basic_indicators(params)
     
     def get_stock_balance_sheet(self,
                                symbols: Symbols,
-                               start_date: Optional[DateRange] = None,
-                               end_date: Optional[DateRange] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
+                               indicator: Optional[str] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取资产负债表
         
         Args:
-            symbols: 股票代码
-            start_date: 开始日期
-            end_date: 结束日期
+            symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
+            indicator: 财务指标类型，如 "debt" 等
         
         Returns:
             资产负债表数据
         """
         params = self._build_standard_params(
             symbols=symbols,
-            start_date=start_date,
-            end_date=end_date
+            indicator=indicator
         )
         return self.extractor.get_stock_balance_sheet(params)
     
     def get_stock_income_statement(self,
                                   symbols: Symbols,
-                                  start_date: Optional[DateRange] = None,
-                                  end_date: Optional[DateRange] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
+                                  indicator: Optional[str] = None,
+                                  date: Optional[str] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取利润表
         
         Args:
-            symbols: 股票代码
-            start_date: 开始日期
-            end_date: 结束日期
+            symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
+            indicator: 财务指标类型，如 "benefit" 等
+            date: 指定日期，格式 "2023-01-01"
         
         Returns:
             利润表数据
         """
         params = self._build_standard_params(
             symbols=symbols,
-            start_date=start_date,
-            end_date=end_date
+            indicator=indicator,
+            date=date
         )
         return self.extractor.get_stock_income_statement(params)
     
