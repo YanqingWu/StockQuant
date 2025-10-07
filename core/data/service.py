@@ -138,7 +138,7 @@ class DataService:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
             start_date: 开始日期，格式 "2023-01-01" 或 date(2023, 1, 1)
             end_date: 结束日期，格式 "2023-12-31" 或 date(2023, 12, 31)
-            period: 数据周期，默认"daily"，支持 daily/1min/5min/15min/30min/60min
+            period: 数据周期，默认"daily"，支持 daily/weekly/monthly
             adjust: 复权类型，默认"qfq"，支持 none/qfq/hfq
         
         Returns:

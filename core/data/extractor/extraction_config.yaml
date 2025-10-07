@@ -781,7 +781,7 @@ interfaces_config:
             markets: ["SH", "SZ"]
           
           - name: "stock_zh_b_daily"
-            enabled: true
+            enabled: false
             priority: 2
             markets: ["SH", "SZ"]
           
@@ -3585,8 +3585,8 @@ parameter_mappings:
       value_mapping:
         adjust:
           "none": ""        # 不复权映射为空字符串
-          "qfq": "1"        # 港股接口使用"1"表示前复权
-          "hfq": "2"        # 港股接口使用"2"表示后复权
+          "qfq": "qfq"      # 港股接口使用字符串参数 qfq
+          "hfq": "hfq"      # 港股接口使用字符串参数 hfq
       defaults:
         period: "daily"
         adjust: "qfq"
@@ -3627,8 +3627,8 @@ parameter_mappings:
       value_mapping:
         adjust:
           "none": ""        # 不复权映射为空字符串
-          "qfq": "1"        # 美股接口使用"1"表示前复权
-          "hfq": "2"        # 美股接口使用"2"表示后复权
+          "qfq": "qfq"      # 美股接口使用字符串参数 qfq
+          "hfq": "hfq"      # 美股接口使用字符串参数 hfq
       defaults:
         period: "daily"
         adjust: "qfq"
