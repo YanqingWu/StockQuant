@@ -766,7 +766,7 @@ class DataService:
     
     # ==================== 市场板块数据 ====================
     
-    def get_sector_quote(self) -> ExtractionResult:
+    def get_market_sector_quote(self) -> ExtractionResult:
         """
         获取行业板块行情数据
         
@@ -774,9 +774,9 @@ class DataService:
             行业板块行情数据
         """
         params = self._build_standard_params()
-        return self.extractor.get_sector_quote(params)
+        return self.extractor.get_market_sector_quote(params)
     
-    def get_sector_constituent_quotes(self) -> ExtractionResult:
+    def get_market_sector_constituent_quotes(self) -> ExtractionResult:
         """
         获取行业板块成分股行情数据
         
@@ -784,9 +784,9 @@ class DataService:
             行业板块成分股行情数据
         """
         params = self._build_standard_params()
-        return self.extractor.get_sector_constituent_quotes(params)
+        return self.extractor.get_market_sector_constituent_quotes(params)
     
-    def get_sector_fund_flow(self) -> ExtractionResult:
+    def get_market_sector_fund_flow(self) -> ExtractionResult:
         """
         获取行业板块资金流向数据
         
@@ -794,11 +794,11 @@ class DataService:
             行业板块资金流向数据
         """
         params = self._build_standard_params()
-        return self.extractor.get_sector_fund_flow(params)
+        return self.extractor.get_market_sector_fund_flow(params)
     
     # ==================== 市场概念数据 ====================
     
-    def get_concept_quote(self) -> ExtractionResult:
+    def get_market_concept_quote(self) -> ExtractionResult:
         """
         获取概念板块行情数据
         
@@ -806,9 +806,9 @@ class DataService:
             概念板块行情数据
         """
         params = self._build_standard_params()
-        return self.extractor.get_concept_quote(params)
+        return self.extractor.get_market_concept_quote(params)
     
-    def get_concept_constituent_quotes(self) -> ExtractionResult:
+    def get_market_concept_constituent_quotes(self) -> ExtractionResult:
         """
         获取概念板块成分股行情数据
         
@@ -816,9 +816,9 @@ class DataService:
             概念板块成分股行情数据
         """
         params = self._build_standard_params()
-        return self.extractor.get_concept_constituent_quotes(params)
+        return self.extractor.get_market_concept_constituent_quotes(params)
     
-    def get_concept_fund_flow(self) -> ExtractionResult:
+    def get_market_concept_fund_flow(self) -> ExtractionResult:
         """
         获取概念板块资金流向数据
         
@@ -826,7 +826,7 @@ class DataService:
             概念板块资金流向数据
         """
         params = self._build_standard_params()
-        return self.extractor.get_concept_fund_flow(params)
+        return self.extractor.get_market_concept_fund_flow(params)
     
     # ==================== 查询和管理方法 ====================
     

@@ -1631,28 +1631,28 @@ class Extractor:
         return self._execute_interface_with_batch("market", "block_trading", params)
     
     # 市场板块数据
-    def get_sector_quote(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
+    def get_market_sector_quote(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取行业板块行情数据"""
         return self._execute_interface_with_batch("market", "sector_data.sector_quote", params)
     
-    def get_sector_constituent_quotes(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
+    def get_market_sector_constituent_quotes(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取行业板块成分股行情数据"""
         return self._execute_interface_with_batch("market", "sector_data.constituent_quotes", params)
     
-    def get_sector_fund_flow(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
+    def get_market_sector_fund_flow(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取行业板块资金流向数据"""
         return self._execute_interface_with_batch("market", "sector_data.sector_fund_flow", params)
     
     # 市场概念数据
-    def get_concept_quote(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
+    def get_market_concept_quote(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取概念板块行情数据"""
         return self._execute_interface_with_batch("market", "concept_data.concept_quote", params)
     
-    def get_concept_constituent_quotes(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
+    def get_market_concept_constituent_quotes(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取概念板块成分股行情数据"""
         return self._execute_interface_with_batch("market", "concept_data.constituent_quotes", params)
     
-    def get_concept_fund_flow(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
+    def get_market_concept_fund_flow(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取概念板块资金流向数据"""
         return self._execute_interface_with_batch("market", "concept_data.concept_fund_flow", params)
     
