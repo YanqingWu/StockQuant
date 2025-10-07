@@ -172,7 +172,8 @@ class DataService:
         params = self._build_standard_params(
             symbols=symbols,
             start_date=start_date,
-            end_date=end_date
+            end_date=end_date,
+            date=start_date
         )
         return self.extractor.get_stock_fund_flow(params)
     
@@ -194,22 +195,28 @@ class DataService:
         params = self._build_standard_params(
             symbols=symbols,
             start_date=start_date,
-            end_date=end_date
+            end_date=end_date,
+            date=start_date
         )
         return self.extractor.get_stock_dragon_tiger(params)
     
     def get_stock_sentiment(self,
-                           symbols: Symbols) -> Union[ExtractionResult, List[ExtractionResult]]:
+                           symbols: Symbols,
+                           date: Optional[str] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取股票情绪数据
         
         Args:
-            symbols: 股票代码
+            symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
+            date: 指定日期，格式 "2023-01-01"
         
         Returns:
             股票情绪数据
         """
-        params = self._build_standard_params(symbols=symbols)
+        params = self._build_standard_params(
+            symbols=symbols,
+            date=date
+        )
         return self.extractor.get_stock_sentiment(params)
     
     def get_stock_news(self,

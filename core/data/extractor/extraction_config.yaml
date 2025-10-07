@@ -927,7 +927,7 @@ interfaces_config:
             description: "盘口异动数据"
           
           - name: "stock_hot_search_baidu"
-            enabled: true
+            enabled: false
             priority: 10
             markets: ["SH", "SZ", "BJ"]
             description: "百度搜索热度"
