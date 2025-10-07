@@ -1592,7 +1592,7 @@ class Extractor:
     # ==================== 市场相关接口 (MARKET) ====================
     
     # 市场基础数据
-    def get_stock_list(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
+    def get_market_stock_list(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取市场股票列表"""
         return self._execute_interface_with_batch("market", "stock_list", params)
     

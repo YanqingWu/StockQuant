@@ -574,20 +574,6 @@ class DataService:
         )
         return self.extractor.get_stock_major_contracts(params)
     
-    def get_stock_suspension(self,
-                            symbols: Symbols) -> Union[ExtractionResult, List[ExtractionResult]]:
-        """
-        获取停牌事件数据
-        
-        Args:
-            symbols: 股票代码
-        
-        Returns:
-            停牌事件数据
-        """
-        params = self._build_standard_params(symbols=symbols)
-        return self.extractor.get_stock_suspension(params)
-    
     # ==================== 股票新股数据 ====================
     
     def get_stock_ipo_data(self,
@@ -674,15 +660,19 @@ class DataService:
     
     # ==================== 市场数据 ====================
     
-    def get_stock_list(self) -> ExtractionResult:
+    def get_market_stock_list(self,
+                             market: Optional[str] = None) -> ExtractionResult:
         """
         获取市场股票列表
+        
+        Args:
+            market: 市场代码，如 "SZ", "SH", "BJ" 等
         
         Returns:
             市场股票列表数据
         """
-        params = self._build_standard_params()
-        return self.extractor.get_stock_list(params)
+        params = self._build_standard_params(market=market)
+        return self.extractor.get_market_stock_list(params)
     
     def get_market_overview(self) -> ExtractionResult:
         """
