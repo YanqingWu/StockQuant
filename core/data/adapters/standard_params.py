@@ -10,73 +10,64 @@ from .stock_symbol import StockSymbol
 
 class StandardParams:
     """
-    标准参数类，统一参数格式
+    简化版标准参数类，统一参数格式
     
     核心参数：
-    - symbol: StockSymbol
+    - symbol: StockSymbol (支持单个或列表)
     - start_date/end_date: "YYYY-MM-DD" 格式的日期范围
-    - start_time/end_time: "HH:MM:SS" 格式的时间范围
-    - period: daily/1min/5min/15min/30min/60min
-    - adjust: none/qfq/hfq
-    - market: SZ/SH/BJ (优先使用)
-    - exchange: SZSE/SSE/BSE (补充)
+    - period: daily/1min/5min/15min/30min/60min (默认daily)
+    - adjust: none/qfq/hfq (默认qfq)
     
-    搜索参数：
-    - keyword: 搜索关键词
-    - ranking_type: 排名类型
+    扩展参数：
+    - indicator: 财务指标类型 (财务数据接口使用)
+    - date: 单日期参数 (部分接口使用)
+    - market: 市场代码 (可选，优先从symbol推断，支持SZ/SH/BJ/HK/US)
     
-    分页参数（二选一）：
-    - page/page_size: 页码分页
-    - offset/limit: 偏移分页
+    其他参数通过extra传递，保持向后兼容性
     """
 
     def __init__(
         self,
         *,
-        symbol: Optional[Union[StockSymbol, str]] = None,
-        # 时间参数：使用 start_date/end_date 替代单一的 date
+        # 核心参数
+        symbol: Optional[Union[StockSymbol, str, List[Union[StockSymbol, str]]]] = None,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
-        start_time: Optional[str] = None,
-        end_time: Optional[str] = None,
-        period: Optional[str] = None,
-        adjust: Optional[str] = None,
-        # 市场参数：优先使用 market，exchange 作为补充
+        period: Optional[str] = "daily",
+        adjust: Optional[str] = "qfq",
+        
+        # 扩展参数
+        indicator: Optional[str] = None,
+        date: Optional[str] = None,
         market: Optional[str] = None,
-        exchange: Optional[str] = None,
-        # 搜索参数
-        keyword: Optional[str] = None,
-        ranking_type: Optional[str] = None,
-        # 分页参数：统一使用 page/page_size 或 offset/limit
-        page: Optional[int] = None,
-        page_size: Optional[int] = None,
-        offset: Optional[int] = None,
-        limit: Optional[int] = None,
-        extra: Optional[Dict[str, Any]] = None,
+        
+        # 其他参数通过extra传递，保持向后兼容性
+        **extra
     ) -> None:
-        # 处理 symbol 参数：如果是字符串，转换为 StockSymbol 对象
+        # 处理 symbol 参数：支持单个或列表
         if symbol is not None:
-            if isinstance(symbol, str):
+            if isinstance(symbol, list):
+                self.symbol = [StockSymbol.parse(s) if isinstance(s, str) else s for s in symbol]
+            elif isinstance(symbol, str):
                 self.symbol = StockSymbol.parse(symbol)
             else:
                 self.symbol = symbol
         else:
             self.symbol = None
+            
+        # 核心参数
         self.start_date = start_date
         self.end_date = end_date
-        self.start_time = start_time
-        self.end_time = end_time
         self.period = period
         self.adjust = adjust
+        
+        # 扩展参数
+        self.indicator = indicator
+        self.date = date
         self.market = market
-        self.exchange = exchange
-        self.keyword = keyword
-        self.ranking_type = ranking_type
-        self.page = page
-        self.page_size = page_size
-        self.offset = offset
-        self.limit = limit
-        self.extra = dict(extra) if extra else {}
+        
+        # 其他参数
+        self.extra = extra
         
         # 参数验证
         self._validate_params()
@@ -84,50 +75,38 @@ class StandardParams:
     def _validate_params(self) -> None:
         """验证参数的有效性和一致性"""
         # 验证 symbol 类型（如果提供了）
-        if self.symbol is not None and not isinstance(self.symbol, StockSymbol):
-            raise ValueError(f"symbol 必须是 StockSymbol 类型，实际: {type(self.symbol)}")
-        
-        # 验证分页参数：不能同时使用 page/page_size 和 offset/limit
-        if (self.page is not None or self.page_size is not None) and (self.offset is not None or self.limit is not None):
-            raise ValueError("不能同时使用 page/page_size 和 offset/limit 分页参数")
+        if self.symbol is not None:
+            if isinstance(self.symbol, list):
+                for i, s in enumerate(self.symbol):
+                    if not isinstance(s, StockSymbol):
+                        raise ValueError(f"symbol列表第{i}个元素必须是StockSymbol类型，实际: {type(s)}")
+            elif not isinstance(self.symbol, StockSymbol):
+                raise ValueError(f"symbol必须是StockSymbol类型，实际: {type(self.symbol)}")
         
         # 验证日期格式（如果提供了）
-        if self.start_date and not self._is_valid_date_format(self.start_date):
-            raise ValueError(f"start_date 格式错误: {self.start_date}，期望 YYYY-MM-DD 格式")
-        
-        if self.end_date and not self._is_valid_date_format(self.end_date):
-            raise ValueError(f"end_date 格式错误: {self.end_date}，期望 YYYY-MM-DD 格式")
+        for date_param in [self.start_date, self.end_date, self.date]:
+            if date_param and not self._is_valid_date_format(date_param):
+                raise ValueError(f"日期格式错误: {date_param}，期望 YYYY-MM-DD 格式")
         
         # 验证日期参数：start_date 不能晚于 end_date
         if self.start_date and self.end_date and self.start_date > self.end_date:
             raise ValueError("start_date 不能晚于 end_date")
         
-        # 验证时间格式（如果提供了）
-        if self.start_time and not self._is_valid_time_format(self.start_time):
-            raise ValueError(f"start_time 格式错误: {self.start_time}，期望 HH:MM:SS 格式")
+        # 验证枚举值
+        if self.period and self.period not in ["daily", "1min", "5min", "15min", "30min", "60min"]:
+            raise ValueError(f"period值无效: {self.period}，期望: daily/1min/5min/15min/30min/60min")
         
-        if self.end_time and not self._is_valid_time_format(self.end_time):
-            raise ValueError(f"end_time 格式错误: {self.end_time}，期望 HH:MM:SS 格式")
+        if self.adjust and self.adjust not in ["none", "qfq", "hfq"]:
+            raise ValueError(f"adjust值无效: {self.adjust}，期望: none/qfq/hfq")
         
-        # 验证时间参数：start_time 不能晚于 end_time
-        if self.start_time and self.end_time and self.start_time > self.end_time:
-            raise ValueError("start_time 不能晚于 end_time")
-        
-        # 验证数值参数不能为负数
-        for param_name, value in [
-            ("page", self.page), ("page_size", self.page_size),
-            ("offset", self.offset), ("limit", self.limit)
-        ]:
-            if value is not None and value < 0:
-                raise ValueError(f"{param_name} 不能为负数")
+        if self.market and self.market not in ["SZ", "SH", "BJ", "HK", "US"]:
+            raise ValueError(f"market值无效: {self.market}，期望: SZ/SH/BJ/HK/US")
         
         # 验证字符串参数不能为空字符串
         for param_name, value in [
             ("start_date", self.start_date), ("end_date", self.end_date),
-            ("start_time", self.start_time), ("end_time", self.end_time),
-            ("period", self.period), ("adjust", self.adjust),
-            ("market", self.market), ("exchange", self.exchange),
-            ("keyword", self.keyword), ("ranking_type", self.ranking_type)
+            ("date", self.date), ("period", self.period), ("adjust", self.adjust),
+            ("indicator", self.indicator), ("market", self.market)
         ]:
             if value is not None and isinstance(value, str) and not value.strip():
                 raise ValueError(f"{param_name} 不能为空字符串")
@@ -187,36 +166,26 @@ class StandardParams:
         - symbol 字段在序列化时统一输出为 dot 风格字符串或字符串列表，便于后续适配到目标接口示例风格。
         """
         d: Dict[str, Any] = {}
+        
+        # 核心参数
         if self.symbol is not None:
             d["symbol"] = self._symbol_to_dot(self.symbol)
         if self.start_date is not None:
             d["start_date"] = self._maybe_strip(self.start_date)
         if self.end_date is not None:
             d["end_date"] = self._maybe_strip(self.end_date)
-        if self.start_time is not None:
-            d["start_time"] = self._maybe_strip(self.start_time)
-        if self.end_time is not None:
-            d["end_time"] = self._maybe_strip(self.end_time)
         if self.period is not None:
             d["period"] = self._maybe_strip(self.period)
         if self.adjust is not None:
             d["adjust"] = self._maybe_strip(self.adjust)
+        
+        # 扩展参数
+        if self.indicator is not None:
+            d["indicator"] = self._maybe_strip(self.indicator)
+        if self.date is not None:
+            d["date"] = self._maybe_strip(self.date)
         if self.market is not None:
             d["market"] = self._maybe_strip(self.market)
-        if self.exchange is not None:
-            d["exchange"] = self._maybe_strip(self.exchange)
-        if self.keyword is not None:
-            d["keyword"] = self._maybe_strip(self.keyword)
-        if self.page is not None:
-            d["page"] = self.page
-        if self.page_size is not None:
-            d["page_size"] = self.page_size
-        if self.offset is not None:
-            d["offset"] = self.offset
-        if self.limit is not None:
-            d["limit"] = self.limit
-        if self.ranking_type is not None:
-            d["ranking_type"] = self._maybe_strip(self.ranking_type)
 
         # 透传额外键（不覆盖标准键）
         for k, v in self.extra.items():
@@ -230,11 +199,11 @@ class StandardParams:
         - 若 symbol 为字符串或列表字符串，自动解析为 StockSymbol 或其列表。
         """
         known_keys = {
-            "symbol", "start_date", "end_date", "start_time", "end_time",
-            "period", "adjust", "market", "exchange", "keyword", "ranking_type",
-            "page", "page_size", "offset", "limit",
+            "symbol", "start_date", "end_date", "period", "adjust",
+            "indicator", "date", "market"
         }
         std_kwargs = {k: data[k] for k in known_keys if k in data}
+        
         # 处理 symbol -> StockSymbol
         if "symbol" in std_kwargs:
             sym_val = std_kwargs["symbol"]
@@ -246,6 +215,7 @@ class StandardParams:
                 std_kwargs["symbol"] = [to_obj(i) for i in sym_val]
             else:
                 std_kwargs["symbol"] = to_obj(sym_val)
+        
+        # 其他参数进入extra
         extra = {k: v for k, v in data.items() if k not in known_keys}
-        std_kwargs["extra"] = extra
-        return cls(**std_kwargs)
+        return cls(**std_kwargs, **extra)
