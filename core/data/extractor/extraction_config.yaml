@@ -1551,15 +1551,6 @@ interfaces_config:
             markets: ["SH", "SZ"]
             post_processor: "convert_sector_quote_to_columns"
 
-      constituent_quotes:
-        description: "行业板块成分股行情"
-        interfaces:
-          - name: "stock_board_industry_cons_em"
-            enabled: true
-            priority: 1
-            markets: ["SH", "SZ"]
-            post_processor: "convert_constituent_quotes_to_columns"
-
       sector_fund_flow:
         description: "行业板块资金流向"
         interfaces:
@@ -1578,14 +1569,6 @@ interfaces_config:
             priority: 1
             markets: ["SH", "SZ"]
 
-      constituent_quotes:
-        description: "概念板块成分股行情"
-        interfaces:
-          - name: "stock_board_concept_cons_em"
-            enabled: true
-            priority: 1
-            markets: ["SH", "SZ"]
-
       concept_fund_flow:
         description: "概念板块资金流向"
         interfaces:
@@ -1593,7 +1576,6 @@ interfaces_config:
             enabled: true
             priority: 1
             markets: ["SH", "SZ"]
-
 
     block_trading:
       description: "市场大宗交易统计"

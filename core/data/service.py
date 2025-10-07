@@ -776,16 +776,6 @@ class DataService:
         params = self._build_standard_params()
         return self.extractor.get_market_sector_quote(params)
     
-    def get_market_sector_constituent_quotes(self) -> ExtractionResult:
-        """
-        获取行业板块成分股行情数据
-        
-        Returns:
-            行业板块成分股行情数据
-        """
-        params = self._build_standard_params()
-        return self.extractor.get_market_sector_constituent_quotes(params)
-    
     def get_market_sector_fund_flow(self) -> ExtractionResult:
         """
         获取行业板块资金流向数据
