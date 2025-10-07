@@ -674,14 +674,18 @@ class DataService:
         params = self._build_standard_params(market=market)
         return self.extractor.get_market_stock_list(params)
     
-    def get_market_overview(self) -> ExtractionResult:
+    def get_market_overview(self,
+                           date: Optional[str] = None) -> ExtractionResult:
         """
         获取市场概览数据
+        
+        Args:
+            date: 指定日期，格式 "2023-01-01"
         
         Returns:
             市场概览数据
         """
-        params = self._build_standard_params()
+        params = self._build_standard_params(date=date)
         return self.extractor.get_market_overview(params)
     
     def get_market_indices(self) -> ExtractionResult:
