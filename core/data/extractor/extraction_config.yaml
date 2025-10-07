@@ -3113,6 +3113,32 @@ parameter_mappings:
           required: true
           valid_values: ["资产负债表", "利润表", "现金流量表"]
     
+    # 投票相关接口参数映射配置
+    stock_zh_vote_baidu:
+      parameter_mapping:
+        symbol: "symbol"  # 股票代码参数保持不变
+        business_type: "indicator"  # 将 business_type 映射为 indicator 参数
+      defaults:
+        business_type: "指数"  # 默认业务类型
+      validation:
+        symbol:
+          required: true
+        business_type:
+          required: true
+          valid_values: ["指数", "股票"]
+    
+    # 分红配股相关接口参数映射配置
+    stock_history_dividend_detail:
+      parameter_mapping:
+        symbol: "symbol"  # 股票代码参数保持不变
+        business_type: "indicator"  # 将 business_type 映射为 indicator 参数
+      validation:
+        symbol:
+          required: true
+        business_type:
+          required: true
+          valid_values: ["分红", "配股"]
+    
     stock_institute_hold_detail:
       parameter_mapping:
         symbol: "stock"  # 将 symbol 映射为 stock (股票代码参数)
