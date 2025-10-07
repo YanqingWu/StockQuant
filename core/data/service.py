@@ -363,14 +363,18 @@ class DataService:
     def get_stock_hsgt_holdings(self,
                                symbols: Symbols,
                                start_date: Optional[DateRange] = None,
-                               end_date: Optional[DateRange] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
+                               end_date: Optional[DateRange] = None,
+                               market: Optional[str] = None,
+                               indicator: Optional[str] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取沪深港通持仓数据
         
         Args:
-            symbols: 股票代码
-            start_date: 开始日期
-            end_date: 结束日期
+            symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
+            start_date: 开始日期，格式 "2023-01-01"
+            end_date: 结束日期，格式 "2023-01-01"
+            market: 市场代码，如 "SZ", "SH" 等
+            indicator: 指标类型，如 "hold" 等
         
         Returns:
             沪深港通持仓数据
@@ -378,24 +382,34 @@ class DataService:
         params = self._build_standard_params(
             symbols=symbols,
             start_date=start_date,
-            end_date=end_date
+            end_date=end_date,
+            market=market,
+            indicator=indicator
         )
         return self.extractor.get_stock_hsgt_holdings(params)
     
     # ==================== 股票研究分析数据 ====================
     
     def get_stock_research_reports(self,
-                                  symbols: Symbols) -> Union[ExtractionResult, List[ExtractionResult]]:
+                                  symbols: Symbols,
+                                  indicator: Optional[str] = None,
+                                  year: Optional[str] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取研报数据
         
         Args:
-            symbols: 股票代码
+            symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
+            indicator: 指标类型，如 "rating" 等
+            year: 年份，如 "2023"
         
         Returns:
             研报数据
         """
-        params = self._build_standard_params(symbols=symbols)
+        params = self._build_standard_params(
+            symbols=symbols,
+            indicator=indicator,
+            year=year
+        )
         return self.extractor.get_stock_research_reports(params)
     
     def get_stock_forecast_consensus(self,
