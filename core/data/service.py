@@ -434,48 +434,34 @@ class DataService:
         )
         return self.extractor.get_stock_forecast_consensus(params)
     
-    def get_stock_opinions(self,
-                          symbols: Symbols) -> Union[ExtractionResult, List[ExtractionResult]]:
-        """
-        获取机构观点数据
-        
-        Args:
-            symbols: 股票代码
-        
-        Returns:
-            机构观点数据
-        """
-        params = self._build_standard_params(symbols=symbols)
-        return self.extractor.get_stock_opinions(params)
-    
     # ==================== 股票技术分析 ====================
     
     def get_innovation_high_ranking(self,
-                                   limit: Optional[int] = 100) -> ExtractionResult:
+                                   symbols: Symbols) -> ExtractionResult:
         """
         获取创新高股票排名
         
         Args:
-            limit: 返回数量限制，默认100
+            symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
         
         Returns:
             创新高股票排名数据
         """
-        params = self._build_standard_params(limit=limit)
+        params = self._build_standard_params(symbols=symbols)
         return self.extractor.get_innovation_high_ranking(params)
     
     def get_innovation_low_ranking(self,
-                                  limit: Optional[int] = 100) -> ExtractionResult:
+                                  symbols: Symbols) -> ExtractionResult:
         """
         获取创新低股票排名
         
         Args:
-            limit: 返回数量限制，默认100
+            symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
         
         Returns:
             创新低股票排名数据
         """
-        params = self._build_standard_params(limit=limit)
+        params = self._build_standard_params(symbols=symbols)
         return self.extractor.get_innovation_low_ranking(params)
     
     def get_volume_price_rise_ranking(self,
