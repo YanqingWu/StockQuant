@@ -1429,13 +1429,13 @@ interfaces_config:
           enabled: true
           priority: 1
           markets: ["SH"]
-          post_processor: "convert_market_summary_to_columns"
+          post_processor: "convert_market_summary_to_columns_and_add_recent_date"
         
         - name: "stock_szse_summary"
           enabled: true
           priority: 2
           markets: ["SZ"]
-          post_processor: "convert_field_mapping"
+          post_processor: "add_input_date_to_rows"
         
         # 投资者统计
         - name: "stock_account_statistics_em"
@@ -1472,6 +1472,7 @@ interfaces_config:
           enabled: true
           priority: 1
           markets: ["SH", "SZ"]
+          post_processor: "add_recent_trade_date"
         
         - name: "stock_zh_index_daily"
           enabled: true
@@ -1514,7 +1515,7 @@ interfaces_config:
           enabled: true
           priority: 1
           markets: ["SH", "SZ"]
-          post_processor: "convert_item_value_to_columns"
+          post_processor: "convert_item_value_to_columns_and_add_recent_date"
 
     fund_flow:
       market_level:
@@ -1568,6 +1569,7 @@ interfaces_config:
             enabled: true
             priority: 1
             markets: ["SH", "SZ"]
+            post_processor: "add_recent_trade_date"
 
       concept_fund_flow:
         description: "概念板块资金流向"
@@ -1576,6 +1578,7 @@ interfaces_config:
             enabled: true
             priority: 1
             markets: ["SH", "SZ"]
+            post_processor: "add_recent_trade_date"
 
     block_trading:
       description: "市场大宗交易统计"

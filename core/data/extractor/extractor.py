@@ -131,7 +131,7 @@ class Extractor:
         return filtered_data
     
     def _apply_post_processor(self, data: Any, category: str, data_type: str, 
-                             interface_name: str) -> Any:
+                             interface_name: str, params: Union[StandardParams, Dict[str, Any]] = None) -> Any:
         """
         应用后处理器函数
         
@@ -140,6 +140,7 @@ class Extractor:
             category: 数据分类
             data_type: 数据类型
             interface_name: 接口名称
+            params: 接口参数（可选）
             
         Returns:
             处理后的数据
@@ -157,7 +158,13 @@ class Extractor:
                 processor_func = getattr(post_processors, interface_config.post_processor, None)
                 if processor_func:
                     logger.debug(f"应用后处理器: {interface_config.post_processor}")
-                    processed_data = processor_func(data)
+                    # 检查后处理器是否支持参数
+                    import inspect
+                    sig = inspect.signature(processor_func)
+                    if len(sig.parameters) > 1:  # 除了data参数外还有其他参数
+                        processed_data = processor_func(data, params)
+                    else:
+                        processed_data = processor_func(data)
                     logger.debug(f"后处理器 {interface_config.post_processor} 执行成功")
                     return processed_data
                 else:
@@ -482,10 +489,17 @@ class Extractor:
         return None
     
     def _process_extraction_result(self, raw_data: Any, category: str, data_type: str, 
-                                 interface_name: str) -> ExtractionResult:
+                                 interface_name: str, params: Union[StandardParams, Dict[str, Any]] = None) -> ExtractionResult:
         """
         处理提取结果，统一返回 pandas.DataFrame
         优化流程：先建立标准字段结构，再从接口数据中填充
+        
+        Args:
+            raw_data: 原始数据
+            category: 数据分类
+            data_type: 数据类型
+            interface_name: 接口名称
+            params: 接口参数（可选）
         """
         try:
             # 1. 数据验证
@@ -504,7 +518,7 @@ class Extractor:
                 return self._create_error_result(interface_name, f"DataFrame转换失败: {e}")
 
             # 4. 应用后处理器
-            raw_df = self._apply_post_processor(raw_df, category, data_type, interface_name)
+            raw_df = self._apply_post_processor(raw_df, category, data_type, interface_name, params)
 
             # 5. 将原始数据填充到标准字段结构中
             filled_df = self._fill_standard_fields_from_data(standard_df, raw_df)
@@ -684,11 +698,13 @@ class Extractor:
             param_index = call_mapping.get(result.task_id)
             if param_index is not None and result.success:
                 # 处理提取结果
+                task_params = result.metadata.get('standard_params') if hasattr(result, 'metadata') else None
                 extraction_result = self._process_extraction_result(
                     result.data,
                     category,
                     data_type,
-                    result.interface_name
+                    result.interface_name,
+                    task_params
                 )
                 if extraction_result.success:
                     param_results[param_index].append((None, extraction_result))
@@ -839,7 +855,9 @@ class Extractor:
                 
                 result = matched[0]
                 if result.success:
-                    extraction_result = self._process_extraction_result(result.data, category, data_type, interface.name)
+                    # 从任务metadata中获取参数
+                    task_params = result.metadata.get('standard_params') if hasattr(result, 'metadata') else None
+                    extraction_result = self._process_extraction_result(result.data, category, data_type, interface.name, task_params)
                     if extraction_result.success:
                         logger.info(f"接口 {interface.name} 执行成功")
                         successful_results.append((interface, extraction_result))

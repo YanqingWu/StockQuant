@@ -109,6 +109,91 @@ def convert_market_summary_to_columns(data: Any) -> Any:
         return data
 
 
+def _compute_recent_trade_date() -> str:
+    """
+    Compute a recent trade date in YYYY-MM-DD format using a simple weekday fallback.
+    - If today is Mon-Fri: return today
+    - If Sat: return Friday
+    - If Sun: return Friday
+    This is a heuristic without an exchange calendar dependency.
+    """
+    from datetime import datetime, timedelta
+    today = datetime.today().date()
+    weekday = today.weekday()  # Mon=0, Sun=6
+    if weekday <= 4:
+        return today.strftime('%Y-%m-%d')
+    # weekend fallback to previous Friday
+    delta_days = 1 if weekday == 5 else 2
+    recent = today - timedelta(days=delta_days)
+    return recent.strftime('%Y-%m-%d')
+
+
+def add_recent_trade_date(data: Any) -> Any:
+    """
+    Add a 'date' column with the most recent trade date when the dataset lacks any date/time field.
+    If the data already has a clear date/time-like column, do nothing.
+    """
+    if not isinstance(data, pd.DataFrame):
+        return data
+    if data.empty:
+        return data
+
+    # If any likely date/time columns exist, skip
+    lower_cols = [str(c).lower() for c in data.columns]
+    likely_date_cols = {'date', '交易日期', '日期', '时间', 'timestamp', 'trade_date'}
+    if any(col in likely_date_cols for col in lower_cols):
+        return data
+
+    # Add recent trade date
+    result = data.copy()
+    result['date'] = _compute_recent_trade_date()
+    return result
+
+
+def add_input_date_to_rows(data: Any, params: Any = None) -> Any:
+    """
+    Add a 'date' column based on input parameters when available.
+    If params contains a date field, use it; otherwise fallback to recent trade date.
+    """
+    if not isinstance(data, pd.DataFrame):
+        return data
+    if data.empty:
+        return data
+    
+    # Try to extract date from params
+    input_date = None
+    if params is not None:
+        if hasattr(params, 'date') and params.date:
+            input_date = str(params.date)
+        elif hasattr(params, 'start_date') and params.start_date:
+            input_date = str(params.start_date)
+        elif isinstance(params, dict):
+            input_date = params.get('date') or params.get('start_date')
+    
+    # If we have a valid input date, use it; otherwise use recent trade date
+    if input_date:
+        result = data.copy()
+        result['date'] = input_date
+        return result
+    else:
+        return add_recent_trade_date(data)
+
+
+def convert_item_value_to_columns_and_add_recent_date(data: Any, params: Any = None) -> Any:
+    """
+    First convert item/value pairs to columns, then add recent trade date if missing.
+    """
+    converted = convert_item_value_to_columns(data)
+    return add_recent_trade_date(converted)
+
+
+def convert_market_summary_to_columns_and_add_recent_date(data: Any, params: Any = None) -> Any:
+    """
+    First convert market summary table to a single-row columns table, then add recent trade date if missing.
+    """
+    converted = convert_market_summary_to_columns(data)
+    return add_recent_trade_date(converted)
+
 def convert_item_value_to_columns(data: Any) -> Any:
     """
     将item-value格式转换为标准列格式
