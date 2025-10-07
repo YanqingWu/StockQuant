@@ -760,60 +760,60 @@ interfaces_config:
           data_quality_priority: "most_complete"  # highest, latest, most_complete
           handle_date_gaps: "keep_all"  # keep_all, fill_gaps, latest_only
         interfaces:
+          # 最快接口组合 - 优先级0
           - name: "stock_zh_a_hist"
             enabled: true
             priority: 0
             markets: ["SH", "SZ"]
+            # 性能: 0.05s - 覆盖SH/SZ的最快接口
 
-          - name: "stock_zh_a_daily"
-            enabled: true
-            priority: 1
-            markets: ["SH", "SZ"]
-          
-          - name: "stock_zh_a_hist_tx"
-            enabled: true
-            priority: 1
-            markets: ["SZ", "SH", "HK"]
-          
-          - name: "stock_zh_kcb_daily"
-            enabled: true
-            priority: 2
-            markets: ["SH", "SZ"]
-          
-          - name: "stock_zh_b_daily"
-            enabled: false
-            priority: 2
-            markets: ["SH", "SZ"]
-          
           - name: "stock_zh_a_cdr_daily"
             enabled: true
-            priority: 2
-            markets: ["SH", "SZ", "BJ"]
-          
-          - name: "stock_zh_ah_daily"
-            enabled: false  # 禁用：akshare库内部有BUG，A股股票无法使用
-            priority: 7
-            markets: ["SZ", "SH"]  # 原始配置，但接口已禁用
-          
-          - name: "stock_hk_daily"
-            enabled: true
             priority: 0
-            markets: ["HK"]
-          
+            markets: ["BJ"]
+            # 性能: 0.13s - 覆盖BJ的唯一接口，也支持SH/SZ
+
           - name: "stock_hk_hist"
             enabled: true
             priority: 0
             markets: ["HK"]
-          
-          - name: "stock_us_daily"
-            enabled: true
-            priority: 0
-            markets: ["US"]
-          
+            # 性能: 0.12s - 覆盖HK的最快接口
+
           - name: "stock_us_hist"
             enabled: true
             priority: 0
             markets: ["US"]
+            # 性能: 0.19s - 覆盖US的最快接口
+
+          - name: "stock_zh_a_daily"
+            enabled: false
+            priority: 1
+            markets: ["SH", "SZ"]
+            # 性能: 0.71s - 比stock_zh_a_hist慢14倍，已禁用
+          
+          - name: "stock_zh_a_hist_tx"
+            enabled: false
+            priority: 1
+            markets: ["SZ", "SH", "HK"]
+            # 性能: 0.52s - 比组合方案慢，已禁用
+          
+          - name: "stock_zh_kcb_daily"
+            enabled: false
+            priority: 1
+            markets: ["SH", "SZ"]
+            # 性能: 2.15s - 最慢接口，已禁用
+
+          - name: "stock_hk_daily"
+            enabled: false
+            priority: 1
+            markets: ["HK"]
+            # 性能: 0.37s - 比stock_hk_hist慢3倍，已禁用
+
+          - name: "stock_us_daily"
+            enabled: false
+            priority: 1
+            markets: ["US"]
+            # 性能: 0.47s - 比stock_us_hist慢2.5倍，已禁用
       
       financing:
         description: "融资融券数据"
