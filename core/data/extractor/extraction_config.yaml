@@ -712,22 +712,7 @@ interfaces_config:
       merge_options:
         data_quality_priority: "most_complete"  # highest, latest, most_complete
         handle_date_gaps: "keep_all"  # keep_all, fill_gaps, latest_only
-      interfaces:
-        - name: "stock_info_sh_name_code"
-          enabled: true
-          priority: 0
-          markets: ["SH"]
-        
-        - name: "stock_info_sz_name_code"
-          enabled: true
-          priority: 0
-          markets: ["SZ"]
-        
-        - name: "stock_info_bj_name_code"
-          enabled: true
-          priority: 0
-          markets: ["BJ"]
-        
+      interfaces:        
         - name: "stock_info_a_code_name"
           enabled: true
           priority: 0
@@ -744,6 +729,21 @@ interfaces_config:
           priority: 0
           markets: ["SH", "SZ", "BJ"]
   
+        - name: "stock_info_sh_name_code"
+          enabled: false
+          priority: 1
+          markets: ["SH"]
+        
+        - name: "stock_info_sz_name_code"
+          enabled: false
+          priority: 1
+          markets: ["SZ"]
+        
+        - name: "stock_info_bj_name_code"
+          enabled: false
+          priority: 1
+          markets: ["BJ"]
+
     daily_market:
       # 日行情数据：按日期合并
       merge_strategy: "date_based_merge"
