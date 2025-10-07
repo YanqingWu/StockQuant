@@ -20,14 +20,19 @@ DateRange = Union[date, str]     # 日期，支持date对象或字符串
 class StandardParameterOptions:
     """标准参数选项定义 - 服务层用户输入的有效值"""
     
-    # 财务指标类型选项 - 基于实际业务含义
-    INDICATOR_OPTIONS = [
-        "按报告期",    # 按报告期统计
-        "年度",        # 年度数据
-        "年报",        # 年报数据
-        "按年度",      # 按年度统计
-        "按季度",      # 按季度统计
-        "按半年"       # 按半年统计
+    # 财务数据周期类型选项 - 简化的核心选项
+    FINANCIAL_PERIOD_OPTIONS = [
+        "按报告期",    # 获取所有报告期数据
+        "年报",        # 仅获取年报数据
+        "中报",        # 仅获取中报（半年报）数据
+        "季报"         # 仅获取季报数据
+    ]
+    
+    # 财务报表类型选项
+    FINANCIAL_STATEMENT_OPTIONS = [
+        "资产负债表",
+        "利润表",
+        "现金流量表"
     ]
     
     # 市场代码选项
@@ -260,72 +265,72 @@ class DataService:
     
     def get_stock_basic_indicators(self,
                                   symbols: Symbols,
-                                  indicator: str = "按报告期") -> Union[ExtractionResult, List[ExtractionResult]]:
+                                  financial_period: str = "按报告期") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取基础财务指标
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
-            indicator: 财务指标类型，可选值：按报告期、年度、年报、按年度、按季度、按半年
+            financial_period: 财务数据周期类型，可选值：按报告期、年报、中报、季报
         
         Returns:
             基础财务指标数据
         """
         # 参数验证
-        if indicator not in StandardParameterOptions.INDICATOR_OPTIONS:
-            raise ValueError(f"不支持的indicator值: {indicator}，支持的值: {StandardParameterOptions.INDICATOR_OPTIONS}")
+        if financial_period not in StandardParameterOptions.FINANCIAL_PERIOD_OPTIONS:
+            raise ValueError(f"不支持的financial_period值: {financial_period}，支持的值: {StandardParameterOptions.FINANCIAL_PERIOD_OPTIONS}")
         
         params = self._build_standard_params(
             symbols=symbols,
-            indicator=indicator
+            financial_period=financial_period
         )
         return self.extractor.get_stock_basic_indicators(params)
     
     def get_stock_balance_sheet(self,
                                symbols: Symbols,
-                               indicator: str = "按报告期") -> Union[ExtractionResult, List[ExtractionResult]]:
+                               financial_period: str = "按报告期") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取资产负债表
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
-            indicator: 财务指标类型，可选值：按报告期、年度、年报、按年度、按季度、按半年
+            financial_period: 财务数据周期类型，可选值：按报告期、年报、中报、季报
         
         Returns:
             资产负债表数据
         """
         # 参数验证
-        if indicator not in StandardParameterOptions.INDICATOR_OPTIONS:
-            raise ValueError(f"不支持的indicator值: {indicator}，支持的值: {StandardParameterOptions.INDICATOR_OPTIONS}")
+        if financial_period not in StandardParameterOptions.FINANCIAL_PERIOD_OPTIONS:
+            raise ValueError(f"不支持的financial_period值: {financial_period}，支持的值: {StandardParameterOptions.FINANCIAL_PERIOD_OPTIONS}")
         
         params = self._build_standard_params(
             symbols=symbols,
-            indicator=indicator
+            financial_period=financial_period
         )
         return self.extractor.get_stock_balance_sheet(params)
     
     def get_stock_income_statement(self,
                                   symbols: Symbols,
                                   date: DateRange,
-                                  indicator: str = "按报告期") -> Union[ExtractionResult, List[ExtractionResult]]:
+                                  financial_period: str = "按报告期") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取利润表
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
             date: 指定日期，格式 "2023-01-01" 或 date(2023, 1, 1)
-            indicator: 财务指标类型，可选值：按报告期、年度、年报、按年度、按季度、按半年
+            financial_period: 财务数据周期类型，可选值：按报告期、年报、中报、季报
         
         Returns:
             利润表数据
         """
         # 参数验证
-        if indicator not in StandardParameterOptions.INDICATOR_OPTIONS:
-            raise ValueError(f"不支持的indicator值: {indicator}，支持的值: {StandardParameterOptions.INDICATOR_OPTIONS}")
+        if financial_period not in StandardParameterOptions.FINANCIAL_PERIOD_OPTIONS:
+            raise ValueError(f"不支持的financial_period值: {financial_period}，支持的值: {StandardParameterOptions.FINANCIAL_PERIOD_OPTIONS}")
         
         params = self._build_standard_params(
             symbols=symbols,
-            indicator=indicator,
+            financial_period=financial_period,
             date=date
         )
         return self.extractor.get_stock_income_statement(params)
@@ -333,25 +338,25 @@ class DataService:
     def get_stock_cash_flow(self,
                            symbols: Symbols,
                            date: DateRange,
-                           indicator: str = "按报告期") -> Union[ExtractionResult, List[ExtractionResult]]:
+                           financial_period: str = "按报告期") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取现金流量表
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
             date: 指定日期，格式 "2023-01-01" 或 date(2023, 1, 1)
-            indicator: 财务指标类型，可选值：按报告期、年度、年报、按年度、按季度、按半年
+            financial_period: 财务数据周期类型，可选值：按报告期、年报、中报、季报
         
         Returns:
             现金流量表数据
         """
         # 参数验证
-        if indicator not in StandardParameterOptions.INDICATOR_OPTIONS:
-            raise ValueError(f"不支持的indicator值: {indicator}，支持的值: {StandardParameterOptions.INDICATOR_OPTIONS}")
+        if financial_period not in StandardParameterOptions.FINANCIAL_PERIOD_OPTIONS:
+            raise ValueError(f"不支持的financial_period值: {financial_period}，支持的值: {StandardParameterOptions.FINANCIAL_PERIOD_OPTIONS}")
         
         params = self._build_standard_params(
             symbols=symbols,
-            indicator=indicator,
+            financial_period=financial_period,
             date=date
         )
         return self.extractor.get_stock_cash_flow(params)
@@ -359,25 +364,25 @@ class DataService:
     def get_stock_dividend(self,
                           symbols: Symbols,
                           date: DateRange,
-                          indicator: str = "按报告期") -> Union[ExtractionResult, List[ExtractionResult]]:
+                          financial_period: str = "按报告期") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取分红数据
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
             date: 指定日期，格式 "2023-01-01" 或 date(2023, 1, 1)
-            indicator: 财务指标类型，可选值：按报告期、年度、年报、按年度、按季度、按半年
+            financial_period: 财务数据周期类型，可选值：按报告期、年报、中报、季报
         
         Returns:
             分红数据
         """
         # 参数验证
-        if indicator not in StandardParameterOptions.INDICATOR_OPTIONS:
-            raise ValueError(f"不支持的indicator值: {indicator}，支持的值: {StandardParameterOptions.INDICATOR_OPTIONS}")
+        if financial_period not in StandardParameterOptions.FINANCIAL_PERIOD_OPTIONS:
+            raise ValueError(f"不支持的financial_period值: {financial_period}，支持的值: {StandardParameterOptions.FINANCIAL_PERIOD_OPTIONS}")
         
         params = self._build_standard_params(
             symbols=symbols,
-            indicator=indicator,
+            financial_period=financial_period,
             date=date
         )
         return self.extractor.get_stock_dividend(params)
@@ -387,25 +392,25 @@ class DataService:
     def get_stock_institutional_holdings(self,
                                         symbols: Symbols,
                                         date: DateRange,
-                                        indicator: str = "按报告期") -> Union[ExtractionResult, List[ExtractionResult]]:
+                                        financial_period: str = "按报告期") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取机构持仓数据
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
             date: 指定日期，格式 "2023-01-01" 或 date(2023, 1, 1)
-            indicator: 财务指标类型，可选值：按报告期、年度、年报、按年度、按季度、按半年
+            financial_period: 财务数据周期类型，可选值：按报告期、年报、中报、季报
         
         Returns:
             机构持仓数据
         """
         # 参数验证
-        if indicator not in StandardParameterOptions.INDICATOR_OPTIONS:
-            raise ValueError(f"不支持的indicator值: {indicator}，支持的值: {StandardParameterOptions.INDICATOR_OPTIONS}")
+        if financial_period not in StandardParameterOptions.FINANCIAL_PERIOD_OPTIONS:
+            raise ValueError(f"不支持的financial_period值: {financial_period}，支持的值: {StandardParameterOptions.FINANCIAL_PERIOD_OPTIONS}")
         
         params = self._build_standard_params(
             symbols=symbols,
-            indicator=indicator,
+            financial_period=financial_period,
             date=date
         )
         return self.extractor.get_stock_institutional_holdings(params)
@@ -415,7 +420,7 @@ class DataService:
                                start_date: DateRange,
                                end_date: DateRange,
                                market: str = "SZ",
-                               indicator: str = "按报告期") -> Union[ExtractionResult, List[ExtractionResult]]:
+                               financial_period: str = "按报告期") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取沪深港通持仓数据
         
@@ -424,21 +429,21 @@ class DataService:
             start_date: 开始日期，格式 "2023-01-01" 或 date(2023, 1, 1)
             end_date: 结束日期，格式 "2023-12-31" 或 date(2023, 12, 31)
             market: 市场代码，默认"SZ"（深市）
-            indicator: 财务指标类型，可选值：按报告期、年度、年报、按年度、按季度、按半年
+            financial_period: 财务数据周期类型，可选值：按报告期、年报、中报、季报
         
         Returns:
             沪深港通持仓数据
         """
         # 参数验证
-        if indicator not in StandardParameterOptions.INDICATOR_OPTIONS:
-            raise ValueError(f"不支持的indicator值: {indicator}，支持的值: {StandardParameterOptions.INDICATOR_OPTIONS}")
+        if financial_period not in StandardParameterOptions.FINANCIAL_PERIOD_OPTIONS:
+            raise ValueError(f"不支持的financial_period值: {financial_period}，支持的值: {StandardParameterOptions.FINANCIAL_PERIOD_OPTIONS}")
         
         params = self._build_standard_params(
             symbols=symbols,
             start_date=start_date,
             end_date=end_date,
             market=market,
-            indicator=indicator
+            financial_period=financial_period
         )
         return self.extractor.get_stock_hsgt_holdings(params)
     
@@ -446,26 +451,26 @@ class DataService:
     
     def get_stock_research_reports(self,
                                   symbols: Symbols,
-                                  indicator: str = "按报告期",
+                                  financial_period: str = "按报告期",
                                   year: str = "2023") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取研报数据
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
-            indicator: 财务指标类型，可选值：按报告期、年度、年报、按年度、按季度、按半年
+            financial_period: 财务数据周期类型，可选值：按报告期、年报、中报、季报
             year: 年份，默认"2023"
         
         Returns:
             研报数据
         """
         # 参数验证
-        if indicator not in StandardParameterOptions.INDICATOR_OPTIONS:
-            raise ValueError(f"不支持的indicator值: {indicator}，支持的值: {StandardParameterOptions.INDICATOR_OPTIONS}")
+        if financial_period not in StandardParameterOptions.FINANCIAL_PERIOD_OPTIONS:
+            raise ValueError(f"不支持的financial_period值: {financial_period}，支持的值: {StandardParameterOptions.FINANCIAL_PERIOD_OPTIONS}")
         
         params = self._build_standard_params(
             symbols=symbols,
-            indicator=indicator,
+            financial_period=financial_period,
             year=year
         )
         return self.extractor.get_stock_research_reports(params)
@@ -473,25 +478,25 @@ class DataService:
     def get_stock_forecast_consensus(self,
                                     symbols: Symbols,
                                     date: DateRange,
-                                    indicator: str = "按报告期") -> Union[ExtractionResult, List[ExtractionResult]]:
+                                    financial_period: str = "按报告期") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取预测共识数据
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
             date: 指定日期，格式 "2023-01-01" 或 date(2023, 1, 1)
-            indicator: 财务指标类型，可选值：按报告期、年度、年报、按年度、按季度、按半年
+            financial_period: 财务数据周期类型，可选值：按报告期、年报、中报、季报
         
         Returns:
             预测共识数据
         """
         # 参数验证
-        if indicator not in StandardParameterOptions.INDICATOR_OPTIONS:
-            raise ValueError(f"不支持的indicator值: {indicator}，支持的值: {StandardParameterOptions.INDICATOR_OPTIONS}")
+        if financial_period not in StandardParameterOptions.FINANCIAL_PERIOD_OPTIONS:
+            raise ValueError(f"不支持的financial_period值: {financial_period}，支持的值: {StandardParameterOptions.FINANCIAL_PERIOD_OPTIONS}")
         
         params = self._build_standard_params(
             symbols=symbols,
-            indicator=indicator,
+            financial_period=financial_period,
             date=date
         )
         return self.extractor.get_stock_forecast_consensus(params)

@@ -19,7 +19,8 @@ class StandardParams:
     - adjust: none/qfq/hfq (默认qfq)
     
     扩展参数：
-    - indicator: 财务指标类型 (财务数据接口使用)
+    - financial_period: 财务数据周期类型 (财务数据接口使用)
+    - financial_statement: 财务报表类型 (财务报表接口使用)
     - date: 单日期参数 (部分接口使用)
     - market: 市场代码 (可选，优先从symbol推断，支持SZ/SH/BJ/HK/US)
     - index_code: 指数代码 (市场指数接口使用)
@@ -38,7 +39,8 @@ class StandardParams:
         adjust: Optional[str] = "qfq",
         
         # 扩展参数
-        indicator: Optional[str] = None,
+        financial_period: Optional[str] = None,
+        financial_statement: Optional[str] = None,
         date: Optional[str] = None,
         market: Optional[str] = None,
         index_code: Optional[str] = None,
@@ -64,7 +66,8 @@ class StandardParams:
         self.adjust = adjust
         
         # 扩展参数
-        self.indicator = indicator
+        self.financial_period = financial_period
+        self.financial_statement = financial_statement
         self.date = date
         self.market = market
         self.index_code = index_code
@@ -109,7 +112,7 @@ class StandardParams:
         for param_name, value in [
             ("start_date", self.start_date), ("end_date", self.end_date),
             ("date", self.date), ("period", self.period), ("adjust", self.adjust),
-            ("indicator", self.indicator), ("market", self.market)
+            ("financial_period", self.financial_period), ("financial_statement", self.financial_statement), ("market", self.market)
         ]:
             if value is not None and isinstance(value, str) and not value.strip():
                 raise ValueError(f"{param_name} 不能为空字符串")
@@ -183,8 +186,10 @@ class StandardParams:
             d["adjust"] = self._maybe_strip(self.adjust)
         
         # 扩展参数
-        if self.indicator is not None:
-            d["indicator"] = self._maybe_strip(self.indicator)
+        if self.financial_period is not None:
+            d["financial_period"] = self._maybe_strip(self.financial_period)
+        if self.financial_statement is not None:
+            d["financial_statement"] = self._maybe_strip(self.financial_statement)
         if self.date is not None:
             d["date"] = self._maybe_strip(self.date)
         if self.market is not None:
@@ -205,7 +210,7 @@ class StandardParams:
         """
         known_keys = {
             "symbol", "start_date", "end_date", "period", "adjust",
-            "indicator", "date", "market", "index_code"
+            "financial_period", "financial_statement", "date", "market", "index_code"
         }
         std_kwargs = {k: data[k] for k in known_keys if k in data}
         

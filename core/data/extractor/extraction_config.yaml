@@ -3102,10 +3102,16 @@ parameter_mappings:
     
     stock_financial_report_sina:
       parameter_mapping:
-        symbol: "stock"  # 将 symbol 映射为 stock (股票代码参数)
+        symbol: "stock"  # 将 StandardParams 的 symbol（股票代码）映射为接口的 stock 参数
+        financial_statement: "symbol"  # 将 StandardParams 的 financial_statement 映射为接口的 symbol 参数
+      defaults:
+        financial_statement: "资产负债表"  # 默认财务报表类型
       validation:
         symbol:
           required: true
+        financial_statement:
+          required: true
+          valid_values: ["资产负债表", "利润表", "现金流量表"]
     
     stock_institute_hold_detail:
       parameter_mapping:
@@ -3213,77 +3219,52 @@ parameter_mappings:
     # 财务指标接口参数值映射配置
     stock_financial_analysis_indicator_em:
       parameter_mapping:
-        indicator: "indicator"
+        financial_period: "indicator"
       value_mapping:
-        indicator:
-          "按报告期": "按报告期"
-          "年度": "年度"
-          "年报": "年报"
-          "按年度": "按年度"
-          "按季度": "按季度"
-          "按半年": "按半年"
+        financial_period:
+          "按报告期": "按报告期"  # A股接口支持按报告期获取所有数据
+          "年报": "按报告期"      # 年报映射为按报告期（A股接口限制）
+          "中报": "按报告期"      # 中报映射为按报告期（A股接口限制）
+          "季报": "按单季度"      # 季报映射为按单季度
       defaults:
-        indicator: "按报告期"
+        financial_period: "按报告期"
       validation:
-        indicator:
+        financial_period:
           required: true
-          valid_values: ["按报告期", "年度", "年报", "按年度", "按季度", "按半年"]
+          valid_values: ["按报告期", "年报", "中报", "季报"]
     
     stock_financial_hk_analysis_indicator_em:
       parameter_mapping:
-        indicator: "indicator"
+        financial_period: "indicator"
       value_mapping:
-        indicator:
-          "按报告期": "年度"      # 港股接口将"按报告期"映射为"年度"
-          "年度": "年度"
-          "年报": "年报"
-          "按年度": "年度"
-          "按季度": "年度"
-          "按半年": "年度"
+        financial_period:
+          "按报告期": "年度"      # 港股接口主要提供年度数据
+          "年报": "年度"          # 年报映射为年度
+          "中报": "报告期"        # 中报映射为报告期
+          "季报": "报告期"        # 季报映射为报告期
       defaults:
-        indicator: "按报告期"
+        financial_period: "按报告期"
       validation:
-        indicator:
+        financial_period:
           required: true
-          valid_values: ["按报告期", "年度", "年报", "按年度", "按季度", "按半年"]
+          valid_values: ["按报告期", "年报", "中报", "季报"]
     
     stock_financial_us_analysis_indicator_em:
       parameter_mapping:
-        indicator: "indicator"
+        financial_period: "indicator"
       value_mapping:
-        indicator:
-          "按报告期": "年报"      # 美股接口将"按报告期"映射为"年报"
-          "年度": "年报"
-          "年报": "年报"
-          "按年度": "年报"
-          "按季度": "年报"
-          "按半年": "年报"
+        financial_period:
+          "按报告期": "年报"      # 美股接口主要提供年报数据
+          "年报": "年报"          # 年报数据
+          "中报": "年报"          # 中报映射为年报（美股接口限制）
+          "季报": "单季报"        # 季报映射为单季报
       defaults:
-        indicator: "按报告期"
+        financial_period: "按报告期"
       validation:
-        indicator:
+        financial_period:
           required: true
-          valid_values: ["按报告期", "年度", "年报", "按年度", "按季度", "按半年"]
-    
-    # 资产负债表接口参数值映射配置
-    stock_financial_report_sina:
-      parameter_mapping:
-        indicator: "indicator"
-      value_mapping:
-        indicator:
-          "按报告期": "按报告期"
-          "年度": "年度"
-          "年报": "年报"
-          "按年度": "按年度"
-          "按季度": "按季度"
-          "按半年": "按半年"
-      defaults:
-        indicator: "按报告期"
-      validation:
-        indicator:
-          required: true
-          valid_values: ["按报告期", "年度", "年报", "按年度", "按季度", "按半年"]
-    
+          valid_values: ["按报告期", "年报", "中报", "季报"]
+
     stock_balance_sheet_by_report_em:
       parameter_mapping:
         indicator: "indicator"
