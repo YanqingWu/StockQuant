@@ -436,7 +436,7 @@ class DataService:
     
     # ==================== 股票技术分析 ====================
     
-    def get_innovation_high_ranking(self,
+    def get_stock_innovation_high_ranking(self,
                                    symbols: Symbols) -> ExtractionResult:
         """
         获取创新高股票排名
@@ -450,7 +450,7 @@ class DataService:
         params = self._build_standard_params(symbols=symbols)
         return self.extractor.get_innovation_high_ranking(params)
     
-    def get_innovation_low_ranking(self,
+    def get_stock_innovation_low_ranking(self,
                                   symbols: Symbols) -> ExtractionResult:
         """
         获取创新低股票排名
@@ -464,7 +464,7 @@ class DataService:
         params = self._build_standard_params(symbols=symbols)
         return self.extractor.get_innovation_low_ranking(params)
     
-    def get_volume_price_rise_ranking(self,
+    def get_stock_volume_price_rise_ranking(self,
                                      symbols: Symbols) -> ExtractionResult:
         """
         获取量价齐升股票排名
@@ -478,46 +478,46 @@ class DataService:
         params = self._build_standard_params(symbols=symbols)
         return self.extractor.get_volume_price_rise_ranking(params)
     
-    def get_continuous_rise_ranking(self,
-                                   limit: Optional[int] = 100) -> ExtractionResult:
+    def get_stock_continuous_rise_ranking(self,
+                                   symbols: Symbols) -> ExtractionResult:
         """
         获取连续上涨股票排名
         
         Args:
-            limit: 返回数量限制，默认100
+            symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
         
         Returns:
             连续上涨股票排名数据
         """
-        params = self._build_standard_params(limit=limit)
+        params = self._build_standard_params(symbols=symbols)
         return self.extractor.get_continuous_rise_ranking(params)
     
-    def get_volume_price_fall_ranking(self,
-                                     limit: Optional[int] = 100) -> ExtractionResult:
+    def get_stock_volume_price_fall_ranking(self,
+                                     symbols: Symbols) -> ExtractionResult:
         """
         获取量价齐跌股票排名
         
         Args:
-            limit: 返回数量限制，默认100
+            symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
         
         Returns:
             量价齐跌股票排名数据
         """
-        params = self._build_standard_params(limit=limit)
+        params = self._build_standard_params(symbols=symbols)
         return self.extractor.get_volume_price_fall_ranking(params)
     
-    def get_volume_shrink_ranking(self,
-                                 limit: Optional[int] = 100) -> ExtractionResult:
+    def get_stock_volume_shrink_ranking(self,
+                                       symbols: Symbols) -> ExtractionResult:
         """
         获取创新缩量股票排名
         
         Args:
-            limit: 返回数量限制，默认100
+            symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
         
         Returns:
             创新缩量股票排名数据
         """
-        params = self._build_standard_params(limit=limit)
+        params = self._build_standard_params(symbols=symbols)
         return self.extractor.get_volume_shrink_ranking(params)
     
     def get_stock_valuation(self,
