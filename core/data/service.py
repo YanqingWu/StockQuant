@@ -86,8 +86,8 @@ class DataService:
     
     def get_stock_daily_quote(self,
                              symbols: Symbols,
-                             start_date: Optional[DateRange] = None,
-                             end_date: Optional[DateRange] = None,
+                             start_date: DateRange,
+                             end_date: DateRange,
                              period: str = "daily",
                              adjust: str = "qfq") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
@@ -114,15 +114,15 @@ class DataService:
     
     def get_stock_financing_data(self,
                                 symbols: Symbols,
-                                start_date: Optional[DateRange] = None,
-                                end_date: Optional[DateRange] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
+                                start_date: DateRange,
+                                end_date: DateRange) -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取融资融券数据
         
         Args:
-            symbols: 股票代码
-            start_date: 开始日期
-            end_date: 结束日期
+            symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
+            start_date: 开始日期，格式 "2023-01-01" 或 date(2023, 1, 1)
+            end_date: 结束日期，格式 "2023-12-31" 或 date(2023, 12, 31)
         
         Returns:
             融资融券数据
@@ -156,15 +156,15 @@ class DataService:
     
     def get_stock_fund_flow(self,
                            symbols: Symbols,
-                           start_date: Optional[DateRange] = None,
-                           end_date: Optional[DateRange] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
+                           start_date: DateRange,
+                           end_date: DateRange) -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取股票资金流向数据
         
         Args:
-            symbols: 股票代码
-            start_date: 开始日期
-            end_date: 结束日期
+            symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
+            start_date: 开始日期，格式 "2023-01-01" 或 date(2023, 1, 1)
+            end_date: 结束日期，格式 "2023-12-31" 或 date(2023, 12, 31)
         
         Returns:
             股票资金流向数据
@@ -179,15 +179,15 @@ class DataService:
     
     def get_stock_dragon_tiger(self,
                               symbols: Symbols,
-                              start_date: Optional[DateRange] = None,
-                              end_date: Optional[DateRange] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
+                              start_date: DateRange,
+                              end_date: DateRange) -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取龙虎榜数据
         
         Args:
-            symbols: 股票代码
-            start_date: 开始日期
-            end_date: 结束日期
+            symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
+            start_date: 开始日期，格式 "2023-01-01" 或 date(2023, 1, 1)
+            end_date: 结束日期，格式 "2023-12-31" 或 date(2023, 12, 31)
         
         Returns:
             龙虎榜数据
@@ -202,13 +202,13 @@ class DataService:
     
     def get_stock_sentiment(self,
                            symbols: Symbols,
-                           date: Optional[str] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
+                           date: DateRange) -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取股票情绪数据
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
-            date: 指定日期，格式 "2023-01-01"
+            date: 指定日期，格式 "2023-01-01" 或 date(2023, 1, 1)
         
         Returns:
             股票情绪数据
@@ -225,7 +225,7 @@ class DataService:
         获取股票新闻数据
         
         Args:
-            symbols: 股票代码
+            symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
         
         Returns:
             股票新闻数据
@@ -237,13 +237,13 @@ class DataService:
     
     def get_stock_basic_indicators(self,
                                   symbols: Symbols,
-                                  indicator: Optional[str] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
+                                  indicator: str = "roe") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取基础财务指标
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
-            indicator: 财务指标类型，如 "roe", "pe" 等
+            indicator: 财务指标类型，默认"roe"（净资产收益率）
         
         Returns:
             基础财务指标数据
@@ -256,13 +256,13 @@ class DataService:
     
     def get_stock_balance_sheet(self,
                                symbols: Symbols,
-                               indicator: Optional[str] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
+                               indicator: str = "debt") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取资产负债表
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
-            indicator: 财务指标类型，如 "debt" 等
+            indicator: 财务指标类型，默认"debt"（债务相关指标）
         
         Returns:
             资产负债表数据
@@ -275,15 +275,15 @@ class DataService:
     
     def get_stock_income_statement(self,
                                   symbols: Symbols,
-                                  indicator: Optional[str] = None,
-                                  date: Optional[str] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
+                                  date: DateRange,
+                                  indicator: str = "benefit") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取利润表
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
-            indicator: 财务指标类型，如 "benefit" 等
-            date: 指定日期，格式 "2023-01-01"
+            date: 指定日期，格式 "2023-01-01" 或 date(2023, 1, 1)
+            indicator: 财务指标类型，默认"benefit"（盈利相关指标）
         
         Returns:
             利润表数据
@@ -297,15 +297,15 @@ class DataService:
     
     def get_stock_cash_flow(self,
                            symbols: Symbols,
-                           indicator: Optional[str] = None,
-                           date: Optional[str] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
+                           date: DateRange,
+                           indicator: str = "cash") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取现金流量表
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
-            indicator: 财务指标类型，如 "cash" 等
-            date: 指定日期，格式 "2023-01-01"
+            date: 指定日期，格式 "2023-01-01" 或 date(2023, 1, 1)
+            indicator: 财务指标类型，默认"cash"（现金流相关指标）
         
         Returns:
             现金流量表数据
@@ -319,15 +319,15 @@ class DataService:
     
     def get_stock_dividend(self,
                           symbols: Symbols,
-                          indicator: Optional[str] = None,
-                          date: Optional[str] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
+                          date: DateRange,
+                          indicator: str = "dividend") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取分红数据
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
-            indicator: 财务指标类型，如 "dividend" 等
-            date: 指定日期，格式 "2023-01-01"
+            date: 指定日期，格式 "2023-01-01" 或 date(2023, 1, 1)
+            indicator: 财务指标类型，默认"dividend"（分红相关指标）
         
         Returns:
             分红数据
@@ -343,13 +343,13 @@ class DataService:
     
     def get_stock_institutional_holdings(self,
                                         symbols: Symbols,
-                                        date: Optional[str] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
+                                        date: DateRange) -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取机构持仓数据
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
-            date: 指定日期，格式 "2023-01-01"
+            date: 指定日期，格式 "2023-01-01" 或 date(2023, 1, 1)
         
         Returns:
             机构持仓数据
@@ -362,19 +362,19 @@ class DataService:
     
     def get_stock_hsgt_holdings(self,
                                symbols: Symbols,
-                               start_date: Optional[DateRange] = None,
-                               end_date: Optional[DateRange] = None,
-                               market: Optional[str] = None,
-                               indicator: Optional[str] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
+                               start_date: DateRange,
+                               end_date: DateRange,
+                               market: str = "SZ",
+                               indicator: str = "hold") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取沪深港通持仓数据
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
-            start_date: 开始日期，格式 "2023-01-01"
-            end_date: 结束日期，格式 "2023-01-01"
-            market: 市场代码，如 "SZ", "SH" 等
-            indicator: 指标类型，如 "hold" 等
+            start_date: 开始日期，格式 "2023-01-01" 或 date(2023, 1, 1)
+            end_date: 结束日期，格式 "2023-12-31" 或 date(2023, 12, 31)
+            market: 市场代码，默认"SZ"（深市）
+            indicator: 指标类型，默认"hold"（持仓相关指标）
         
         Returns:
             沪深港通持仓数据
@@ -392,15 +392,15 @@ class DataService:
     
     def get_stock_research_reports(self,
                                   symbols: Symbols,
-                                  indicator: Optional[str] = None,
-                                  year: Optional[str] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
+                                  indicator: str = "rating",
+                                  year: str = "2023") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取研报数据
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
-            indicator: 指标类型，如 "rating" 等
-            year: 年份，如 "2023"
+            indicator: 指标类型，默认"rating"（评级相关指标）
+            year: 年份，默认"2023"
         
         Returns:
             研报数据
@@ -414,15 +414,15 @@ class DataService:
     
     def get_stock_forecast_consensus(self,
                                     symbols: Symbols,
-                                    indicator: Optional[str] = None,
-                                    date: Optional[str] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
+                                    date: DateRange,
+                                    indicator: str = "profit") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取预测共识数据
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
-            indicator: 指标类型，如 "profit" 等
-            date: 指定日期，格式 "2023-01-01"
+            date: 指定日期，格式 "2023-01-01" 或 date(2023, 1, 1)
+            indicator: 指标类型，默认"profit"（盈利预测相关指标）
         
         Returns:
             预测共识数据
@@ -554,15 +554,15 @@ class DataService:
     
     def get_stock_major_contracts(self,
                                  symbols: Symbols,
-                                 start_date: Optional[DateRange] = None,
-                                 end_date: Optional[DateRange] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
+                                 start_date: DateRange,
+                                 end_date: DateRange) -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取重大合同事件数据
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
-            start_date: 开始日期，格式 "2023-01-01"
-            end_date: 结束日期，格式 "2023-01-01"
+            start_date: 开始日期，格式 "2023-01-01" 或 date(2023, 1, 1)
+            end_date: 结束日期，格式 "2023-12-31" 或 date(2023, 12, 31)
         
         Returns:
             重大合同事件数据
@@ -638,15 +638,15 @@ class DataService:
     
     def get_stock_block_trading(self,
                                symbols: Symbols,
-                               start_date: Optional[DateRange] = None,
-                               end_date: Optional[DateRange] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
+                               start_date: DateRange,
+                               end_date: DateRange) -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取个股大宗交易数据
         
         Args:
-            symbols: 股票代码
-            start_date: 开始日期
-            end_date: 结束日期
+            symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
+            start_date: 开始日期，格式 "2023-01-01" 或 date(2023, 1, 1)
+            end_date: 结束日期，格式 "2023-12-31" 或 date(2023, 12, 31)
         
         Returns:
             个股大宗交易数据
@@ -675,12 +675,12 @@ class DataService:
         return self.extractor.get_market_stock_list(params)
     
     def get_market_overview(self,
-                           date: Optional[str] = None) -> ExtractionResult:
+                           date: Optional[DateRange] = None) -> ExtractionResult:
         """
         获取市场概览数据
         
         Args:
-            date: 指定日期，格式 "2023-01-01"
+            date: 指定日期，格式 "2023-01-01" 或 date(2023, 1, 1)
         
         Returns:
             市场概览数据
