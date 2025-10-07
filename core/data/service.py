@@ -87,7 +87,9 @@ class DataService:
     def get_stock_daily_quote(self,
                              symbols: Symbols,
                              start_date: Optional[DateRange] = None,
-                             end_date: Optional[DateRange] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
+                             end_date: Optional[DateRange] = None,
+                             period: str = "daily",
+                             adjust: str = "qfq") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取股票日行情数据
         
@@ -95,6 +97,8 @@ class DataService:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
             start_date: 开始日期，格式 "2023-01-01" 或 date(2023, 1, 1)
             end_date: 结束日期，格式 "2023-12-31" 或 date(2023, 12, 31)
+            period: 数据周期，默认"daily"，支持 daily/1min/5min/15min/30min/60min
+            adjust: 复权类型，默认"qfq"，支持 none/qfq/hfq
         
         Returns:
             单个股票返回ExtractionResult，多个股票返回List[ExtractionResult]
@@ -102,7 +106,9 @@ class DataService:
         params = self._build_standard_params(
             symbols=symbols,
             start_date=start_date,
-            end_date=end_date
+            end_date=end_date,
+            period=period,
+            adjust=adjust
         )
         return self.extractor.get_stock_daily_quote(params)
     
