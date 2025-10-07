@@ -297,23 +297,23 @@ class DataService:
     
     def get_stock_cash_flow(self,
                            symbols: Symbols,
-                           start_date: Optional[DateRange] = None,
-                           end_date: Optional[DateRange] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
+                           indicator: Optional[str] = None,
+                           date: Optional[str] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取现金流量表
         
         Args:
-            symbols: 股票代码
-            start_date: 开始日期
-            end_date: 结束日期
+            symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
+            indicator: 财务指标类型，如 "cash" 等
+            date: 指定日期，格式 "2023-01-01"
         
         Returns:
             现金流量表数据
         """
         params = self._build_standard_params(
             symbols=symbols,
-            start_date=start_date,
-            end_date=end_date
+            indicator=indicator,
+            date=date
         )
         return self.extractor.get_stock_cash_flow(params)
     
