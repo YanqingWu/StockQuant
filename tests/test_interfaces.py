@@ -29,12 +29,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.data.interfaces.executor import InterfaceExecutor, CallResult, ExecutorConfig, RetryConfig
 from core.data.interfaces.base import APIProviderManager, InterfaceMetadata, FunctionCategory
 from core.data.interfaces.akshare import akshare_provider
-# 新增：导入标准参数与适配入口
-from core.data.extractor.adapter import (
-    StandardParams,
-    to_standard_params,
-    adapt_params_for_interface,
-)
+from core.data.adapters import StandardParams, to_standard_params, adapt_params_for_interface
 
 
 @dataclass
