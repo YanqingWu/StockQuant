@@ -773,7 +773,7 @@ interfaces_config:
           - name: "stock_zh_a_hist_tx"
             enabled: true
             priority: 1
-            markets: ["SZ"]
+            markets: ["SZ", "SH", "HK"]
           
           - name: "stock_zh_kcb_daily"
             enabled: true
