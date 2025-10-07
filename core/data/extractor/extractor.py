@@ -72,6 +72,8 @@ class Extractor:
         # 验证关键组件是否成功初始化
         try:
             self.executor = InterfaceExecutor(self.provider_manager, self.executor_config)
+            # 为执行器设置配置引用，用于获取缓存策略
+            self.executor.extractor_config = self.config
             self.task_manager = TaskManager(self.executor)
             logger.debug("执行器和任务管理器初始化成功")
         except Exception as e:

@@ -376,11 +376,48 @@ class InterfaceExecutor:
                 return self.config.cache_key_func(interface_name, params)
             except Exception as e:
                 logger.warning(f"Custom cache_key_func failed, fallback to default: {e}")
+
+        # 获取接口的缓存策略
+        cache_strategy = self._get_interface_cache_strategy(interface_name)
         
-        # 将参数排序后序列化，确保相同参数生成相同的键
-        sorted_params = json.dumps(params, sort_keys=True, ensure_ascii=False)
-        key_str = f"{interface_name}:{sorted_params}"
+        if cache_strategy and cache_strategy.get('type') == 'time_based':
+            # 基于时间的缓存
+            granularity = cache_strategy.get('granularity', 'day')
+            time_key = self._get_time_key(granularity)
+            sorted_params = json.dumps(params, sort_keys=True, ensure_ascii=False)
+            key_str = f"{interface_name}:{time_key}:{sorted_params}"
+        else:
+            # 基于参数的缓存（默认行为）
+            sorted_params = json.dumps(params, sort_keys=True, ensure_ascii=False)
+            key_str = f"{interface_name}:{sorted_params}"
+        
         return hashlib.md5(key_str.encode()).hexdigest()
+    
+    def _get_interface_cache_strategy(self, interface_name: str) -> Optional[Dict[str, Any]]:
+        """获取接口的缓存策略配置"""
+        try:
+            # 从 ExtractorConfig 获取缓存策略
+            if hasattr(self, 'extractor_config') and self.extractor_config:
+                return self.extractor_config.get_interface_cache_strategy(interface_name)
+            return None
+        except Exception as e:
+            logger.debug(f"获取接口 {interface_name} 缓存策略失败: {e}")
+            return None
+    
+    def _get_time_key(self, granularity: str) -> str:
+        """生成时间键"""
+        from datetime import datetime
+        now = datetime.now()
+        if granularity == 'hour':
+            return now.strftime('%Y%m%d%H')  # 2024120114
+        elif granularity == 'day':
+            return now.strftime('%Y%m%d')    # 20241201
+        elif granularity == 'week':
+            return now.strftime('%Y%W')      # 202448
+        elif granularity == 'month':
+            return now.strftime('%Y%m')      # 202412
+        else:
+            return now.strftime('%Y%m%d')    # 默认按天
     
     def _apply_rate_limit(self, interface_name: str) -> None:
         """应用频率限制"""

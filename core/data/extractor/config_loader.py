@@ -20,6 +20,7 @@ class InterfaceConfig:
     priority: int = 1
     markets: List[str] = field(default_factory=list)  # 新增：适用市场列表
     post_processor: Optional[str] = None  # 新增：后处理器函数名
+    cache_strategy: Optional[Dict[str, Any]] = None  # 新增：缓存策略配置
     
     def is_market_supported(self, market: str) -> bool:
         """检查是否支持指定市场"""
@@ -133,6 +134,23 @@ class ExtractionConfig:
         if data_type_config:
             return data_type_config.get_interface_by_name(interface_name)
         return None
+    
+    def get_interface_cache_strategy(self, interface_name: str) -> Optional[Dict[str, Any]]:
+        """获取接口的缓存策略配置"""
+        try:
+            # 遍历所有分类查找接口
+            for category_name, category_config in self.interfaces_config.items():
+                for data_type_name, data_type_config in category_config.data_types.items():
+                    if hasattr(data_type_config, 'interfaces'):
+                        for interface in data_type_config.interfaces:
+                            if interface.name == interface_name:
+                                return getattr(interface, 'cache_strategy', None)
+            return None
+        except Exception as e:
+            from core.logging import get_logger
+            logger = get_logger(__name__)
+            logger.debug(f"查找接口 {interface_name} 缓存策略失败: {e}")
+            return None
     
     def get_standard_fields(self, category: str, data_type: str) -> List[str]:
         """获取标准字段列表，支持嵌套的数据类型路径"""
@@ -393,7 +411,8 @@ class ConfigLoader:
                     enabled=interface_data.get('enabled', True),
                     priority=interface_data.get('priority', 1),
                     markets=interface_data.get('markets', []),
-                    post_processor=interface_data.get('post_processor')
+                    post_processor=interface_data.get('post_processor'),
+                    cache_strategy=interface_data.get('cache_strategy')
                 )
                 interfaces.append(interface)
             

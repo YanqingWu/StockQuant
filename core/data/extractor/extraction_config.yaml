@@ -1202,6 +1202,10 @@ interfaces_config:
             priority: 1
             markets: ["SH", "SZ"]
             description: "创新高股票列表"
+            cache_strategy:
+              type: "time_based"
+              granularity: "day"
+              description: "创新高排名按天缓存"
 
       innovation_low:
         description: "创新低股票排名"
@@ -1211,6 +1215,10 @@ interfaces_config:
             priority: 1
             markets: ["SH", "SZ"]
             description: "创新低股票列表"
+            cache_strategy:
+              type: "time_based"
+              granularity: "day"
+              description: "创新低排名按天缓存"
 
       volume_price_rise:
         description: "量价齐升股票排名"
@@ -1220,6 +1228,10 @@ interfaces_config:
             priority: 1
             markets: ["SH", "SZ"]
             description: "量价齐升股票列表"
+            cache_strategy:
+              type: "time_based"
+              granularity: "day"
+              description: "量价齐升排名按天缓存"
 
       continuous_rise:
         description: "连续上涨股票排名"
@@ -1229,6 +1241,10 @@ interfaces_config:
             priority: 1
             markets: ["SH", "SZ"]
             description: "连续上涨股票列表"
+            cache_strategy:
+              type: "time_based"
+              granularity: "day"
+              description: "连续上涨排名按天缓存"
 
       volume_price_fall:
         description: "量价齐跌股票排名"
@@ -1238,6 +1254,10 @@ interfaces_config:
             priority: 1
             markets: ["SH", "SZ"]
             description: "量价齐跌股票列表"
+            cache_strategy:
+              type: "time_based"
+              granularity: "day"
+              description: "量价齐跌排名按天缓存"
 
       volume_shrink:
         description: "创新缩量股票排名"
@@ -1247,6 +1267,10 @@ interfaces_config:
             priority: 1
             markets: ["SH", "SZ"]
             description: "创新缩量股票列表"
+            cache_strategy:
+              type: "time_based"
+              granularity: "day"
+              description: "创新缩量排名按天缓存"
 
     valuation:
       description: "个股估值数据"
@@ -1430,12 +1454,20 @@ interfaces_config:
           priority: 1
           markets: ["SH"]
           post_processor: "convert_market_summary_to_columns_and_add_recent_date"
+          cache_strategy:
+            type: "time_based"
+            granularity: "day"
+            description: "上交所市场概览按天缓存"
         
         - name: "stock_szse_summary"
           enabled: true
           priority: 2
           markets: ["SZ"]
           post_processor: "add_input_date_to_rows"
+          cache_strategy:
+            type: "time_based"
+            granularity: "day"
+            description: "深交所市场概览按天缓存"
         
         # 投资者统计
         - name: "stock_account_statistics_em"
@@ -1473,6 +1505,10 @@ interfaces_config:
           priority: 1
           markets: ["SH", "SZ"]
           post_processor: "add_recent_trade_date"
+          cache_strategy:
+            type: "time_based"
+            granularity: "day"
+            description: "指数行情按天缓存"
         
         - name: "stock_zh_index_daily"
           enabled: true
@@ -1516,6 +1552,10 @@ interfaces_config:
           priority: 1
           markets: ["SH", "SZ"]
           post_processor: "convert_item_value_to_columns_and_add_recent_date"
+          cache_strategy:
+            type: "time_based"
+            granularity: "day"
+            description: "市场活跃度数据按天缓存"
 
     fund_flow:
       market_level:
@@ -1565,11 +1605,15 @@ interfaces_config:
       concept_quote:
         description: "概念板块行情"
         interfaces:
-          - name: "stock_board_concept_name_em_async"
-            enabled: true
-            priority: 1
-            markets: ["SH", "SZ"]
-            post_processor: "add_recent_trade_date"
+        - name: "stock_board_concept_name_em_async"
+          enabled: true
+          priority: 1
+          markets: ["SH", "SZ"]
+          post_processor: "add_recent_trade_date"
+          cache_strategy:
+            type: "time_based"
+            granularity: "day"
+            description: "概念板块行情按天缓存"
 
       concept_fund_flow:
         description: "概念板块资金流向"
@@ -1579,6 +1623,10 @@ interfaces_config:
             priority: 1
             markets: ["SH", "SZ"]
             post_processor: "add_recent_trade_date"
+            cache_strategy:
+              type: "time_based"
+              granularity: "day"
+              description: "概念板块资金流向按天缓存"
 
     block_trading:
       description: "市场大宗交易统计"
