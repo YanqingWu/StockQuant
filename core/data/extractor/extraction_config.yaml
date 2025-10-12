@@ -1465,15 +1465,6 @@ interfaces_config:
             granularity: "minute"
             description: "指数列表按分钟缓存"
 
-    market_sentiment:
-      description: "市场情绪数据"
-      interfaces:
-        - name: "stock_zh_vote_baidu"
-          enabled: true
-          priority: 1
-          markets: ["SH", "SZ"]
-          post_processor: "convert_item_value_to_columns"
-
     market_activity:
       description: "市场活跃度数据"
       interfaces:
@@ -3061,20 +3052,6 @@ parameter_mappings:
         security_type:
           required: true
           valid_values: ["A股", "B股", "基金", "债券"]
-    
-    # 投票相关接口参数映射配置
-    stock_zh_vote_baidu:
-      parameter_mapping:
-        symbol: "symbol"  # 股票代码参数保持不变
-        business_type: "indicator"  # 将 business_type 映射为 indicator 参数
-      defaults:
-        business_type: "指数"  # 默认业务类型
-      validation:
-        symbol:
-          required: true
-        business_type:
-          required: true
-          valid_values: ["指数", "股票"]
     
     # 分红配股相关接口参数映射配置
     stock_history_dividend_detail:
