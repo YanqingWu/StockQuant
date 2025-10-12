@@ -1053,7 +1053,7 @@ interfaces_config:
             - name: "stock_zygc_em"
               enabled: true
               priority: 0
-              markets: ["SH", "SZ", "BJ"]
+              markets: ["SH", "SZ"]
 
         cash_flow:
           description: "现金流量表"
@@ -1113,7 +1113,7 @@ interfaces_config:
           - name: "stock_dividend_cninfo"
             enabled: true
             priority: 3
-            markets: ["SH", "SZ", "BJ"]
+            markets: ["SH", "SZ"]
           
           - name: "stock_history_dividend_detail"
             enabled: true
