@@ -1394,14 +1394,12 @@ interfaces_config:
           enabled: true
           priority: 0
           markets: ["SH", "SZ"]
-          post_processor: "convert_field_mapping"
         
         # 市场估值指标
         - name: "stock_buffett_index_lg"
           enabled: true
           priority: 0
           markets: ["SH", "SZ"]
-          post_processor: "convert_field_mapping"
 
     market_indices:
       description: "市场指数"
