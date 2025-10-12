@@ -503,6 +503,13 @@ class InterfaceExecutor:
                     logger.debug(f"接口 {task.interface_name} 返回{type(result).__name__}")
                 
                 return result
+            except TypeError as e:
+                if "'NoneType' object is not subscriptable" in str(e):
+                    logger.warning(f"接口 {task.interface_name} 返回None导致内部错误，返回None: {e}")
+                    return None
+                else:
+                    logger.error(f"接口 {task.interface_name} 调用失败: {e}")
+                    raise
             except Exception as e:
                 logger.error(f"接口 {task.interface_name} 调用失败: {e}")
                 # 让错误通过错误分类系统处理，不要在这里直接处理
