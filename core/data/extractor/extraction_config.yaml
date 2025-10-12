@@ -821,27 +821,15 @@ interfaces_config:
           data_quality_priority: "most_complete"  # highest, latest, most_complete
           handle_date_gaps: "keep_all"  # keep_all, fill_gaps, latest_only
         interfaces:
-          - name: "stock_margin_sse"
-            enabled: true
-            priority: 0
-            markets: ["SH"]
-            description: "上交所融资融券汇总数据"
-          
           - name: "stock_margin_detail_sse"
             enabled: true
-            priority: 1
+            priority: 0
             markets: ["SH"]
             description: "上交所融资融券明细数据"
           
-          - name: "stock_margin_szse"
-            enabled: true
-            priority: 0
-            markets: ["SZ"]
-            description: "深交所融资融券汇总数据"
-          
           - name: "stock_margin_detail_szse"
             enabled: true
-            priority: 1
+            priority: 0
             markets: ["SZ"]
             description: "深交所融资融券明细数据"
 
