@@ -3052,6 +3052,16 @@ parameter_mappings:
           required: true
           valid_values: ["年报", "单季报", "累计季报"]
     
+    stock_dzjy_mrmx:
+      parameter_mapping:
+        security_type: "symbol"  # 将 StandardParams 的 security_type 映射为接口的 symbol 参数
+      defaults:
+        security_type: "A股"  # 默认证券类型
+      validation:
+        security_type:
+          required: true
+          valid_values: ["A股", "B股", "基金", "债券"]
+    
     # 投票相关接口参数映射配置
     stock_zh_vote_baidu:
       parameter_mapping:

@@ -22,6 +22,7 @@ class StandardParams:
     - financial_period: 财务数据周期类型 (财务数据接口使用)
     - financial_statement: 财务报表类型 (财务报表接口使用)
     - business_type: 业务类型 (统一处理各种业务类型参数)
+    - security_type: 证券类型 (大宗交易接口使用，支持A股/B股/基金/债券)
     - date: 单日期参数 (部分接口使用)
     - year: 年份参数 (部分接口使用，格式YYYY)
     - forecast_data_type: 预测数据类型 (同花顺预测接口使用)
@@ -47,6 +48,7 @@ class StandardParams:
         financial_period: Optional[str] = None,
         financial_statement: Optional[str] = None,
         business_type: Optional[str] = None,
+        security_type: Optional[str] = None,  # 证券类型 (大宗交易接口使用，支持A股/B股/基金/债券)
         date: Optional[str] = None,
         year: Optional[str] = None,
         forecast_data_type: Optional[str] = None,
@@ -79,6 +81,7 @@ class StandardParams:
         self.financial_period = financial_period
         self.financial_statement = financial_statement
         self.business_type = business_type
+        self.security_type = security_type
         self.date = date
         self.year = year
         self.forecast_data_type = forecast_data_type
@@ -135,7 +138,8 @@ class StandardParams:
             ("start_date", self.start_date), ("end_date", self.end_date),
             ("date", self.date), ("period", self.period), ("adjust", self.adjust),
             ("financial_period", self.financial_period), ("financial_statement", self.financial_statement), 
-            ("business_type", self.business_type), ("forecast_data_type", self.forecast_data_type),
+            ("business_type", self.business_type), ("security_type", self.security_type),
+            ("forecast_data_type", self.forecast_data_type),
             ("forecast_overview_type", self.forecast_overview_type), ("market", self.market), ("hsgt_market", self.hsgt_market)
         ]:
             if value is not None and isinstance(value, str) and not value.strip():
@@ -229,6 +233,8 @@ class StandardParams:
             d["financial_statement"] = self._maybe_strip(self.financial_statement)
         if self.business_type is not None:
             d["business_type"] = self._maybe_strip(self.business_type)
+        if self.security_type is not None:
+            d["security_type"] = self._maybe_strip(self.security_type)
         if self.date is not None:
             d["date"] = self._maybe_strip(self.date)
         if self.year is not None:
@@ -257,7 +263,7 @@ class StandardParams:
         """
         known_keys = {
             "symbol", "start_date", "end_date", "period", "adjust",
-            "financial_period", "financial_statement", "business_type", "date", "year", 
+            "financial_period", "financial_statement", "business_type", "security_type", "date", "year", 
             "forecast_data_type", "forecast_overview_type", "market", "hsgt_market", "index_code"
         }
         std_kwargs = {k: data[k] for k in known_keys if k in data}

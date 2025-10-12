@@ -646,7 +646,8 @@ class DataService:
     def get_stock_block_trading(self,
                                symbols: Symbols,
                                start_date: DateRange,
-                               end_date: DateRange) -> Union[ExtractionResult, List[ExtractionResult]]:
+                               end_date: DateRange,
+                               security_type: Optional[str] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取个股大宗交易数据
         
@@ -654,6 +655,7 @@ class DataService:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
             start_date: 开始日期，格式 "2023-01-01" 或 date(2023, 1, 1)
             end_date: 结束日期，格式 "2023-12-31" 或 date(2023, 12, 31)
+            security_type: 证券类型，可选值：'A股', 'B股', '基金', '债券'。如果为None，会使用默认值'A股'
         
         Returns:
             个股大宗交易数据
@@ -661,7 +663,8 @@ class DataService:
         params = self._build_standard_params(
             symbols=symbols,
             start_date=start_date,
-            end_date=end_date
+            end_date=end_date,
+            security_type=security_type
         )
         return self.extractor.get_stock_block_trading(params)
     
