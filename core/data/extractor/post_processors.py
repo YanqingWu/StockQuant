@@ -10,6 +10,57 @@ from core.logging import get_logger
 logger = get_logger(__name__)
 
 
+def map_index_fields(data: Any) -> Any:
+    """
+    将指数接口的字段映射为指数标准字段
+    
+    将akshare指数接口返回的"代码"和"名称"字段映射为"index_code"和"index_name"
+    
+    Args:
+        data: 原始数据（通常是DataFrame）
+        
+    Returns:
+        转换后的数据（保持相同类型）
+    """
+    # 如果不是DataFrame，直接返回原数据
+    if not isinstance(data, pd.DataFrame):
+        logger.debug("数据不是DataFrame类型，跳过指数字段映射")
+        return data
+    
+    # 检查数据是否为空
+    if data.empty:
+        logger.debug("DataFrame为空，跳过指数字段映射")
+        return data
+    
+    try:
+        logger.debug(f"开始处理指数字段映射，原始数据形状: {data.shape}")
+        logger.debug(f"原始数据列名: {data.columns.tolist()}")
+        
+        # 创建数据副本
+        result_data = data.copy()
+        
+        # 映射字段
+        field_mapping = {
+            '代码': 'index_code',
+            '名称': 'index_name'
+        }
+        
+        # 应用字段映射
+        for old_col, new_col in field_mapping.items():
+            if old_col in result_data.columns:
+                result_data = result_data.rename(columns={old_col: new_col})
+                logger.debug(f"字段映射: {old_col} -> {new_col}")
+        
+        logger.debug(f"指数字段映射完成，结果数据形状: {result_data.shape}")
+        logger.debug(f"结果数据列名: {result_data.columns.tolist()}")
+        
+        return result_data
+        
+    except Exception as e:
+        logger.error(f"指数字段映射失败: {e}")
+        return data
+
+
 def convert_market_summary_to_columns(data: Any) -> Any:
     """
     将市场概览的项目-数值格式转换为标准列格式

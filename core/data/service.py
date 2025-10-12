@@ -729,6 +729,16 @@ class DataService:
         )
         return self.extractor.get_market_indices(params)
     
+    def get_market_index_list(self) -> ExtractionResult:
+        """
+        获取市场指数列表
+        
+        Returns:
+            市场指数列表，包含指数代码、名称等信息
+        """
+        params = self._build_standard_params()
+        return self.extractor.get_market_index_list(params)
+    
     def get_market_activity(self) -> ExtractionResult:
         """
         获取市场活跃度数据

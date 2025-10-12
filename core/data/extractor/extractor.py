@@ -1620,6 +1620,10 @@ class Extractor:
         """获取市场指数数据"""
         return self._execute_interface_with_batch("market", "market_indices", params)
     
+    def get_market_index_list(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
+        """获取市场指数列表"""
+        return self._execute_interface_with_batch("market", "index_list", params)
+    
     def get_market_activity(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取市场活跃度数据"""
         return self._execute_interface_with_batch("market", "market_activity", params)

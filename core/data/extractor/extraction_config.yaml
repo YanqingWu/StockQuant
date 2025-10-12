@@ -546,6 +546,10 @@ standard_fields:
       - sample_count                       # 样本数量
       - pe_ttm                             # 滚动市盈率
 
+    index_list:                            # 市场指数列表
+      - index_code                         # 指数代码
+      - index_name                         # 指数名称
+
     market_sentiment:                      # 市场情绪数据
       - date                               # 日期
       - bullish_ratio                      # 看涨比例
@@ -1482,6 +1486,20 @@ interfaces_config:
           priority: 6
           markets: ["SH", "SZ"]
 
+    index_list:
+      description: "市场指数列表"
+      interfaces:
+        - name: "stock_zh_index_spot_sina"
+          enabled: true
+          priority: 1
+          markets: ["SH", "SZ"]
+          description: "获取所有指数的实时行情列表"
+          post_processor: "map_index_fields"
+          cache_strategy:
+            type: "time_based"
+            granularity: "minute"
+            description: "指数列表按分钟缓存"
+
     market_sentiment:
       description: "市场情绪数据"
       interfaces:
@@ -1613,6 +1631,10 @@ field_mappings:
   "代码": "symbol"
   "股票代码": "symbol"
   "证券代码": "symbol"
+  
+  # 指数相关字段映射（更具体的映射，避免与股票冲突）
+  "指数代码": "index_code"
+  "指数名称": "index_name"
   
   # 情绪相关字段映射
   "交易日": "date"
