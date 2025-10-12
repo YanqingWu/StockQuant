@@ -501,31 +501,6 @@ standard_fields:
       - recent_decade_percentile           # 近十年分位数
       - total_history_percentile           # 总历史分位数
       - close_price                        # 收盘价
-      
-      # 市场活跃度指标
-      - rising_count                       # 上涨股票数量
-      - falling_count                      # 下跌股票数量
-      - limit_up_count                     # 涨停股票数量
-      - limit_down_count                   # 跌停股票数量
-      - real_limit_up_count                # 真实涨停数量
-      
-      # 资金流向指标
-      - main_net_inflow                    # 主力净流入
-      - main_net_inflow_ratio              # 主力净流入占比
-      - large_net_inflow                   # 超大单净流入
-      - large_net_inflow_ratio             # 超大单净流入占比
-      - super_large_net_inflow             # 超大单净流入
-      - super_large_net_inflow_ratio       # 超大单净流入占比
-      - medium_net_inflow                  # 中单净流入
-      - medium_net_inflow_ratio            # 中单净流入占比
-      - small_net_inflow                   # 小单净流入
-      - small_net_inflow_ratio             # 小单净流入占比
-      
-      # 指数相关指标
-      - sh_close_price                     # 上证收盘价
-      - sh_change_pct                      # 上证涨跌幅
-      - sz_close_price                     # 深证收盘价
-      - sz_change_pct                      # 深证涨跌幅
 
     market_indices:
       - date                               # 日期
@@ -1429,17 +1404,6 @@ interfaces_config:
           priority: 0
           markets: ["SH", "SZ"]
           post_processor: "convert_field_mapping"
-        
-        # 资金流向
-        - name: "stock_market_fund_flow"
-          enabled: true
-          priority: 0
-          markets: ["SH", "SZ"]
-          post_processor: "convert_field_mapping"
-          cache_strategy:
-            type: "time_based"
-            granularity: "day"
-            description: "市场级别资金流向按天缓存"
 
     market_indices:
       description: "市场指数"
