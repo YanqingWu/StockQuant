@@ -497,6 +497,10 @@ standard_fields:
       - market_cap_to_gdp_ratio            # 市值GDP比值（巴菲特指数）
       - pe_ratio_ttm                       # 滚动市盈率
       - pb_ratio                           # 市净率
+      - gdp                                # GDP数据
+      - recent_decade_percentile           # 近十年分位数
+      - total_history_percentile           # 总历史分位数
+      - close_price                        # 收盘价
       
       # 市场活跃度指标
       - rising_count                       # 上涨股票数量
@@ -510,11 +514,18 @@ standard_fields:
       - main_net_inflow_ratio              # 主力净流入占比
       - large_net_inflow                   # 超大单净流入
       - large_net_inflow_ratio             # 超大单净流入占比
+      - super_large_net_inflow             # 超大单净流入
+      - super_large_net_inflow_ratio       # 超大单净流入占比
+      - medium_net_inflow                  # 中单净流入
+      - medium_net_inflow_ratio            # 中单净流入占比
+      - small_net_inflow                   # 小单净流入
+      - small_net_inflow_ratio             # 小单净流入占比
       
-      # 市场情绪指标
-      - market_sentiment_score             # 市场情绪评分
-      - volatility_index                   # 波动率指数
-      - fear_greed_index                   # 恐慌贪婪指数
+      # 指数相关指标
+      - sh_close_price                     # 上证收盘价
+      - sh_change_pct                      # 上证涨跌幅
+      - sz_close_price                     # 深证收盘价
+      - sz_change_pct                      # 深证涨跌幅
 
     market_indices:
       - date                               # 日期
@@ -1383,7 +1394,7 @@ interfaces_config:
         # 基础市场数据
         - name: "stock_sse_summary"
           enabled: true
-          priority: 1
+          priority: 0
           markets: ["SH"]
           post_processor: "convert_market_summary_to_columns_and_add_recent_date"
           cache_strategy:
@@ -1393,7 +1404,7 @@ interfaces_config:
         
         - name: "stock_szse_summary"
           enabled: true
-          priority: 2
+          priority: 0
           markets: ["SZ"]
           post_processor: "add_input_date_to_rows"
           cache_strategy:
@@ -1404,21 +1415,21 @@ interfaces_config:
         # 投资者统计
         - name: "stock_account_statistics_em"
           enabled: true
-          priority: 3
+          priority: 0
           markets: ["SH", "SZ"]
           post_processor: "convert_field_mapping"
         
         # 市场估值指标
         - name: "stock_buffett_index_lg"
           enabled: true
-          priority: 4
+          priority: 0
           markets: ["SH", "SZ"]
           post_processor: "convert_field_mapping"
         
         # 资金流向
         - name: "stock_market_fund_flow"
           enabled: true
-          priority: 6
+          priority: 0
           markets: ["SH", "SZ"]
           post_processor: "convert_field_mapping"
           cache_strategy:
