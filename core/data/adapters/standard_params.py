@@ -15,7 +15,7 @@ class StandardParams:
     核心参数：
     - symbol: StockSymbol (支持单个或列表)
     - start_date/end_date: "YYYY-MM-DD" 格式的日期范围
-    - period: daily/weekly/monthly (默认daily)
+    - period: daily/weekly/monthly/quarterly/yearly/historical (默认daily)
     - adjust: none/qfq/hfq (默认qfq)
     
     扩展参数：
@@ -121,8 +121,8 @@ class StandardParams:
             raise ValueError("start_date 不能晚于 end_date")
         
         # 验证枚举值
-        if self.period and self.period not in ["daily", "weekly", "monthly"]:
-            raise ValueError(f"period值无效: {self.period}，期望: daily/weekly/monthly")
+        if self.period and self.period not in ["daily", "weekly", "monthly", "quarterly", "yearly", "historical"]:
+            raise ValueError(f"period值无效: {self.period}，期望: daily/weekly/monthly/quarterly/yearly/historical")
         
         if self.adjust and self.adjust not in ["none", "qfq", "hfq"]:
             raise ValueError(f"adjust值无效: {self.adjust}，期望: none/qfq/hfq")

@@ -3535,3 +3535,35 @@ parameter_mappings:
           valid_values: ["daily", "weekly", "monthly"]
         adjust:
           valid_values: ["none", "qfq", "hfq"]
+    # 技术分析排名接口参数映射配置
+    stock_rank_cxg_ths:
+      parameter_mapping:
+        period: "symbol"  # 将 period 映射为 symbol
+      value_mapping:
+        period:
+          "monthly": "创月新高"      # 月度新高
+          "quarterly": "半年新高"   # 半年新高 (季度)
+          "yearly": "一年新高"      # 年度新高
+          "historical": "历史新高"  # 历史新高
+      defaults:
+        period: "monthly"  # 默认月度新高
+      validation:
+        period:
+          required: true
+          valid_values: ["monthly", "quarterly", "yearly", "historical"]
+    
+    stock_rank_cxd_ths:
+      parameter_mapping:
+        period: "symbol"  # 将 period 映射为 symbol
+      value_mapping:
+        period:
+          "monthly": "创月新低"      # 月度新低
+          "quarterly": "半年新低"   # 半年新低 (季度)
+          "yearly": "一年新低"      # 年度新低
+          "historical": "历史新低"  # 历史新低
+      defaults:
+        period: "monthly"  # 默认月度新低
+      validation:
+        period:
+          required: true
+          valid_values: ["monthly", "quarterly", "yearly", "historical"]
