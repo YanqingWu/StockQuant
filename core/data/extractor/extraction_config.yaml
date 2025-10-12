@@ -880,66 +880,67 @@ interfaces_config:
         interfaces:
           - name: "stock_comment_em"
             enabled: true
-            priority: 1
-            markets: ["SH", "SZ", "BJ"]
-          
-          - name: "stock_comment_detail_scrd_desire_daily_em"
-            enabled: true
-            priority: 2
-            markets: ["SH", "SZ", "BJ"]
-          
-          - name: "stock_comment_detail_scrd_focus_em"
-            enabled: true
-            priority: 3
-            markets: ["SH", "SZ", "BJ"]
-          
-          - name: "stock_comment_detail_zhpj_lspf_em"
-            enabled: true
-            priority: 4
-            markets: ["SH", "SZ", "BJ"]
-          
-          - name: "stock_comment_detail_zlkp_jgcyd_em"
-            enabled: true
-            priority: 5
-            markets: ["SH", "SZ", "BJ"]
-          
-          - name: "stock_hot_rank_em"
-            enabled: true
-            priority: 6
-            markets: ["SH", "SZ", "BJ"]
-          
-          - name: "stock_changes_em"
-            enabled: true
-            priority: 9
-            markets: ["SH", "SZ", "BJ"]
-            description: "盘口异动数据"
-          
-          - name: "stock_hot_keyword_em"
-            enabled: true
-            priority: 11
-            markets: ["SH", "SZ", "BJ"]
-            description: "热门关键词热度"
-          
-          - name: "stock_hot_rank_detail_em"
-            enabled: true
-            priority: 12
-            markets: ["SH", "SZ", "BJ"]
-            description: "人气榜历史趋势"
-          
-          - name: "stock_hot_follow_xq"
-            enabled: true
-            priority: 13
-            markets: ["SH", "SZ", "BJ"]
-          
-          - name: "stock_hot_deal_xq"
-            enabled: true
-            priority: 14
-            markets: ["SH", "SZ", "BJ"]
+            priority: 0
+            markets: ["SH", "SZ", "BJ", "HK", "US"]
           
           - name: "stock_hot_tweet_xq"
             enabled: true
-            priority: 15
-            markets: ["SH", "SZ", "BJ"]
+            priority: 0
+            markets: ["SH", "SZ", "BJ", "HK", "US"]
+
+          - name: "stock_hot_follow_xq"
+            enabled: false
+            priority: 0
+            markets: ["SH", "SZ", "BJ", "HK", "US"]
+            # 禁用原因：雪球只保留stock_hot_tweet_xq，其他都禁用
+          
+          - name: "stock_hot_deal_xq"
+            enabled: false
+            priority: 0
+            markets: ["SH", "SZ", "BJ", "HK", "US"]
+            # 禁用原因：雪球只保留stock_hot_tweet_xq，其他都禁用
+          
+          - name: "stock_comment_detail_scrd_desire_daily_em"
+            enabled: true
+            priority: 0
+            markets: ["SH", "SZ", "BJ", "HK", "US"]
+          
+          - name: "stock_comment_detail_scrd_focus_em"
+            enabled: false
+            priority: 1
+            markets: ["SH", "SZ", "BJ", "HK", "US"]
+            # 禁用原因：与stock_comment_em的"关注指数"功能重复
+          
+          - name: "stock_comment_detail_zhpj_lspf_em"
+            enabled: false
+            priority: 1
+            markets: ["SH", "SZ", "BJ", "HK", "US"]
+            # 禁用原因：与stock_comment_em的"综合得分"功能重复
+          
+          - name: "stock_comment_detail_zlkp_jgcyd_em"
+            enabled: true
+            priority: 0
+            markets: ["SH", "SZ", "BJ", "HK", "US"]
+            # 禁用原因：与stock_comment_em的"机构参与度"功能重复
+          
+          - name: "stock_hot_rank_em"
+            enabled: false
+            priority: 1
+            markets: ["SH", "SZ", "BJ", "HK", "US"]
+            # 禁用原因：与stock_comment_em的"目前排名"功能重复
+          
+          - name: "stock_hot_keyword_em"
+            enabled: false
+            priority: 1
+            markets: ["SH", "SZ"]
+            description: "个股关键词热度"
+            # 禁用原因：与tock_hot_tweet_xq的热度给你重复
+
+          - name: "stock_hot_rank_detail_em"
+            enabled: true
+            priority: 0
+            markets: ["SH", "SZ", "BJ", "HK", "US"]
+            description: "人气榜历史趋势"
 
       news:
         description: "新闻数据"
