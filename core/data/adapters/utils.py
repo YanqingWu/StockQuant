@@ -25,10 +25,6 @@ def to_standard_params(params: Union[StandardParams, Dict[str, Any]]) -> Standar
     if not isinstance(params, dict):
         raise ValueError(f"参数类型错误，期望 dict 或 StandardParams，实际: {type(params)}")
     
-    # 确保字典不为空
-    if not params:
-        raise ValueError("参数字典不能为空")
-    
     src: Dict[str, Any] = dict(params)
     adapter = AkshareStockParamAdapter()
     normalizer = ParamNormalizer()

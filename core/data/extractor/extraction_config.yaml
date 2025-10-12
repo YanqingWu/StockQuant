@@ -538,8 +538,6 @@ standard_fields:
       - rising_count                       # 上涨数量
       - limit_up_count                     # 涨停数量
       - real_limit_up_count                # 真实涨停数量
-      - item_type                          # 统计项目类型
-      - item_value                         # 统计项目数值
 
     sector_data:
       # 行业板块行情
