@@ -997,22 +997,22 @@ interfaces_config:
           interfaces:
             - name: "stock_financial_report_sina"
               enabled: true
-              priority: 1
+              priority: 0
               markets: ["SH", "SZ", "BJ"]
             
             - name: "stock_balance_sheet_by_report_em"
               enabled: true
-              priority: 2
+              priority: 0
               markets: ["SH", "SZ", "BJ"]
             
             - name: "stock_balance_sheet_by_yearly_em"
               enabled: true
-              priority: 3
+              priority: 0
               markets: ["SH", "SZ", "BJ"]
             
             - name: "stock_financial_debt_ths"
               enabled: true
-              priority: 4
+              priority: 0
               markets: ["SH", "SZ", "BJ"]
 
         income_statement:
