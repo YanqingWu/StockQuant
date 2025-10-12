@@ -947,7 +947,7 @@ interfaces_config:
         interfaces:
           - name: "stock_news_em"
             enabled: true
-            priority: 1
+            priority: 0
             markets: ["SH", "SZ", "BJ"]
 
     financials:
