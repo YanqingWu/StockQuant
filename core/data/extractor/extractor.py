@@ -1596,13 +1596,9 @@ class Extractor:
         return self._execute_interface_with_batch("stock", "new_stock.performance", params)
     
     # 股票回购数据
-    def get_stock_repurchase_plan(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
-        """获取回购计划数据"""
-        return self._execute_interface_with_batch("stock", "repurchase.repurchase_plan", params)
-    
-    def get_stock_repurchase_progress(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
-        """获取回购进度数据"""
-        return self._execute_interface_with_batch("stock", "repurchase.repurchase_progress", params)
+    def get_stock_repurchase(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
+        """获取股票回购数据（包含计划和进展信息）"""
+        return self._execute_interface_with_batch("stock", "repurchase", params)
     
     # 股票大宗交易数据
     def get_stock_block_trading(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:

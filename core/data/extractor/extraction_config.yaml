@@ -452,24 +452,26 @@ standard_fields:
         - cumulative_return                  # 累计收益率
         - break_issue_price_date             # 破发日期（可选）
 
-    repurchase:
-      repurchase_plan:                   # 回购计划
-        - symbol                             # 股票代码
-        - announcement_date                  # 公告日期
-        - plan_amount_min                    # 计划回购金额下限
-        - plan_amount_max                    # 计划回购金额上限
-        - plan_volume_min                    # 计划回购数量下限（可选）
-        - plan_volume_max                    # 计划回购数量上限（可选）
-        - repurchase_purpose                 # 回购目的
-        - implementation_period              # 实施期限
-
-      repurchase_progress:               # 回购进展
-        - symbol                             # 股票代码
-        - date                               # 日期
-        - cumulative_amount                  # 累计回购金额
-        - cumulative_volume                  # 累计回购数量
-        - progress_ratio                     # 完成比例
-        - remaining_amount                   # 剩余金额（可选）
+    repurchase:                          # 股票回购数据（合并计划和进展）
+      - symbol                             # 股票代码
+      - announcement_date                  # 公告日期
+      - plan_amount_min                    # 计划回购金额下限
+      - plan_amount_max                    # 计划回购金额上限
+      - plan_volume_min                    # 计划回购数量下限（可选）
+      - plan_volume_max                    # 计划回购数量上限（可选）
+      - plan_price_range                   # 计划回购价格区间
+      - repurchase_purpose                 # 回购目的
+      - implementation_period              # 实施期限
+      - implementation_status              # 实施状态
+      - cumulative_amount                  # 累计回购金额
+      - cumulative_volume                  # 累计回购数量
+      - actual_repurchase_price_min        # 实际回购价格下限
+      - actual_repurchase_price_max        # 实际回购价格上限
+      - progress_ratio                     # 完成比例
+      - remaining_amount                   # 剩余金额（可选）
+      - repurchase_ratio_min               # 回购比例下限
+      - repurchase_ratio_max               # 回购比例上限
+      - current_price                      # 最新价
 
   market:
     stock_list:                        # 市场股票列表
@@ -1334,43 +1336,14 @@ interfaces_config:
             markets: ["SH", "SZ", "BJ"]
             description: "停牌复牌信息（接口不存在）"
 
-    new_stock:
-      ipo_data:
-        description: "新股发行数据"
-        interfaces:
-          - name: "stock_zh_a_new_em"
-            enabled: true
-            priority: 1
-            markets: ["SH", "SZ", "BJ"]
-            description: "新股行情数据"
-      
-      performance:
-        description: "新股表现数据"
-        interfaces:
-          - name: "stock_zh_a_new"
-            enabled: true
-            priority: 1
-            markets: ["SH", "SZ", "BJ"]
-            description: "次新股行情数据"
-
     repurchase:
-      repurchase_plan:
-        description: "回购计划"
-        interfaces:
-          - name: "stock_repurchase_em"
-            enabled: true
-            priority: 1
-            markets: ["SH", "SZ", "BJ"]
-            description: "股票回购数据"
-      
-      repurchase_progress:
-        description: "回购进度"
-        interfaces:
-          - name: "stock_repurchase_em"
-            enabled: true
-            priority: 1
-            markets: ["SH", "SZ", "BJ"]
-            description: "股票回购数据（包含进度信息）"
+      description: "股票回购数据（合并计划和进展）"
+      interfaces:
+        - name: "stock_repurchase_em"
+          enabled: true
+          priority: 1
+          markets: ["SH", "SZ", "BJ"]
+          description: "股票回购数据（包含计划和进展信息）"
 
     block_trading:
       description: "个股大宗交易明细"

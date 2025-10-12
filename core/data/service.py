@@ -637,65 +637,21 @@ class DataService:
         )
         return self.extractor.get_stock_major_contracts(params)
     
-    # ==================== 股票新股数据 ====================
-    
-    def get_stock_ipo_data(self,
-                          symbols: Symbols) -> Union[ExtractionResult, List[ExtractionResult]]:
-        """
-        获取新股发行数据
-        
-        Args:
-            symbols: 股票代码
-        
-        Returns:
-            新股发行数据
-        """
-        params = self._build_standard_params(symbols=symbols)
-        return self.extractor.get_stock_ipo_data(params)
-    
-    def get_stock_ipo_performance(self,
-                                 symbols: Symbols) -> Union[ExtractionResult, List[ExtractionResult]]:
-        """
-        获取新股表现数据
-        
-        Args:
-            symbols: 股票代码
-        
-        Returns:
-            新股表现数据
-        """
-        params = self._build_standard_params(symbols=symbols)
-        return self.extractor.get_stock_ipo_performance(params)
-    
     # ==================== 股票回购数据 ====================
     
-    def get_stock_repurchase_plan(self,
-                                 symbols: Symbols) -> Union[ExtractionResult, List[ExtractionResult]]:
+    def get_stock_repurchase(self,
+                           symbols: Symbols) -> Union[ExtractionResult, List[ExtractionResult]]:
         """
-        获取回购计划数据
+        获取股票回购数据（包含计划和进展信息）
         
         Args:
-            symbols: 股票代码
+            symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
         
         Returns:
-            回购计划数据
+            股票回购数据（包含计划金额、数量、实施进度、累计回购等信息）
         """
         params = self._build_standard_params(symbols=symbols)
-        return self.extractor.get_stock_repurchase_plan(params)
-    
-    def get_stock_repurchase_progress(self,
-                                     symbols: Symbols) -> Union[ExtractionResult, List[ExtractionResult]]:
-        """
-        获取回购进度数据
-        
-        Args:
-            symbols: 股票代码
-        
-        Returns:
-            回购进度数据
-        """
-        params = self._build_standard_params(symbols=symbols)
-        return self.extractor.get_stock_repurchase_progress(params)
+        return self.extractor.get_stock_repurchase(params)
     
     # ==================== 股票大宗交易数据 ====================
     
