@@ -603,7 +603,7 @@ class Extractor:
             
             if not param_tasks:
                 logger.warning("没有有效的任务可以执行")
-                return [ExtractionResult(success=False, error="参数标准化失败") for _ in params_list]
+                return [ExtractionResult(success=False, data=None, error="参数标准化失败") for _ in params_list]
             
             # 2. 执行批量任务
             context = ExecutionContext(
@@ -635,7 +635,7 @@ class Extractor:
             
         except Exception as e:
             logger.error(f"批量执行失败: {e}")
-            return [ExtractionResult(success=False, error=f"批量执行失败: {e}") for _ in params_list]
+            return [ExtractionResult(success=False, data=None, error=f"批量执行失败: {e}") for _ in params_list]
 
     def _execute_interface(self, category: str, data_type: str, params: Union[StandardParams, Dict[str, Any]]) -> ExtractionResult:
         """
@@ -674,7 +674,7 @@ class Extractor:
             
         except Exception as e:
             logger.error(f"接口执行失败: {e}")
-            return ExtractionResult(success=False, error=str(e))
+            return ExtractionResult(success=False, data=None, error=str(e))
     
     def _process_batch_results(self, batch_result: BatchResult, call_mapping: Dict[str, int], 
                               standardized_params: List[Optional[StandardParams]], 
