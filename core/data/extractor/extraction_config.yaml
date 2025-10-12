@@ -1022,42 +1022,42 @@ interfaces_config:
           interfaces:
             - name: "stock_profit_sheet_by_report_em"
               enabled: true
-              priority: 1
+              priority: 0
               markets: ["SH", "SZ", "BJ"]
             
             - name: "stock_profit_sheet_by_quarterly_em"
               enabled: true
-              priority: 2
+              priority: 0
               markets: ["SH", "SZ", "BJ"]
             
             - name: "stock_profit_sheet_by_yearly_em"
               enabled: true
-              priority: 3
+              priority: 0
               markets: ["SH", "SZ", "BJ"]
             
             - name: "stock_financial_benefit_ths"
               enabled: true
-              priority: 4
+              priority: 0
               markets: ["SH", "SZ", "BJ"]
             
             - name: "stock_lrb_em"
               enabled: true
-              priority: 5
+              priority: 0
               markets: ["SH", "SZ"]
             
             - name: "stock_yjbb_em"
               enabled: true
-              priority: 6
+              priority: 0
               markets: ["SH", "SZ", "BJ"]
             
             - name: "stock_financial_abstract_ths"
               enabled: true
-              priority: 7
+              priority: 0
               markets: ["SH", "SZ", "BJ"]
             
             - name: "stock_zygc_em"
               enabled: true
-              priority: 8
+              priority: 0
               markets: ["SH", "SZ", "BJ"]
 
         cash_flow:
@@ -1069,37 +1069,37 @@ interfaces_config:
           interfaces:
             - name: "stock_cash_flow_sheet_by_report_em"
               enabled: true
-              priority: 1
+              priority: 0
               markets: ["SH", "SZ", "BJ"]
             
             - name: "stock_cash_flow_sheet_by_yearly_em"
               enabled: true
-              priority: 2
+              priority: 0
               markets: ["SH", "SZ", "BJ"]
             
             - name: "stock_cash_flow_sheet_by_quarterly_em"
               enabled: true
-              priority: 3
+              priority: 0
               markets: ["SH", "SZ", "BJ"]
             
             - name: "stock_financial_cash_ths"
               enabled: true
-              priority: 4
+              priority: 0
               markets: ["SH", "SZ", "BJ"]
             
             - name: "stock_xjll_em"
               enabled: true
-              priority: 5
+              priority: 0
               markets: ["SH", "SZ"]
             
             - name: "stock_financial_abstract_ths"
               enabled: true
-              priority: 6
+              priority: 0
               markets: ["SH", "SZ", "BJ"]
             
             - name: "stock_yjbb_em"
               enabled: true
-              priority: 7
+              priority: 0
               markets: ["SH", "SZ", "BJ"]
 
       dividend:
