@@ -3370,23 +3370,15 @@ parameter_mappings:
           valid_values: ["按报告期", "年度", "年报", "按年度", "按季度", "按半年"]
     
     # 预测共识接口参数值映射配置
-    stock_forecast_consensus_em:
+    stock_profit_forecast_ths:
       parameter_mapping:
-        indicator: "indicator"
-      value_mapping:
-        indicator:
-          "按报告期": "按报告期"
-          "年度": "年度"
-          "年报": "年报"
-          "按年度": "按年度"
-          "按季度": "按季度"
-          "按半年": "按半年"
-      defaults:
-        indicator: "按报告期"
-      validation:
-        indicator:
-          required: true
-          valid_values: ["按报告期", "年度", "年报", "按年度", "按季度", "按半年"]
+        forecast_data_type: "indicator"
+      defaults: {}
+    
+    stock_hk_profit_forecast_et:
+      parameter_mapping:
+        forecast_overview_type: "indicator"
+      defaults: {}
     
     # ==================== 行情数据接口参数映射配置 ====================
     

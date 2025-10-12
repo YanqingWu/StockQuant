@@ -475,27 +475,25 @@ class DataService:
     
     def get_stock_forecast_consensus(self,
                                     symbols: Symbols,
-                                    date: DateRange,
-                                    financial_period: str = "按报告期") -> Union[ExtractionResult, List[ExtractionResult]]:
+                                    forecast_data_type: Optional[str] = None,
+                                    forecast_overview_type: Optional[str] = None) -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取预测共识数据
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
-            date: 指定日期，格式 "2023-01-01" 或 date(2023, 1, 1)
-            financial_period: 财务数据周期类型，可选值：按报告期、年报、中报、季报
+            forecast_data_type: 预测数据类型（同花顺接口），可选值：
+                "预测年报每股收益", "预测年报净利润", "业绩预测详表-机构", "业绩预测详表-详细指标预测"
+            forecast_overview_type: 预测概览类型（港股接口），可选值：
+                "盈利预测概览", "评级总览", "去年度业绩表现", "综合盈利预测"
         
         Returns:
             预测共识数据
         """
-        # 参数验证
-        if financial_period not in StandardParameterOptions.FINANCIAL_PERIOD_OPTIONS:
-            raise ValueError(f"不支持的financial_period值: {financial_period}，支持的值: {StandardParameterOptions.FINANCIAL_PERIOD_OPTIONS}")
-        
         params = self._build_standard_params(
             symbols=symbols,
-            financial_period=financial_period,
-            date=date
+            forecast_data_type=forecast_data_type,
+            forecast_overview_type=forecast_overview_type
         )
         return self.extractor.get_stock_forecast_consensus(params)
     

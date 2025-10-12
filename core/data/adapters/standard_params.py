@@ -24,6 +24,8 @@ class StandardParams:
     - business_type: 业务类型 (统一处理各种业务类型参数)
     - date: 单日期参数 (部分接口使用)
     - year: 年份参数 (部分接口使用，格式YYYY)
+    - forecast_data_type: 预测数据类型 (同花顺预测接口使用)
+    - forecast_overview_type: 预测概览类型 (港股预测接口使用)
     - market: 市场代码 (可选，优先从symbol推断，支持SZ/SH/BJ/HK/US)
     - hsgt_market: 沪深港通市场 (沪深港通接口使用，支持沪股通/深股通)
     - index_code: 指数代码 (市场指数接口使用)
@@ -47,6 +49,8 @@ class StandardParams:
         business_type: Optional[str] = None,
         date: Optional[str] = None,
         year: Optional[str] = None,
+        forecast_data_type: Optional[str] = None,
+        forecast_overview_type: Optional[str] = None,
         market: Optional[str] = None,
         hsgt_market: Optional[str] = None,
         index_code: Optional[str] = None,
@@ -77,6 +81,8 @@ class StandardParams:
         self.business_type = business_type
         self.date = date
         self.year = year
+        self.forecast_data_type = forecast_data_type
+        self.forecast_overview_type = forecast_overview_type
         self.market = market
         self.hsgt_market = hsgt_market
         self.index_code = index_code
@@ -129,7 +135,8 @@ class StandardParams:
             ("start_date", self.start_date), ("end_date", self.end_date),
             ("date", self.date), ("period", self.period), ("adjust", self.adjust),
             ("financial_period", self.financial_period), ("financial_statement", self.financial_statement), 
-            ("business_type", self.business_type), ("market", self.market), ("hsgt_market", self.hsgt_market)
+            ("business_type", self.business_type), ("forecast_data_type", self.forecast_data_type),
+            ("forecast_overview_type", self.forecast_overview_type), ("market", self.market), ("hsgt_market", self.hsgt_market)
         ]:
             if value is not None and isinstance(value, str) and not value.strip():
                 raise ValueError(f"{param_name} 不能为空字符串")
@@ -226,6 +233,10 @@ class StandardParams:
             d["date"] = self._maybe_strip(self.date)
         if self.year is not None:
             d["year"] = self._maybe_strip(self.year)
+        if self.forecast_data_type is not None:
+            d["forecast_data_type"] = self._maybe_strip(self.forecast_data_type)
+        if self.forecast_overview_type is not None:
+            d["forecast_overview_type"] = self._maybe_strip(self.forecast_overview_type)
         if self.market is not None:
             d["market"] = self._maybe_strip(self.market)
         if self.hsgt_market is not None:
@@ -246,7 +257,8 @@ class StandardParams:
         """
         known_keys = {
             "symbol", "start_date", "end_date", "period", "adjust",
-            "financial_period", "financial_statement", "business_type", "date", "year", "market", "hsgt_market", "index_code"
+            "financial_period", "financial_statement", "business_type", "date", "year", 
+            "forecast_data_type", "forecast_overview_type", "market", "hsgt_market", "index_code"
         }
         std_kwargs = {k: data[k] for k in known_keys if k in data}
         
