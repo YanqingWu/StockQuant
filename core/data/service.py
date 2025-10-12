@@ -456,26 +456,19 @@ class DataService:
     
     def get_stock_research_reports(self,
                                   symbols: Symbols,
-                                  financial_period: str = "按报告期",
                                   year: str = "2023") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取研报数据
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
-            financial_period: 财务数据周期类型，可选值：按报告期、年报、中报、季报
-            year: 年份，默认"2023"
+            year: 年份，默认"2023"，格式YYYY
         
         Returns:
             研报数据
         """
-        # 参数验证
-        if financial_period not in StandardParameterOptions.FINANCIAL_PERIOD_OPTIONS:
-            raise ValueError(f"不支持的financial_period值: {financial_period}，支持的值: {StandardParameterOptions.FINANCIAL_PERIOD_OPTIONS}")
-        
         params = self._build_standard_params(
             symbols=symbols,
-            financial_period=financial_period,
             year=year
         )
         return self.extractor.get_stock_research_reports(params)

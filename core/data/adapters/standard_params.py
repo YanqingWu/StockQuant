@@ -23,6 +23,7 @@ class StandardParams:
     - financial_statement: 财务报表类型 (财务报表接口使用)
     - business_type: 业务类型 (统一处理各种业务类型参数)
     - date: 单日期参数 (部分接口使用)
+    - year: 年份参数 (部分接口使用，格式YYYY)
     - market: 市场代码 (可选，优先从symbol推断，支持SZ/SH/BJ/HK/US)
     - hsgt_market: 沪深港通市场 (沪深港通接口使用，支持沪股通/深股通)
     - index_code: 指数代码 (市场指数接口使用)
@@ -45,6 +46,7 @@ class StandardParams:
         financial_statement: Optional[str] = None,
         business_type: Optional[str] = None,
         date: Optional[str] = None,
+        year: Optional[str] = None,
         market: Optional[str] = None,
         hsgt_market: Optional[str] = None,
         index_code: Optional[str] = None,
@@ -74,6 +76,7 @@ class StandardParams:
         self.financial_statement = financial_statement
         self.business_type = business_type
         self.date = date
+        self.year = year
         self.market = market
         self.hsgt_market = hsgt_market
         self.index_code = index_code
@@ -99,6 +102,10 @@ class StandardParams:
         for date_param in [self.start_date, self.end_date, self.date]:
             if date_param and not self._is_valid_date_format(date_param):
                 raise ValueError(f"日期格式错误: {date_param}，期望 YYYY-MM-DD 格式")
+        
+        # 验证年份格式（如果提供了）
+        if self.year and not self._is_valid_year_format(self.year):
+            raise ValueError(f"年份格式错误: {self.year}，期望 YYYY 格式")
         
         # 验证日期参数：start_date 不能晚于 end_date
         if self.start_date and self.end_date and self.start_date > self.end_date:
@@ -126,6 +133,19 @@ class StandardParams:
         ]:
             if value is not None and isinstance(value, str) and not value.strip():
                 raise ValueError(f"{param_name} 不能为空字符串")
+    
+    def _is_valid_year_format(self, year_str: str) -> bool:
+        """验证年份格式 YYYY"""
+        import re
+        pattern = r'^\d{4}$'
+        if not re.match(pattern, year_str):
+            return False
+        
+        try:
+            year = int(year_str)
+            return 1900 <= year <= 2100  # 合理的年份范围
+        except ValueError:
+            return False
     
     def _is_valid_date_format(self, date_str: str) -> bool:
         """验证日期格式 YYYY-MM-DD"""
@@ -204,6 +224,8 @@ class StandardParams:
             d["business_type"] = self._maybe_strip(self.business_type)
         if self.date is not None:
             d["date"] = self._maybe_strip(self.date)
+        if self.year is not None:
+            d["year"] = self._maybe_strip(self.year)
         if self.market is not None:
             d["market"] = self._maybe_strip(self.market)
         if self.hsgt_market is not None:
@@ -224,7 +246,7 @@ class StandardParams:
         """
         known_keys = {
             "symbol", "start_date", "end_date", "period", "adjust",
-            "financial_period", "financial_statement", "business_type", "date", "market", "hsgt_market", "index_code"
+            "financial_period", "financial_statement", "business_type", "date", "year", "market", "hsgt_market", "index_code"
         }
         std_kwargs = {k: data[k] for k in known_keys if k in data}
         
