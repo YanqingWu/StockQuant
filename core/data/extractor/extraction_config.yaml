@@ -966,32 +966,32 @@ interfaces_config:
         interfaces:
           - name: "stock_financial_analysis_indicator_em"
             enabled: true
-            priority: 1
+            priority: 0
             markets: ["SH", "SZ", "BJ"]
           
           - name: "stock_financial_hk_analysis_indicator_em"
             enabled: true
-            priority: 2
+            priority: 0
             markets: ["HK"]
           
           - name: "stock_financial_us_analysis_indicator_em"
             enabled: true
-            priority: 3
+            priority: 0
             markets: ["US"]
           
           - name: "stock_financial_abstract_ths"
             enabled: true   # 重新启用：只使用正常字段
-            priority: 2
+            priority: 0
             markets: ["SH", "SZ", "BJ"]
           
           - name: "stock_financial_report_sina"
             enabled: false  # 禁用：不包含eps/bps字段
-            priority: 5
+            priority: 1
             markets: ["SH", "SZ", "BJ"]
           
           - name: "stock_financial_us_report_em"
             enabled: true
-            priority: 6
+            priority: 0
             markets: ["US"]
 
       detailed_financials:
