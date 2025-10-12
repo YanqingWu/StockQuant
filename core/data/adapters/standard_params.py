@@ -24,6 +24,7 @@ class StandardParams:
     - business_type: 业务类型 (统一处理各种业务类型参数)
     - date: 单日期参数 (部分接口使用)
     - market: 市场代码 (可选，优先从symbol推断，支持SZ/SH/BJ/HK/US)
+    - hsgt_market: 沪深港通市场 (沪深港通接口使用，支持沪股通/深股通)
     - index_code: 指数代码 (市场指数接口使用)
     
     其他参数通过extra传递，保持向后兼容性
@@ -45,6 +46,7 @@ class StandardParams:
         business_type: Optional[str] = None,
         date: Optional[str] = None,
         market: Optional[str] = None,
+        hsgt_market: Optional[str] = None,
         index_code: Optional[str] = None,
         
         # 其他参数通过extra传递，保持向后兼容性
@@ -73,6 +75,7 @@ class StandardParams:
         self.business_type = business_type
         self.date = date
         self.market = market
+        self.hsgt_market = hsgt_market
         self.index_code = index_code
         
         # 其他参数
@@ -111,12 +114,15 @@ class StandardParams:
         if self.market and self.market not in ["SZ", "SH", "BJ", "HK", "US"]:
             raise ValueError(f"market值无效: {self.market}，期望: SZ/SH/BJ/HK/US")
         
+        if self.hsgt_market and self.hsgt_market not in ["沪股通", "深股通"]:
+            raise ValueError(f"hsgt_market值无效: {self.hsgt_market}，期望: 沪股通/深股通")
+        
         # 验证字符串参数不能为空字符串
         for param_name, value in [
             ("start_date", self.start_date), ("end_date", self.end_date),
             ("date", self.date), ("period", self.period), ("adjust", self.adjust),
             ("financial_period", self.financial_period), ("financial_statement", self.financial_statement), 
-            ("business_type", self.business_type), ("market", self.market)
+            ("business_type", self.business_type), ("market", self.market), ("hsgt_market", self.hsgt_market)
         ]:
             if value is not None and isinstance(value, str) and not value.strip():
                 raise ValueError(f"{param_name} 不能为空字符串")
@@ -200,6 +206,8 @@ class StandardParams:
             d["date"] = self._maybe_strip(self.date)
         if self.market is not None:
             d["market"] = self._maybe_strip(self.market)
+        if self.hsgt_market is not None:
+            d["hsgt_market"] = self._maybe_strip(self.hsgt_market)
         if self.index_code is not None:
             d["index_code"] = self._maybe_strip(self.index_code)
 
@@ -216,7 +224,7 @@ class StandardParams:
         """
         known_keys = {
             "symbol", "start_date", "end_date", "period", "adjust",
-            "financial_period", "financial_statement", "business_type", "date", "market", "index_code"
+            "financial_period", "financial_statement", "business_type", "date", "market", "hsgt_market", "index_code"
         }
         std_kwargs = {k: data[k] for k in known_keys if k in data}
         

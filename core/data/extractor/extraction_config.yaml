@@ -1147,11 +1147,6 @@ interfaces_config:
       hsgt_holdings:
         description: "沪深港通持仓"
         interfaces:
-          - name: "stock_hsgt_individual_em"
-            enabled: true
-            priority: 1
-            markets: ["SH", "SZ", "BJ"]
-          
           - name: "stock_hsgt_hold_stock_em"
             enabled: true
             priority: 2
@@ -3355,23 +3350,10 @@ parameter_mappings:
           valid_values: ["按报告期", "年度", "年报", "按年度", "按季度", "按半年"]
     
     # 沪深港通持仓接口参数值映射配置
-    stock_hsgt_holdings_em:
+    stock_hsgt_hold_stock_em:
       parameter_mapping:
-        indicator: "indicator"
-      value_mapping:
-        indicator:
-          "按报告期": "按报告期"
-          "年度": "年度"
-          "年报": "年报"
-          "按年度": "按年度"
-          "按季度": "按季度"
-          "按半年": "按半年"
-      defaults:
-        indicator: "按报告期"
-      validation:
-        indicator:
-          required: true
-          valid_values: ["按报告期", "年度", "年报", "按年度", "按季度", "按半年"]
+        hsgt_market: "market"
+      defaults: {}
     
     # 研报数据接口参数值映射配置
     stock_research_reports_em:
