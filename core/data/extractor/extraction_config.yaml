@@ -2325,14 +2325,6 @@ field_mappings:
   "报告日期": "report_date"
   "资产负债率": "debt_to_asset_ratio"
 
-  # 现金流量表字段映射
-  # stock_xjll_em接口的字段映射（现金流量表汇总）
-  "经营性现金流-现金流量净额": "operating_cash_flow"
-  "投资性现金流-现金流量净额": "investing_cash_flow"
-  "融资性现金流-现金流量净额": "financing_cash_flow"
-  "净现金流-净现金流": "net_cash_increase"
-  "公告日期": "notice_date"
-  
   # stock_financial_cash_ths接口的字段映射（同花顺现金流量表）
   "*经营活动产生的现金流量净额": "operating_cash_flow"
   "*投资活动产生的现金流量净额": "investing_cash_flow"
