@@ -36,6 +36,19 @@ class SymbolTransformer(BaseTransformer):
     def _convert_symbol(self, value: Any, target_format: str, context: TransformContext) -> Any:
         """转换股票代码格式"""
         def convert_one(v: Any) -> Any:
+            # 港股代码特殊处理：直接字符串处理，不需要StockSymbol解析
+            if target_format == "hk_code" and isinstance(v, str) and '.HK' in v.upper():
+                code_match = re.search(r'(\d+)\.HK', v.upper())
+                if code_match:
+                    # 港股代码：去掉前导0，但最多保留4位数字
+                    code = code_match.group(1).lstrip('0') or '0'
+                    # 如果超过4位，截取后4位；如果不足4位，前面补0到4位
+                    if len(code) > 4:
+                        code = code[-4:]  # 截取后4位
+                    return code.zfill(4)
+                return v
+            
+            # 其他格式需要StockSymbol解析
             sym = StockSymbol.parse(v)
             if not sym:
                 if isinstance(v, str) and target_format == "code":
@@ -107,6 +120,12 @@ class SymbolTransformer(BaseTransformer):
             return "prefix"
         if re.fullmatch(r"\d{6}", example_symbol):
             return "code"
+        
+        # 港股代码特殊处理：检测不带前导0的格式（3-5位数字）
+        if re.fullmatch(r"\d{3,5}", s) and len(s) <= 5:
+            # 检查是否是港股代码（3-5位数字，可能是港股）
+            return "hk_code"  # 新增格式类型
+        
         # 纯数字代码：5-6位（A股6位，港股5位）
         if re.fullmatch(r"\d{5,6}", example_symbol):
             return "code"

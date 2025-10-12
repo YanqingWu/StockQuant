@@ -2838,7 +2838,6 @@ field_mappings:
   "分红类型": "dividend_type"
   "实施方案分红说明": "dividend_description"
   "分红方案说明": "dividend_description"
-  "实施方案公告日期": "announcement_date"
   "实施公告日": "implementation_date"
   "董事会日期": "board_date"
 
