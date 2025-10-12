@@ -929,7 +929,7 @@ interfaces_config:
           - name: "stock_hot_rank_detail_em"
             enabled: true
             priority: 0
-            markets: ["SH", "SZ", "BJ", "HK", "US"]
+            markets: ["SH", "SZ"]  # 只支持沪深市场，不支持北交所、港股、美股
             description: "人气榜历史趋势"
 
       news:
