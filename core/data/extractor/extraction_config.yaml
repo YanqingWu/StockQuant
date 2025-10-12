@@ -1478,7 +1478,7 @@ interfaces_config:
           enabled: true
           priority: 1
           markets: ["SH", "SZ"]
-          post_processor: "convert_item_value_to_columns_and_add_recent_date"
+          post_processor: "convert_item_value_to_columns"
           cache_strategy:
             type: "time_based"
             granularity: "day"
