@@ -213,8 +213,7 @@ class DataService:
         params = self._build_standard_params(
             symbols=symbols,
             start_date=start_date,
-            end_date=end_date,
-            date=start_date
+            end_date=end_date
         )
         return self.extractor.get_stock_fund_flow(params)
     

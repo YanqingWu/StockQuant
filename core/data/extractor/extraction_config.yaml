@@ -857,7 +857,7 @@ interfaces_config:
           - name: "stock_individual_fund_flow"
             enabled: true
             priority: 1
-            markets: ["SH", "SZ", "BJ"]
+            markets: ["SH", "SZ"]
             description: "个股资金流向数据"
 
       dragon_tiger:
