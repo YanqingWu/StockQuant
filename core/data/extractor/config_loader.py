@@ -372,9 +372,9 @@ class ConfigLoader:
     
     def reload(self) -> ExtractionConfig:
         """重新加载配置文件"""
-        if not self._config_path:
+        if not self.config_path:
             raise ValueError("没有配置文件路径，无法重新加载")
-        return self.load_from_file(str(self._config_path))
+        return self.load_config(force_reload=True)
     
     def get_parameter_mappings(self) -> Dict[str, Dict[str, Any]]:
         """获取参数映射配置"""
