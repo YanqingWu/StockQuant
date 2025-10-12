@@ -403,26 +403,19 @@ class DataService:
     
     def get_stock_institutional_holdings(self,
                                         symbols: Symbols,
-                                        date: DateRange,
-                                        financial_period: str = "按报告期") -> Union[ExtractionResult, List[ExtractionResult]]:
+                                        date: DateRange) -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取机构持仓数据
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
             date: 指定日期，格式 "2023-01-01" 或 date(2023, 1, 1)
-            financial_period: 财务数据周期类型，可选值：按报告期、年报、中报、季报
         
         Returns:
             机构持仓数据
         """
-        # 参数验证
-        if financial_period not in StandardParameterOptions.FINANCIAL_PERIOD_OPTIONS:
-            raise ValueError(f"不支持的financial_period值: {financial_period}，支持的值: {StandardParameterOptions.FINANCIAL_PERIOD_OPTIONS}")
-        
         params = self._build_standard_params(
             symbols=symbols,
-            financial_period=financial_period,
             date=date
         )
         return self.extractor.get_stock_institutional_holdings(params)

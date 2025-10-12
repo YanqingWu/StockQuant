@@ -1134,11 +1134,6 @@ interfaces_config:
       institutional_holdings:
         description: "机构持仓（包含基金、保险、券商等大资金）"
         interfaces:
-          - name: "stock_fund_stock_holder"
-            enabled: true
-            priority: 1
-            markets: ["SH", "SZ", "BJ"]
-          
           - name: "stock_report_fund_hold"
             enabled: true
             priority: 2
@@ -1147,16 +1142,6 @@ interfaces_config:
           - name: "stock_institute_hold"
             enabled: true
             priority: 3
-            markets: ["SH", "SZ", "BJ"]
-          
-          - name: "stock_main_stock_holder"
-            enabled: true
-            priority: 4
-            markets: ["SH", "SZ", "BJ"]
-          
-          - name: "stock_circulate_stock_holder"
-            enabled: true
-            priority: 5
             markets: ["SH", "SZ", "BJ"]
 
       hsgt_holdings:
