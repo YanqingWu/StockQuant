@@ -984,11 +984,6 @@ interfaces_config:
             priority: 0
             markets: ["SH", "SZ", "BJ"]
           
-          - name: "stock_financial_report_sina"
-            enabled: false  # 禁用：不包含eps/bps字段
-            priority: 1
-            markets: ["SH", "SZ", "BJ"]
-          
           - name: "stock_financial_us_report_em"
             enabled: true
             priority: 0
