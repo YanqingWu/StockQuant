@@ -865,15 +865,15 @@ interfaces_config:
         interfaces:
           - name: "stock_lhb_detail_em"
             enabled: true
-            priority: 1
-            markets: ["SH", "SZ"]
-            description: "东方财富龙虎榜详细数据"
+            priority: 0
+            markets: ["SH", "SZ", "BJ"]
+            description: "东方财富龙虎榜详细数据-包含营业部信息"
           
           - name: "stock_lhb_detail_daily_sina"
             enabled: true
-            priority: 2
-            markets: ["SH", "SZ"]
-            description: "新浪龙虎榜每日数据"
+            priority: 0
+            markets: ["SH", "SZ", "BJ"]
+            description: "新浪龙虎榜每日数据-基础信息"
 
       sentiment:
         description: "情绪数据"
