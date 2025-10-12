@@ -1644,10 +1644,6 @@ class Extractor:
         """获取市场活跃度数据"""
         return self._execute_interface_with_batch("market", "market_activity", params)
     
-    def get_market_sentiment(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
-        """获取市场情绪数据"""
-        return self._execute_interface_with_batch("market", "market_sentiment", params)
-    
     # 市场资金流向数据
     def get_market_fund_flow(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取市场级别资金流向数据"""
