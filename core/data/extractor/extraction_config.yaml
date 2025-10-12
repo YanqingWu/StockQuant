@@ -1359,22 +1359,22 @@ interfaces_config:
       interfaces:
         - name: "stock_info_a_code_name"
           enabled: true
-          priority: 1
+          priority: 0
           markets: ["SH", "SZ", "BJ"]
         
         - name: "stock_info_sh_name_code"
           enabled: true
-          priority: 0
+          priority: 1
           markets: ["SH"]
         
         - name: "stock_info_sz_name_code"
           enabled: true
-          priority: 0
+          priority: 1
           markets: ["SZ"]
         
         - name: "stock_info_bj_name_code"
           enabled: true
-          priority: 0
+          priority: 1
           markets: ["BJ"]
 
     market_overview:
