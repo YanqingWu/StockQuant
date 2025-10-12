@@ -1999,7 +1999,7 @@ field_mappings:
   # "每股收益": "eps"      # 移除：返回False值  
   "每股净资产": "bps"      # 重新启用：有正常数值
   "净资产收益率": "roe"    # 重新启用：有正常数值
-  "净资产收益率-摊薄": "roe"  # 新增：有正常数值
+  "净资产收益率-摊薄": "roe_diluted"  # 新增：有正常数值
   "销售毛利率": "gross_profit_margin"
   "毛利率": "gross_profit_margin"
   "销售净利率": "net_profit_margin"
@@ -2015,16 +2015,16 @@ field_mappings:
   # EPS相关字段（按优先级排序）
   "EPSJB": "eps"           # 基本每股收益（主要）
   "BASIC_EPS": "eps"       # 基本每股收益（港股）
-  "EPSKCJB": "eps"         # 扣非每股收益（备选）
-  "EPSXS": "eps"           # 稀释每股收益（备选）
-  "DILUTED_EPS": "eps"     # 稀释每股收益（港股）
+  "EPSKCJB": "eps_deducted" # 扣非每股收益（备选）
+  "EPSXS": "eps_diluted"    # 稀释每股收益（备选）
+  "DILUTED_EPS": "eps_diluted" # 稀释每股收益（港股）
   
   # BPS相关字段（按优先级排序）
   "BPS": "bps"             # 每股净资产（主要）
   
   # ROE相关字段
   "ROEJQ": "roe"           # 净资产收益率
-  "ROEKCJQ": "roe"         # 扣非净资产收益率
+  "ROEKCJQ": "roe_deducted" # 扣非净资产收益率
   
   # 其他财务指标
   "XSMLL": "gross_profit_margin"    # 销售毛利率
@@ -2282,7 +2282,7 @@ field_mappings:
   "PARENT_NETPROFIT": "parent_net_profit"
   "DEDUCT_PARENT_NETPROFIT": "non_recurring_profit"
   "BASIC_EPS": "eps"
-  "DILUTED_EPS": "eps"
+  "DILUTED_EPS": "eps_diluted"
   "REPORT_DATE": "report_date"
   "REPORT_TYPE": "report_type"
   
@@ -2299,7 +2299,7 @@ field_mappings:
   "归属于母公司所有者的净利润": "parent_net_profit"
   "扣除非经常性损益后的净利润": "non_recurring_profit"
   "（一）基本每股收益": "eps"
-  "（二）稀释每股收益": "eps"
+  "（二）稀释每股收益": "eps_diluted"
   
   # stock_lrb_em接口的字段映射（利润表）
   "营业总收入": "operating_income"
@@ -2319,15 +2319,13 @@ field_mappings:
   "销售毛利率": "gross_profit_margin"
   "基本每股收益": "eps"
   "每股净资产": "bps"
-  "净资产收益率": "roe"
   
   # stock_yjbb_em接口的字段映射（业绩报表）
   "营业总收入-营业总收入": "operating_income"
   "净利润-净利润": "net_profit"
   "销售毛利率": "gross_profit_margin"
-  "每股收益": "eps"
+  "每股收益": "eps_basic"
   "每股净资产": "bps"
-  "净资产收益率": "roe"
   "每股经营现金流量": "operating_cash_flow_per_share"
   
   # stock_zygc_em接口的字段映射（主营构成）
@@ -2447,7 +2445,7 @@ field_mappings:
   "REPORT_DATE": "report_date"
   "BPS": "bps"
   # "BASIC_EPS": "eps"  # 已在上面定义，避免重复
-  "ROE_AVG": "roe"
+  "ROE_AVG": "roe_avg"
   "GROSS_PROFIT_RATIO": "gross_profit_margin"
   "NET_PROFIT_RATIO": "net_profit_margin"
   "CURRENT_RATIO": "current_ratio"
@@ -2455,7 +2453,7 @@ field_mappings:
   
   # stock_financial_us_analysis_indicator_em接口的字段映射
   # "BASIC_EPS": "eps"  # 已在上面定义，避免重复
-  "ROE_AVG": "roe"
+  "ROE_AVG": "roe_avg"
   "GROSS_PROFIT_RATIO": "gross_profit_margin"
   "NET_PROFIT_RATIO": "net_profit_margin"
   "CURRENT_RATIO": "current_ratio"

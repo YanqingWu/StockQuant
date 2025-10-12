@@ -596,6 +596,14 @@ class Extractor:
                         call_mapping[task.task_id] = i
                         param_tasks.append(task)
                     
+                except ValueError as e:
+                    # 检查是否是接口未找到的错误
+                    if "未找到启用的接口" in str(e):
+                        logger.warning(f"参数 {i} 标准化失败: {e}")
+                    else:
+                        logger.error(f"参数 {i} 标准化失败: {e}")
+                    # 为失败的参数创建空结果
+                    standardized_params.append(None)
                 except Exception as e:
                     logger.error(f"参数 {i} 标准化失败: {e}")
                     # 为失败的参数创建空结果
@@ -672,6 +680,14 @@ class Extractor:
             # 6. 合并结果
             return self._merge_execution_results(successful_results, standard_params, category, data_type)
             
+        except ValueError as e:
+            # 检查是否是接口未找到的错误
+            if "未找到启用的接口" in str(e):
+                logger.warning(f"接口执行失败: {e}")
+                return ExtractionResult(success=False, data=None, error=str(e))
+            else:
+                logger.error(f"接口执行失败: {e}")
+                return ExtractionResult(success=False, data=None, error=str(e))
         except Exception as e:
             logger.error(f"接口执行失败: {e}")
             return ExtractionResult(success=False, data=None, error=str(e))
