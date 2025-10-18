@@ -28,7 +28,8 @@ class StandardParams:
     - forecast_data_type: 预测数据类型 (同花顺预测接口使用)
     - forecast_overview_type: 预测概览类型 (港股预测接口使用)
     - market: 市场代码 (可选，优先从symbol推断，支持SZ/SH/BJ/HK/US)
-    - hsgt_market: 沪深港通市场 (沪深港通接口使用，支持沪股通/深股通)
+    - hsgt_market: 沪深港通市场 (沪深港通接口使用，支持沪股通/深股通/北向)
+    - ranking_type: 排行类型 (沪深港通接口使用，支持今日排行/3日排行/5日排行等)
     - index_code: 指数代码 (市场指数接口使用)
     
     其他参数通过extra传递，保持向后兼容性
@@ -55,6 +56,7 @@ class StandardParams:
         forecast_overview_type: Optional[str] = None,
         market: Optional[str] = None,
         hsgt_market: Optional[str] = None,
+        ranking_type: Optional[str] = None,
         index_code: Optional[str] = None,
         
         # 其他参数通过extra传递，保持向后兼容性
@@ -88,6 +90,7 @@ class StandardParams:
         self.forecast_overview_type = forecast_overview_type
         self.market = market
         self.hsgt_market = hsgt_market
+        self.ranking_type = ranking_type
         self.index_code = index_code
         
         # 其他参数
@@ -130,8 +133,11 @@ class StandardParams:
         if self.market and self.market not in ["SZ", "SH", "BJ", "HK", "US"]:
             raise ValueError(f"market值无效: {self.market}，期望: SZ/SH/BJ/HK/US")
         
-        if self.hsgt_market and self.hsgt_market not in ["沪股通", "深股通"]:
-            raise ValueError(f"hsgt_market值无效: {self.hsgt_market}，期望: 沪股通/深股通")
+        if self.hsgt_market and self.hsgt_market not in ["沪股通", "深股通", "北向"]:
+            raise ValueError(f"hsgt_market值无效: {self.hsgt_market}，期望: 沪股通/深股通/北向")
+        
+        if self.ranking_type and self.ranking_type not in ["今日排行", "3日排行", "5日排行", "10日排行", "月排行", "季排行", "年排行"]:
+            raise ValueError(f"ranking_type值无效: {self.ranking_type}，期望: 今日排行/3日排行/5日排行/10日排行/月排行/季排行/年排行")
         
         # 验证字符串参数不能为空字符串
         for param_name, value in [
@@ -140,7 +146,8 @@ class StandardParams:
             ("financial_period", self.financial_period), ("financial_statement", self.financial_statement), 
             ("business_type", self.business_type), ("security_type", self.security_type),
             ("forecast_data_type", self.forecast_data_type),
-            ("forecast_overview_type", self.forecast_overview_type), ("market", self.market), ("hsgt_market", self.hsgt_market)
+            ("forecast_overview_type", self.forecast_overview_type), ("market", self.market), 
+            ("hsgt_market", self.hsgt_market), ("ranking_type", self.ranking_type)
         ]:
             if value is not None and isinstance(value, str) and not value.strip():
                 raise ValueError(f"{param_name} 不能为空字符串")
@@ -247,6 +254,8 @@ class StandardParams:
             d["market"] = self._maybe_strip(self.market)
         if self.hsgt_market is not None:
             d["hsgt_market"] = self._maybe_strip(self.hsgt_market)
+        if self.ranking_type is not None:
+            d["ranking_type"] = self._maybe_strip(self.ranking_type)
         if self.index_code is not None:
             d["index_code"] = self._maybe_strip(self.index_code)
 
@@ -264,7 +273,7 @@ class StandardParams:
         known_keys = {
             "symbol", "start_date", "end_date", "period", "adjust",
             "financial_period", "financial_statement", "business_type", "security_type", "date", "year", 
-            "forecast_data_type", "forecast_overview_type", "market", "hsgt_market", "index_code"
+            "forecast_data_type", "forecast_overview_type", "market", "hsgt_market", "ranking_type", "index_code"
         }
         std_kwargs = {k: data[k] for k in known_keys if k in data}
         

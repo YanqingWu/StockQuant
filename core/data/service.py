@@ -413,33 +413,36 @@ class DataService:
     
     def get_stock_hsgt_holdings(self,
                                symbols: Symbols,
-                               start_date: DateRange,
-                               end_date: DateRange,
-                               market: str = "SZ",
-                               financial_period: str = "按报告期") -> Union[ExtractionResult, List[ExtractionResult]]:
+                               hsgt_market: str = "深股通",
+                               ranking_type: str = "今日排行",
+                               start_date: DateRange = None,
+                               end_date: DateRange = None) -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取沪深港通持仓数据
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
-            start_date: 开始日期，格式 "2023-01-01" 或 date(2023, 1, 1)
-            end_date: 结束日期，格式 "2023-12-31" 或 date(2023, 12, 31)
-            market: 市场代码，默认"SZ"（深市）
-            financial_period: 财务数据周期类型，可选值：按报告期、年报、中报、季报
+            hsgt_market: 沪深港通市场，可选值：沪股通、深股通、北向
+            ranking_type: 排行类型，可选值：今日排行、3日排行、5日排行、10日排行、月排行、季排行、年排行
+            start_date: 开始日期，格式 "2023-01-01" 或 date(2023, 1, 1)（仅用于统计接口）
+            end_date: 结束日期，格式 "2023-12-31" 或 date(2023, 12, 31)（仅用于统计接口）
         
         Returns:
             沪深港通持仓数据
         """
         # 参数验证
-        if financial_period not in StandardParameterOptions.FINANCIAL_PERIOD_OPTIONS:
-            raise ValueError(f"不支持的financial_period值: {financial_period}，支持的值: {StandardParameterOptions.FINANCIAL_PERIOD_OPTIONS}")
+        if hsgt_market not in ["沪股通", "深股通", "北向"]:
+            raise ValueError(f"不支持的hsgt_market值: {hsgt_market}，支持的值: 沪股通、深股通、北向")
+        
+        if ranking_type not in ["今日排行", "3日排行", "5日排行", "10日排行", "月排行", "季排行", "年排行"]:
+            raise ValueError(f"不支持的ranking_type值: {ranking_type}，支持的值: 今日排行、3日排行、5日排行、10日排行、月排行、季排行、年排行")
         
         params = self._build_standard_params(
             symbols=symbols,
+            hsgt_market=hsgt_market,
+            ranking_type=ranking_type,
             start_date=start_date,
-            end_date=end_date,
-            market=market,
-            financial_period=financial_period
+            end_date=end_date
         )
         return self.extractor.get_stock_hsgt_holdings(params)
     

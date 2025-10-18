@@ -3299,8 +3299,54 @@ parameter_mappings:
     # 沪深港通持仓接口参数值映射配置
     stock_hsgt_hold_stock_em:
       parameter_mapping:
-        hsgt_market: "market"
-      defaults: {}
+        hsgt_market: "market"           # 将 hsgt_market 映射为 market
+        ranking_type: "indicator"        # 将 ranking_type 映射为 indicator
+      value_mapping:
+        hsgt_market:
+          "沪股通": "沪股通"             # 沪股通 -> 沪股通
+          "深股通": "深股通"             # 深股通 -> 深股通
+          "北向": "北向"                 # 北向 -> 北向
+        ranking_type:
+          "今日排行": "今日排行"         # 今日排行 -> 今日排行
+          "3日排行": "3日排行"           # 3日排行 -> 3日排行
+          "5日排行": "5日排行"           # 5日排行 -> 5日排行
+          "10日排行": "10日排行"         # 10日排行 -> 10日排行
+          "月排行": "月排行"             # 月排行 -> 月排行
+          "季排行": "季排行"             # 季排行 -> 季排行
+          "年排行": "年排行"             # 年排行 -> 年排行
+      defaults:
+        hsgt_market: "深股通"           # 默认深股通
+        ranking_type: "今日排行"        # 默认今日排行
+      validation:
+        hsgt_market:
+          required: true
+          valid_values: ["沪股通", "深股通", "北向"]
+        ranking_type:
+          required: true
+          valid_values: ["今日排行", "3日排行", "5日排行", "10日排行", "月排行", "季排行", "年排行"]
+    
+    stock_hsgt_stock_statistics_em:
+      parameter_mapping:
+        hsgt_market: "symbol"            # 将 hsgt_market 映射为 symbol (统计类型参数)
+        start_date: "start_date"         # start_date 保持不变
+        end_date: "end_date"             # end_date 保持不变
+      value_mapping:
+        hsgt_market:
+          "沪股通": "沪股通持股"         # 沪股通 -> 沪股通持股
+          "深股通": "深股通持股"         # 深股通 -> 深股通持股
+          "北向": "北向持股"             # 北向 -> 北向持股
+      defaults:
+        hsgt_market: "深股通"           # 默认深股通
+      validation:
+        hsgt_market:
+          required: true
+          valid_values: ["沪股通", "深股通", "北向"]
+        start_date:
+          required: false
+          type: string
+        end_date:
+          required: false
+          type: string
     
     # 研报数据接口参数值映射配置
     stock_research_reports_em:
