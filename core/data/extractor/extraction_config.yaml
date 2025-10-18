@@ -50,15 +50,14 @@ standard_fields:
 
       financing:
         - symbol                             # 股票代码
-        - date                               # 日期（仅上交所）
+        - date                               # 日期
         - margin_balance                     # 融资余额
-        - short_balance                      # 融券余额（金额，仅深交所）
+        - short_balance                      # 融券余额
         - short_balance_volume               # 融券余量（股数）
         - margin_buy_amount                  # 融资买入额
-        - margin_repay_amount                # 融资偿还额（仅上交所明细）
+        - margin_repay_amount                # 融资偿还额
         - short_sell_amount                  # 融券卖出量
-        - short_repay_amount                 # 融券偿还量（仅上交所明细）
-        - short_balance_amount               # 融券余量金额（仅上交所汇总）
+        - short_repay_amount                 # 融券偿还量
         - margin_trading_balance             # 融资融券余额
 
       cost_distribution:
@@ -2770,7 +2769,6 @@ field_mappings:
   "融资买入额": "margin_buy_amount"
   "融资偿还额": "margin_repay_amount"
   "融券余量": "short_balance_volume"
-  "融券余量金额": "short_balance_amount"
   "融券卖出量": "short_sell_amount"
   "融券偿还量": "short_repay_amount"
   "融券余额": "short_balance"
