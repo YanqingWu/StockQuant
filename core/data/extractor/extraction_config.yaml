@@ -1225,11 +1225,6 @@ interfaces_config:
             priority: 2
             markets: ["SH", "SZ", "BJ"]
           
-          - name: "stock_analyst_detail_em"
-            enabled: true
-            priority: 3
-            markets: ["SH", "SZ", "BJ"]
-          
           - name: "stock_institute_recommend_detail"
             enabled: true
             priority: 5
