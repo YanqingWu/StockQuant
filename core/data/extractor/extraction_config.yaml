@@ -108,19 +108,16 @@ standard_fields:
         - symbol                             # 股票代码
         - date                               # 日期
         - pe                                 # 市盈率
-        - sentiment_score                    # 情绪得分
-        - popularity_rank                    # 人气排名
-        - attention_score                    # 关注度得分
+        - composite_score                    # 综合得分
+        - current_rank                       # 目前排名
+        - focus_index                        # 关注指数
         - institution_ratio                  # 机构参与度
         - main_cost                          # 主力成本
-        - participation_desire_daily         # 当日意愿上升
+        - rise_count                         # 上升
         - participation_desire_5d_avg        # 5日平均参与意愿变化
         - user_focus_index                   # 用户关注指数
         - historical_score                   # 历史评分
         - rank_change                        # 排名变化
-        - current_price                      # 最新价
-        - pct_change                         # 涨跌幅
-        - turnover                           # 换手率
 
       news:
         - symbol                             # 股票代码
@@ -441,7 +438,6 @@ standard_fields:
       - remaining_amount                   # 剩余金额（可选）
       - repurchase_ratio_min               # 回购比例下限
       - repurchase_ratio_max               # 回购比例上限
-      - current_price                      # 最新价
 
   market:
     stock_list:                        # 市场股票列表
@@ -558,7 +554,6 @@ standard_fields:
         - stock_count                        # 公司家数
         - leader_stock_name                  # 领涨股
         - leader_stock_pct_change            # 领涨股-涨跌幅
-        - current_price                      # 当前价
 
     concept_data:
       # 概念板块行情
@@ -609,7 +604,6 @@ standard_fields:
         - stock_count                        # 公司家数
         - leader_stock_name                  # 领涨股
         - leader_stock_pct_change            # 领涨股-涨跌幅
-        - current_price                      # 当前价
 
     fund_flow:
       market_level:                      # 市场级别资金流向
@@ -842,11 +836,6 @@ interfaces_config:
             enabled: true
             priority: 0
             markets: ["SH", "SZ", "BJ", "HK", "US"]
-          
-          - name: "stock_hot_tweet_xq"
-            enabled: true
-            priority: 0
-            markets: ["SH", "SZ", "BJ", "HK", "US"]
 
           - name: "stock_hot_follow_xq"
             enabled: false
@@ -878,7 +867,7 @@ interfaces_config:
             # 禁用原因：与stock_comment_em的"综合得分"功能重复
           
           - name: "stock_comment_detail_zlkp_jgcyd_em"
-            enabled: true
+            enabled: false
             priority: 0
             markets: ["SH", "SZ", "BJ", "HK", "US"]
             # 禁用原因：与stock_comment_em的"机构参与度"功能重复
@@ -1566,18 +1555,18 @@ field_mappings:
   "交易日": "date"
   "名称": "name"
   "市盈率": "pe"
-  "综合得分": "sentiment_score"
-  "目前排名": "popularity_rank"
-  "当前排名": "popularity_rank"
-  "关注指数": "attention_score"
+  "综合得分": "composite_score"
+  "目前排名": "current_rank"
+  "当前排名": "current_rank"
+  "关注指数": "focus_index"
   "用户关注指数": "user_focus_index"
   "机构参与度": "institution_ratio"
   "主力成本": "main_cost"
   "当日意愿上升": "participation_desire_daily"
   "5日平均参与意愿变化": "participation_desire_5d_avg"
   "评分": "historical_score"
-  "上升": "rank_change"
-  "最新价": "current_price"
+  "上升": "rise_count"
+  "最新价": "price"
   "涨跌幅": "pct_change"
   "换手率": "turnover"
   
@@ -1633,7 +1622,7 @@ field_mappings:
   "公司家数": "stock_count"
   "领涨股": "leader_stock_name"
   "领涨股-涨跌幅": "leader_stock_pct_change"
-  "当前价": "current_price"
+  "当前价": "price"
   "统计日期": "date"
   
   # 市场概览字段映射
@@ -1915,8 +1904,8 @@ field_mappings:
   "最低价": "low_price"
   "收盘": "close"
   "收盘价": "close_price"
-  "现价": "current_price"
-  "当前价": "current_price"
+  "现价": "price"
+  "当前价": "price"
   "昨收": "pre_close"
   "前收盘": "pre_close"
   "昨日收盘价": "pre_close"
