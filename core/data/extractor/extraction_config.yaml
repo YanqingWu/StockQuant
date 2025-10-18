@@ -1061,27 +1061,27 @@ interfaces_config:
         interfaces:
           - name: "stock_fhps_detail_ths"
             enabled: true
-            priority: 1
+            priority: 0
             markets: ["SH", "SZ", "BJ"]
           
           - name: "stock_fhps_detail_em"
             enabled: true
-            priority: 2
+            priority: 0
             markets: ["SH", "SZ", "BJ"]
           
           - name: "stock_dividend_cninfo"
             enabled: true
-            priority: 3
+            priority: 0
             markets: ["SH", "SZ"]
           
           - name: "stock_history_dividend_detail"
             enabled: true
-            priority: 4
+            priority: 0
             markets: ["SH", "SZ", "BJ"]
           
           - name: "stock_hk_fhpx_detail_ths"
             enabled: true
-            priority: 5
+            priority: 0
             markets: ["HK"]
 
     holdings:
@@ -1090,12 +1090,13 @@ interfaces_config:
         interfaces:
           - name: "stock_report_fund_hold"
             enabled: true
-            priority: 2
+            priority: 0
             markets: ["SH", "SZ", "BJ"]
+            post_processor: "add_recent_trade_date"
           
           - name: "stock_institute_hold"
             enabled: true
-            priority: 3
+            priority: 0
             markets: ["SH", "SZ", "BJ"]
 
       hsgt_holdings:
@@ -2496,7 +2497,7 @@ field_mappings:
   "股东名称": "institution_name"
   "持有基金家数": "institution_count"
   "机构数": "institution_count"
-  "持股总数": "total_holding_shares"
+  "持股总数": "holding_shares"
   "持股变化": "holding_change"
   "持股变动数值": "holding_change_shares"
   "持股变动比例": "holding_change_ratio"
@@ -2519,7 +2520,7 @@ field_mappings:
   "持有基金数量": "holding_fund_count"
   "持有基金家数": "holding_fund_count"
   "总持股数量": "total_holding_shares"
-  "持股总数": "total_holding_shares"
+  "持股总数": "holding_shares"
   "总持股市值": "total_holding_value"
   
   # 沪深港通相关字段映射
@@ -2949,6 +2950,25 @@ parameter_mappings:
           required: true
           type: string
           valid_values: ["SH", "SZ", "BJ"]
+    
+    stock_report_fund_hold:
+      parameter_mapping:
+        security_type: "symbol"    # 将 security_type 映射为 symbol
+        date: "date"               # date 参数保持不变
+      value_mapping:
+        security_type:
+          "A股": "基金持仓"
+          "B股": "基金持仓"
+          "基金": "基金持仓"
+          "债券": "基金持仓"
+      validation:
+        security_type:
+          required: true
+          type: string
+          valid_values: ["A股", "B股", "基金", "债券"]
+        date:
+          required: false
+          type: date
     
     stock_zh_ah_daily:
       parameter_mapping:

@@ -391,20 +391,23 @@ class DataService:
     
     def get_stock_institutional_holdings(self,
                                         symbols: Symbols,
-                                        date: DateRange) -> Union[ExtractionResult, List[ExtractionResult]]:
+                                        date: DateRange,
+                                        security_type: str = "基金") -> Union[ExtractionResult, List[ExtractionResult]]:
         """
         获取机构持仓数据
         
         Args:
             symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
             date: 指定日期，格式 "2023-01-01" 或 date(2023, 1, 1)
+            security_type: 证券类型，支持 "A股"/"B股"/"基金"/"债券"，默认为 "基金"
         
         Returns:
             机构持仓数据
         """
         params = self._build_standard_params(
             symbols=symbols,
-            date=date
+            date=date,
+            security_type=security_type
         )
         return self.extractor.get_stock_institutional_holdings(params)
     
