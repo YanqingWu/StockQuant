@@ -837,6 +837,11 @@ interfaces_config:
             priority: 0
             markets: ["SH", "SZ", "BJ", "HK", "US"]
 
+          - name: "stock_comment_detail_scrd_desire_daily_em"
+            enabled: true
+            priority: 0
+            markets: ["SH", "SZ", "BJ", "HK", "US"]
+
           - name: "stock_hot_follow_xq"
             enabled: false
             priority: 0
@@ -848,11 +853,6 @@ interfaces_config:
             priority: 0
             markets: ["SH", "SZ", "BJ", "HK", "US"]
             # 禁用原因：雪球只保留stock_hot_tweet_xq，其他都禁用
-          
-          - name: "stock_comment_detail_scrd_desire_daily_em"
-            enabled: true
-            priority: 0
-            markets: ["SH", "SZ", "BJ", "HK", "US"]
           
           - name: "stock_comment_detail_scrd_focus_em"
             enabled: false
