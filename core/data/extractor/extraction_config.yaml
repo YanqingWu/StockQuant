@@ -413,7 +413,7 @@ standard_fields:
       - date                               # 日期
       - block_trade_price                  # 大宗交易价格
       - volume                             # 大宗交易数量
-      - block_trade_amount                 # 大宗交易金额
+      - amount                             # 大宗交易金额
       - buyer_type                         # 买方类型
       - seller_type                        # 卖方类型
     
@@ -466,7 +466,7 @@ standard_fields:
       - date                               # 日期
       - exchange                           # 交易所（SSE/SZSE 等）
       - stock_count                        # 上市公司数量
-      - turnover_amount                    # 成交金额
+      - amount                             # 成交金额
       - total_market_cap                   # 总市值
       - circulating_market_cap             # 流通市值
       - float_shares                       # 流通股本
@@ -663,7 +663,7 @@ standard_fields:
         - stock_name                         # 股票简称
         - deal_price                         # 成交价格
         - volume                             # 成交量
-        - deal_amount                        # 成交额
+        - amount                             # 成交额
         - deal_type                          # 大单性质（买盘/卖盘）
         - pct_change                         # 涨跌幅
         - change_amount                      # 涨跌额
@@ -1652,7 +1652,7 @@ field_mappings:
   # 市场概览字段映射
   "数量": "stock_count"
   "上市公司": "stock_count"
-  "成交金额": "turnover_amount"
+  "成交金额": "amount"
   "总市值": "total_market_cap"
   "流通市值": "circulating_market_cap"
   "流通股本": "float_shares"
@@ -1660,7 +1660,7 @@ field_mappings:
   
   # 深交所概览字段映射
   "数量": "stock_count"
-  "成交金额": "turnover_amount"
+  "成交金额": "amount"
   "总市值": "total_market_cap"
   "流通市值": "circulating_market_cap"
   
@@ -1713,7 +1713,7 @@ field_mappings:
   "股票简称": "stock_name"
   "成交价格": "deal_price"
   "成交量": "volume"
-  "成交额": "deal_amount"
+  "成交额": "amount"
   "大单性质": "deal_type"
   "涨跌幅": "pct_change"
   "涨跌额": "change_amount"
@@ -1950,7 +1950,7 @@ field_mappings:
   "成交价": "trade_price"
   "成交笔数": "trade_count"
   "成交总量": "volume"
-  "成交总额": "trade_amount"
+  "成交总额": "amount"
   "成交额占比": "amount_ratio"
   "成交总额(龙虎榜)": "total_amount"
   "市场总成交额": "amount"
@@ -2681,7 +2681,7 @@ field_mappings:
 
   # 市场概览
   "上市公司数量": "stock_count"
-  "成交金额": "turnover_amount"
+  "成交金额": "amount"
   "总市值(市场)": "total_market_cap"
   "流通市值(市场)": "circulating_market_cap"
   
@@ -2831,7 +2831,7 @@ field_mappings:
   "证券简称": "name"
   "成交价": "block_trade_price"
   "成交量": "volume"
-  "成交额": "block_trade_amount"
+  "成交额": "amount"
   "买方营业部": "buyer_type"
   "卖方营业部": "seller_type"
   "大宗交易成交总额": "total_amount"
