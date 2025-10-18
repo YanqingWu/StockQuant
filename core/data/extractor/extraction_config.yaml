@@ -47,8 +47,6 @@ standard_fields:
         - turnover_rate                      # 换手率
         - amplitude                          # 振幅
         - volume_ratio                       # 量比
-        - is_limit_up                        # 是否涨停
-        - is_limit_down                      # 是否跌停
         - is_suspended                       # 是否停牌
 
       financing:
