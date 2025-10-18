@@ -77,7 +77,6 @@ standard_fields:
         - date                               # 日期
         - close                              # 最新价
         - pct_change                         # 涨跌幅
-        - turnover                           # 换手率
         - main_net_inflow                    # 主力净流入净额
         - main_net_inflow_ratio              # 主力净流入净占比
         - super_large_net_inflow             # 超大单净流入净额
@@ -88,7 +87,6 @@ standard_fields:
         - medium_order_net_inflow_ratio      # 中单净流入净占比
         - small_order_net_inflow             # 小单净流入净额
         - small_order_net_inflow_ratio       # 小单净流入净占比
-        - retail_net_inflow                  # 散户资金净流入
 
       dragon_tiger:
         - symbol                             # 股票代码
@@ -621,15 +619,15 @@ standard_fields:
         - sz_close_price                     # 深证收盘价
         - sz_pct_change                      # 深证涨跌幅
         - main_net_inflow                    # 主力净流入-净额
-        - main_net_ratio                     # 主力净流入-净占比
-        - super_big_net_inflow               # 超大单净流入-净额
-        - super_big_net_ratio                # 超大单净流入-净占比
-        - big_net_inflow                     # 大单净流入-净额
-        - big_net_ratio                      # 大单净流入-净占比
-        - medium_net_inflow                  # 中单净流入-净额
-        - medium_net_ratio                   # 中单净流入-净占比
-        - small_net_inflow                   # 小单净流入-净额
-        - small_net_ratio                    # 小单净流入-净占比
+        - main_net_inflow_ratio              # 主力净流入-净占比
+        - super_large_net_inflow             # 超大单净流入-净额
+        - super_large_net_inflow_ratio       # 超大单净流入-净占比
+        - large_order_net_inflow             # 大单净流入-净额
+        - large_order_net_inflow_ratio       # 大单净流入-净占比
+        - medium_order_net_inflow            # 中单净流入-净额
+        - medium_order_net_inflow_ratio      # 中单净流入-净占比
+        - small_order_net_inflow             # 小单净流入-净额
+        - small_order_net_inflow_ratio       # 小单净流入-净占比
 
       hsgt_flow:                         # 沪深港通资金流向
         - date                               # 日期
@@ -1671,15 +1669,15 @@ field_mappings:
   "深证-收盘价": "sz_close_price"
   "深证-涨跌幅": "sz_pct_change"
   "主力净流入-净额": "main_net_inflow"
-  "主力净流入-净占比": "main_net_ratio"
-  "超大单净流入-净额": "super_big_net_inflow"
-  "超大单净流入-净占比": "super_big_net_ratio"
-  "大单净流入-净额": "big_net_inflow"
-  "大单净流入-净占比": "big_net_ratio"
-  "中单净流入-净额": "medium_net_inflow"
-  "中单净流入-净占比": "medium_net_ratio"
-  "小单净流入-净额": "small_net_inflow"
-  "小单净流入-净占比": "small_net_ratio"
+  "主力净流入-净占比": "main_net_inflow_ratio"
+  "超大单净流入-净额": "super_large_net_inflow"
+  "超大单净流入-净占比": "super_large_net_inflow_ratio"
+  "大单净流入-净额": "large_order_net_inflow"
+  "大单净流入-净占比": "large_order_net_inflow_ratio"
+  "中单净流入-净额": "medium_order_net_inflow"
+  "中单净流入-净占比": "medium_order_net_inflow_ratio"
+  "小单净流入-净额": "small_order_net_inflow"
+  "小单净流入-净占比": "small_order_net_inflow_ratio"
   
   # 沪深港通字段映射
   "交易日": "date"
