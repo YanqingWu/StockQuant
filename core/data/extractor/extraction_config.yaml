@@ -44,7 +44,7 @@ standard_fields:
         - amount                             # 成交额
         - pct_change                         # 涨跌幅
         - change                             # 涨跌额
-        - turnover_rate                      # 换手率
+        - turnover                           # 换手率
         - amplitude                          # 振幅
         - volume_ratio                       # 量比
         - is_suspended                       # 是否停牌
@@ -80,7 +80,7 @@ standard_fields:
         - date                               # 日期
         - close                              # 最新价
         - pct_change                         # 涨跌幅
-        - turnover_rate                      # 换手率
+        - turnover                           # 换手率
         - main_net_inflow                    # 主力净流入净额
         - main_net_inflow_ratio              # 主力净流入净占比
         - super_large_net_inflow             # 超大单净流入净额
@@ -125,7 +125,7 @@ standard_fields:
         - rank_change                        # 排名变化
         - current_price                      # 最新价
         - pct_change                         # 涨跌幅
-        - turnover_rate                      # 换手率
+        - turnover                           # 换手率
 
       news:
         - symbol                             # 股票代码
@@ -261,7 +261,7 @@ standard_fields:
         - rank                               # 排名
         - price                              # 最新价
         - pct_change                         # 涨跌幅
-        - turnover_rate                      # 换手率
+        - turnover                      # 换手率
         - previous_high                      # 前期高点
         - previous_high_date                 # 前期高点日期
         - industry                           # 所属行业
@@ -272,7 +272,7 @@ standard_fields:
         - rank                               # 排名
         - price                              # 最新价
         - pct_change                         # 涨跌幅
-        - turnover_rate                      # 换手率
+        - turnover                           # 换手率
         - previous_low                       # 前期低点
         - previous_low_date                  # 前期低点日期
         - industry                           # 所属行业
@@ -284,7 +284,7 @@ standard_fields:
         - price                              # 最新价
         - period_days                        # 量价齐升天数
         - total_change_pct                   # 阶段涨幅
-        - turnover_rate                      # 累计换手率
+        - turnover                           # 累计换手率
         - industry                           # 所属行业
 
       continuous_rise:                    # 连续上涨排名
@@ -296,7 +296,7 @@ standard_fields:
         - low_price                          # 最低价
         - period_days                        # 连涨天数
         - total_change_pct                   # 连续涨跌幅
-        - turnover_rate                      # 累计换手率
+        - turnover                      # 累计换手率
         - industry                           # 所属行业
 
       volume_price_fall:                  # 量价齐跌排名
@@ -306,7 +306,7 @@ standard_fields:
         - price                              # 最新价
         - period_days                        # 量价齐跌天数
         - total_change_pct                   # 阶段涨幅
-        - turnover_rate                      # 累计换手率
+        - turnover                      # 累计换手率
         - industry                           # 所属行业
 
       volume_shrink:                      # 创新缩量排名
@@ -524,7 +524,7 @@ standard_fields:
         - change_amount                      # 涨跌额
         - pct_change                         # 涨跌幅
         - total_market_cap                   # 总市值
-        - turnover_rate                      # 换手率
+        - turnover                           # 换手率
         - rising_count                       # 上涨家数
         - falling_count                      # 下跌家数
         - leader_stock_name                  # 领涨股票
@@ -546,7 +546,7 @@ standard_fields:
         - low                                # 最低价
         - open                               # 开盘价
         - close                              # 收盘价
-        - turnover_rate                      # 换手率
+        - turnover                      # 换手率
         - pe_ratio                           # 市盈率
         - pb_ratio                           # 市净率
 
@@ -575,7 +575,7 @@ standard_fields:
         - change_amount                      # 涨跌额
         - pct_change                         # 涨跌幅
         - total_market_cap                   # 总市值
-        - turnover_rate                      # 换手率
+        - turnover                      # 换手率
         - rising_count                       # 上涨家数
         - falling_count                      # 下跌家数
         - leader_stock_name                  # 领涨股票
@@ -597,7 +597,7 @@ standard_fields:
         - low                                # 最低价
         - open                               # 开盘价
         - close                              # 收盘价
-        - turnover_rate                      # 换手率
+        - turnover                      # 换手率
         - pe_ratio                           # 市盈率
         - pb_ratio                           # 市净率
 
@@ -1584,7 +1584,7 @@ field_mappings:
   "上升": "rank_change"
   "最新价": "current_price"
   "涨跌幅": "pct_change"
-  "换手率": "turnover_rate"
+  "换手率": "turnover"
   
   # 市场情绪字段映射
   "周期": "period"
@@ -1903,8 +1903,8 @@ field_mappings:
   "振幅": "amplitude"
   "涨跌幅": "pct_change"
   "涨跌额": "change"
-  "换手率": "turnover_rate"
-  "turnover": "turnover_rate"
+  "换手率": "turnover"
+  "turnover": "turnover"
   "prevclose": "pre_close"
   "outstanding_share": "outstanding"
   "after_volume": "after_volume"
@@ -1946,8 +1946,8 @@ field_mappings:
   "成交额占比": "amount_ratio"
   "成交总额(龙虎榜)": "total_amount"
   "市场总成交额": "amount"
-  "换手率": "turnover_rate"
-  "流通换手率": "turnover_rate_free_float"
+  "换手率": "turnover"
+  "流通换手率": "turnover_free_float"
   "量比": "volume_ratio"
   "交易时段": "session"
 
@@ -2639,8 +2639,8 @@ field_mappings:
   "阶段涨幅": "total_change_pct"
   "连续涨跌幅": "total_change_pct"
   "阶段涨跌幅": "total_change_pct"
-  "累计换手率": "turnover_rate"
-  "换手率": "turnover_rate"
+  "累计换手率": "turnover"
+  "换手率": "turnover"
   "基准日成交量": "base_volume"
   "最新价": "price"
   "收盘价": "price"
@@ -2682,7 +2682,7 @@ field_mappings:
   "涨停数": "limit_up_count"
   "跌停数": "limit_down_count"
   "活跃度指数": "activity_index"
-  "平均换手率": "avg_turnover_rate"
+  "平均换手率": "avg_turnover"
   "是否停牌": "suspended"
   "成交均价": "avg_price"
   "净流入额": "net_amount"
