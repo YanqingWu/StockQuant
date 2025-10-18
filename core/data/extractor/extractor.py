@@ -829,7 +829,11 @@ class Extractor:
                     logger.warning(f"参数适配失败: {interface.name}, 错误: {e}")
                     adapted_params = params_dict
                 
-                task = CallTask(interface_name=interface.name, params=adapted_params)
+                task = CallTask(
+                    interface_name=interface.name, 
+                    params=adapted_params,
+                    timeout=0  # 使用全局配置的超时时间，0表示使用默认配置
+                )
                 tasks.append(task)
             except Exception as e:
                 logger.error(f"构建接口 {interface.name} 任务时发生错误: {e}")
