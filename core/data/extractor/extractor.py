@@ -1027,10 +1027,8 @@ class Extractor:
         # 2. 合并所有数据
         merged_data = pd.concat(all_data, ignore_index=True)
         
-        # 3. 按配置的字段分组去重，使用数据质量优先级
-        group_by = merge_config.get("group_by", ["symbol", "date"])
-        if group_by and all(col in merged_data.columns for col in group_by):
-            merged_data = self._apply_quality_priority_dedup(merged_data, group_by, merge_config)
+        # 3. 按字段质量合并：对于每个字段，选择最有效的值
+        merged_data = self._merge_by_field_quality(merged_data)
         
         # 4. 按日期排序
         if "date" in merged_data.columns:
@@ -1136,34 +1134,33 @@ class Extractor:
         if not target_symbol:
             return successful_results[0][1]
         
-        # 1. 提取目标股票的单行数据
-        merged_data = None
+        # 1. 收集所有接口的数据
+        all_data = []
         interface_names = []
         
         for interface, result in successful_results:
             if result.data is not None and not result.data.empty:
-                target_row = self._find_target_stock_data(result.data, target_symbol)
-                if target_row is not None:
-                    if merged_data is None:
-                        merged_data = target_row.copy()
-                        if interface is not None:
-                            interface_names.append(interface.name)
-                        else:
-                            interface_names.append(result.interface_name or "unknown")
-                    else:
-                        interface_name = interface.name if interface is not None else (result.interface_name or "unknown")
-                        merged_data = self._merge_stock_data(merged_data, target_row, interface_name)
-                        interface_names.append(interface_name)
+                all_data.append(result.data)
+                if interface is not None:
+                    interface_names.append(interface.name)
+                else:
+                    interface_names.append(result.interface_name or "unknown")
         
-        if merged_data is None:
-            # 创建空的标准字段DataFrame而不是返回None
+        if not all_data:
             return self._create_empty_result(category, data_type)
+        
+        # 2. 合并所有数据
+        merged_data = pd.concat(all_data, ignore_index=True)
+        
+        # 3. 按字段质量合并：对于每个字段，选择最有效的值
+        merged_data = self._merge_by_field_quality(merged_data)
         
         return ExtractionResult(
             success=True,
-            data=pd.DataFrame([merged_data]),
+            data=merged_data,
             interface_name=f"merged({', '.join(interface_names)})",
-            error=None
+            source_interface=None,
+            extracted_fields=None
         )
 
     def _merge_by_symbol_report(self, successful_results: List[Tuple[Any, ExtractionResult]], 
@@ -1190,30 +1187,20 @@ class Extractor:
         
         for interface, result in successful_results:
             if result.data is not None and not result.data.empty:
-                # 过滤目标股票的数据
-                if 'symbol' in result.data.columns:
-                    target_data = result.data[result.data['symbol'] == target_symbol.to_dot()]
+                all_data.append(result.data)
+                if interface is not None:
+                    interface_names.append(interface.name)
                 else:
-                    target_data = result.data
-                
-                if not target_data.empty:
-                    all_data.append(target_data)
-                    if interface is not None:
-                        interface_names.append(interface.name)
-                    else:
-                        interface_names.append(result.interface_name or "unknown")
+                    interface_names.append(result.interface_name or "unknown")
         
         if not all_data:
-            # 创建空的标准字段DataFrame而不是返回None
             return self._create_empty_result(category, data_type)
         
         # 2. 合并所有数据
         merged_data = pd.concat(all_data, ignore_index=True)
         
-        # 3. 按股票和报告期去重，使用数据质量优先级
-        group_by = merge_config.get("group_by", ["symbol", "report_date"])
-        if group_by and all(col in merged_data.columns for col in group_by):
-            merged_data = self._apply_quality_priority_dedup(merged_data, group_by, merge_config)
+        # 3. 按字段质量合并：对于每个字段，选择最有效的值
+        merged_data = self._merge_by_field_quality(merged_data)
         
         # 4. 按报告期排序
         if "report_date" in merged_data.columns:
@@ -1243,60 +1230,47 @@ class Extractor:
         if not target_symbol:
             return successful_results[0][1]
         
-        # 移除实例变量污染，使用参数传递
-        
-        # 按接口优先级排序
-        successful_results.sort(key=lambda x: x[0].priority)
-        
-        # 初始化合并后的数据
-        merged_data = None
-        merged_interface_names = []
+        # 收集所有接口的数据
+        all_data = []
+        interface_names = []
         
         for interface, extraction_result in successful_results:
             interface_data = extraction_result.data
-            if interface is not None:
-                merged_interface_names.append(interface.name)
-            else:
-                merged_interface_names.append(extraction_result.interface_name or "unknown")
-            
-            if interface_data is None or interface_data.empty:
-                continue
-            
-            # 查找目标股票数据
-            target_row = self._find_target_stock_data(interface_data, target_symbol)
-            
-            if target_row is not None:
-                if merged_data is None:
-                    # 第一个有效数据作为基础
-                    merged_data = target_row.copy()
-                    interface_name = interface.name if interface is not None else (extraction_result.interface_name or "unknown")
-                    logger.info(f"使用接口 {interface_name} 作为基础数据，symbol: {target_row.get('symbol', 'N/A')}")
+            if interface_data is not None and not interface_data.empty:
+                all_data.append(interface_data)
+                if interface is not None:
+                    interface_names.append(interface.name)
                 else:
-                    # 合并数据，优先保留已有数据，补充缺失字段
-                    interface_name = interface.name if interface is not None else (extraction_result.interface_name or "unknown")
-                    logger.info(f"合并接口 {interface_name} 的数据，symbol: {target_row.get('symbol', 'N/A')}")
-                    merged_data = self._merge_stock_data(merged_data, target_row, interface_name)
-            else:
-                interface_name = interface.name if interface is not None else (extraction_result.interface_name or "unknown")
-                logger.warning(f"接口 {interface_name} 中未找到目标股票 {target_symbol} 的数据")
+                    interface_names.append(extraction_result.interface_name or "unknown")
         
-        if merged_data is None:
-            # 创建空的标准字段DataFrame而不是返回None
+        if not all_data:
             return self._create_empty_result(category, data_type)
         
-        # 将合并后的单行数据转换为DataFrame
-        if isinstance(merged_data, pd.Series):
-            merged_df = pd.DataFrame([merged_data])
-        else:
-            merged_df = merged_data
+        # 合并所有数据
+        merged_data = pd.concat(all_data, ignore_index=True)
         
-        logger.info(f"数据合并完成，使用了接口: {', '.join(merged_interface_names)}")
+        # 按字段质量合并：对于每个字段，选择最有效的值
+        logger.info(f"合并前数据形状: {merged_data.shape}")
+        logger.info(f"合并前数据内容:")
+        for i, row in merged_data.iterrows():
+            logger.info(f"  第{i+1}行: symbol={row.get('symbol', 'N/A')}, eps={row.get('eps', 'N/A')}, roe={row.get('roe', 'N/A')}")
+        
+        merged_data = self._merge_by_field_quality(merged_data)
+        
+        logger.info(f"合并后数据形状: {merged_data.shape}")
+        logger.info(f"合并后数据内容:")
+        if not merged_data.empty:
+            for i, row in merged_data.iterrows():
+                logger.info(f"  第{i+1}行: symbol={row.get('symbol', 'N/A')}, eps={row.get('eps', 'N/A')}, roe={row.get('roe', 'N/A')}")
+        
+        logger.info(f"数据合并完成，使用了接口: {', '.join(interface_names)}")
         
         return ExtractionResult(
             success=True,
-            data=merged_df,
-            interface_name=f"merged({', '.join(merged_interface_names)})",
-            error=None
+            data=merged_data,
+            interface_name=f"merged({', '.join(interface_names)})",
+            source_interface=None,
+            extracted_fields=None
         )
 
     def _apply_date_filter(self, data: pd.DataFrame, standard_params: StandardParams, 
@@ -1480,6 +1454,82 @@ class Extractor:
             logger.info(f"从接口 {interface_name} 补充了 {filled_count} 个字段")
         
         return merged
+
+    def _merge_by_field_quality(self, data: pd.DataFrame) -> pd.DataFrame:
+        """
+        按字段质量合并数据：对于每个字段，选择最有效的值
+        
+        Args:
+            data: 包含多行数据的DataFrame
+            
+        Returns:
+            合并后的DataFrame，每行包含最有效的字段值
+        """
+        if data is None or data.empty:
+            return data
+        
+        # 如果只有一行数据，直接返回
+        if len(data) == 1:
+            return data
+        
+        # 按字段质量合并
+        merged_row = {}
+        
+        for col in data.columns:
+            # 获取该列的所有值
+            all_values = data[col]
+            
+            # 过滤掉None值，只考虑有效值
+            valid_values = all_values.dropna()
+            
+            if valid_values.empty:
+                # 如果所有值都是空，选择第一个值
+                merged_row[col] = all_values.iloc[0]
+            else:
+                # 选择最有效的值
+                merged_row[col] = self._select_best_value(valid_values)
+        
+        # 转换为DataFrame
+        merged_df = pd.DataFrame([merged_row])
+        return merged_df
+    
+    def _select_best_value(self, values: pd.Series) -> Any:
+        """
+        从一系列值中选择最有效的值
+        
+        Args:
+            values: 非空值序列
+            
+        Returns:
+            最有效的值
+        """
+        # 过滤掉None值，只考虑有效值
+        valid_values = values.dropna()
+        
+        if valid_values.empty:
+            # 如果没有有效值，返回第一个值
+            return values.iloc[0]
+        
+        # 优先级：数值类型 > 非空字符串 > 其他
+        for value in valid_values:
+            if value is not None and value != False and value != '':
+                # 优先选择数值类型
+                if isinstance(value, (int, float)) and not pd.isna(value):
+                    return value
+        
+        # 其次选择非空字符串
+        for value in valid_values:
+            if value is not None and value != False and value != '':
+                if isinstance(value, str):
+                    return value
+        
+        # 最后选择其他非None值
+        for value in valid_values:
+            if value is not None and value != False and value != '':
+                return value
+        
+        # 如果没有找到理想值，返回第一个有效值
+        return valid_values.iloc[0]
 
     # ==================== 个股相关接口 (STOCK) ====================
     
