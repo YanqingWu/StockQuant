@@ -801,7 +801,7 @@ interfaces_config:
         interfaces:
           - name: "stock_cyq_em"
             enabled: true
-            priority: 1
+            priority: 0
             markets: ["SH", "SZ", "BJ"]
 
       fund_flow:
@@ -816,7 +816,7 @@ interfaces_config:
         interfaces:
           - name: "stock_individual_fund_flow"
             enabled: true
-            priority: 1
+            priority: 0
             markets: ["SH", "SZ"]
             description: "个股资金流向数据"
 
