@@ -212,11 +212,14 @@ standard_fields:
         - holding_ratio                      # 持股比例
         - holding_value                      # 持股市值
         - circulating_ratio                  # 占流通股比例
-        - net_value_ratio                    # 占净值比例（仅基金）
+        - net_value_ratio                    # 占净值比例
         - institution_count                  # 机构数量
+        - institution_count_change           # 机构数变化
         - holding_change                     # 持股变化
         - holding_change_shares              # 持股变动数值
         - holding_change_ratio               # 持股变动比例
+        - holding_ratio_change               # 持股比例增幅
+        - circulating_ratio_change           # 占流通股比例增幅
         - share_type                         # 股本性质
         - shareholder_description            # 股东说明
 
@@ -1098,6 +1101,7 @@ interfaces_config:
             enabled: true
             priority: 0
             markets: ["SH", "SZ", "BJ"]
+            post_processor: "add_recent_trade_date"
 
       hsgt_holdings:
         description: "沪深港通持仓"
@@ -2501,7 +2505,7 @@ field_mappings:
   "持股变化": "holding_change"
   "持股变动数值": "holding_change_shares"
   "持股变动比例": "holding_change_ratio"
-  "持股比例增幅": "holding_change_ratio"
+  "持股比例增幅": "holding_ratio_change"
   "占流通股比例增幅": "circulating_ratio_change"
   "股票代码": "symbol"
   "股票简称": "stock_name"
@@ -2511,14 +2515,14 @@ field_mappings:
   "股本性质": "share_type"
   "股东说明": "shareholder_description"
   "机构数变化": "institution_count_change"
-  "持股比例增幅": "holding_change_ratio"
+  "持股比例增幅": "holding_ratio_change"
   "占流通股比例增幅": "circulating_ratio_change"
   "股东总数": "total_shareholders"
   "平均持股数": "avg_holding_shares"
   "公告日期": "announcement_date"
   "截至日期": "report_date"
   "持有基金数量": "holding_fund_count"
-  "持有基金家数": "holding_fund_count"
+  "持有基金家数": "institution_count"
   "总持股数量": "total_holding_shares"
   "持股总数": "holding_shares"
   "总持股市值": "total_holding_value"
@@ -2539,10 +2543,10 @@ field_mappings:
   "5日增持估计-市值": "net_buy_amount"
   "今日增持股数": "holding_change_shares"
   "5日增持估计-股数": "holding_change_shares"
-  "持股变动数值": "holding_change_amount"
+  "持股变动数值": "holding_change_shares"
   "持股变动比例": "holding_change_ratio"
-  "机构数": "institute_count"
-  "机构数变化": "institute_count_change"
+  "机构数": "institution_count"
+  "机构数变化": "institution_count_change"
   "持股比例增幅": "holding_ratio_change"
   "占流通股比例增幅": "circulating_ratio_change"
   "排行": "rank"
@@ -3049,6 +3053,10 @@ parameter_mappings:
         symbol:
           required: true
           type: string
+    
+    stock_institute_hold:
+      parameter_mapping:
+        date: "symbol"
     
     stock_profit_forecast_ths:
       parameter_mapping:
