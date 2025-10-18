@@ -1971,7 +1971,7 @@ field_mappings:
   "总股本": "totals"
   "流通股本": "outstanding"
   "主营业务": "main_business"
-  "入选指数成员": "index_membership"
+  "入选指数成员": "index_codes"
 
   # 基础财务指标字段映射
   # 注意：以下字段在某些接口中可能返回False值，已移除
