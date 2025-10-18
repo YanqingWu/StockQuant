@@ -446,6 +446,25 @@ class DataService:
         )
         return self.extractor.get_stock_hsgt_holdings(params)
     
+    def get_stock_suspension_events(self,
+                                   symbols: Symbols,
+                                   date: DateRange) -> Union[ExtractionResult, List[ExtractionResult]]:
+        """
+        获取停复牌事件数据
+        
+        Args:
+            symbols: 股票代码，标准格式如 "000001.SZ" 或 ["000001.SZ", "600519.SH"]
+            date: 查询日期，格式 "2024-10-18" 或 date(2024, 10, 18)
+        
+        Returns:
+            停复牌事件数据
+        """
+        params = self._build_standard_params(
+            symbols=symbols,
+            date=date
+        )
+        return self.extractor.get_stock_suspension_events(params)
+    
     # ==================== 股票研究分析数据 ====================
     
     def get_stock_research_reports(self,

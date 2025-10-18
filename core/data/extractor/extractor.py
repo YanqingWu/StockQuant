@@ -1606,6 +1606,10 @@ class Extractor:
         """获取沪深港通持仓数据"""
         return self._execute_interface_with_batch("stock", "holdings.hsgt_holdings", params)
     
+    def get_stock_suspension_events(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
+        """获取停复牌事件数据"""
+        return self._execute_interface_with_batch("stock", "events.suspension", params)
+    
     # 股票研究分析数据
     def get_stock_research_reports(self, params: Union[StandardParams, Dict[str, Any], List[Union[StandardParams, Dict[str, Any]]]]) -> Union[ExtractionResult, List[ExtractionResult]]:
         """获取研报数据"""

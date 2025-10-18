@@ -242,10 +242,11 @@ standard_fields:
         - contract_party                     # 签署主体
         - counterparty                       # 其他签署方
 
-      suspension:                        # 停复牌事件（股票维度）
+      suspension:                        # 停复牌事件
         - symbol                             # 股票代码
-        - start_date                         # 停牌起始日
+        - date                               # 停牌起始日
         - end_date                           # 停牌截止日
+        - suspension_type                    # 停牌类型（连续停牌/临时停牌等）
         - reason                             # 停牌原因
         - resume_date                        # 复牌日期
 
@@ -1287,11 +1288,10 @@ interfaces_config:
       suspension:
         description: "停牌事件"
         interfaces:
-          - name: "stock_suspension_em"
-            enabled: false
-            priority: 1
+          - name: "stock_tfp_em"
+            enabled: true
+            priority: 0
             markets: ["SH", "SZ", "BJ"]
-            description: "停牌复牌信息（接口不存在）"
 
     repurchase:
       description: "股票回购数据（合并计划和进展）"
@@ -1876,7 +1876,7 @@ field_mappings:
   "除权除息日": "ex_dividend_date"
   "股权登记日": "record_date"
   "分红发放日": "payment_date"
-  "停牌起始日": "start_date"
+  "停牌起始日": "date"
   "停牌截止日": "end_date"
   "复牌日期": "resume_date"
   "发布时间": "publish_time"
@@ -2855,9 +2855,15 @@ field_mappings:
   "其他签署方": "counterparty"
 
   # 停牌事件字段映射
-  "停牌起始日": "start_date"
-  "停牌截止日": "end_date"
+  "代码": "symbol"
+  "名称": "stock_name"
+  "停牌时间": "date"
+  "停牌截止时间": "end_date"
+  "停牌期限": "suspension_type"
   "停牌原因": "reason"
+  "预计复牌时间": "resume_date"
+  "停牌起始日": "date"
+  "停牌截止日": "end_date"
   "复牌日期": "resume_date"
 
   # 新股相关字段映射
@@ -3347,6 +3353,16 @@ parameter_mappings:
         end_date:
           required: false
           type: string
+    
+    # 停复牌事件接口参数值映射配置
+    stock_tfp_em:
+      parameter_mapping:
+        date: "date"                    # 将 date 映射为 date (查询日期参数)
+      validation:
+        date:
+          required: true
+          type: string
+          format: "YYYYMMDD"            # 期望格式：20241018
     
     # 研报数据接口参数值映射配置
     stock_research_reports_em:
