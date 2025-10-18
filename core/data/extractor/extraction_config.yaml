@@ -412,7 +412,7 @@ standard_fields:
       - symbol                             # 股票代码
       - date                               # 日期
       - block_trade_price                  # 大宗交易价格
-      - block_trade_volume                 # 大宗交易数量
+      - volume                             # 大宗交易数量
       - block_trade_amount                 # 大宗交易金额
       - buyer_type                         # 买方类型
       - seller_type                        # 卖方类型
@@ -662,7 +662,7 @@ standard_fields:
         - symbol                             # 股票代码
         - stock_name                         # 股票简称
         - deal_price                         # 成交价格
-        - deal_volume                        # 成交量
+        - volume                             # 成交量
         - deal_amount                        # 成交额
         - deal_type                          # 大单性质（买盘/卖盘）
         - pct_change                         # 涨跌幅
@@ -1712,7 +1712,7 @@ field_mappings:
   "股票代码": "symbol"
   "股票简称": "stock_name"
   "成交价格": "deal_price"
-  "成交量": "deal_volume"
+  "成交量": "volume"
   "成交额": "deal_amount"
   "大单性质": "deal_type"
   "涨跌幅": "pct_change"
@@ -1949,7 +1949,7 @@ field_mappings:
   "成交额": "amount"
   "成交价": "trade_price"
   "成交笔数": "trade_count"
-  "成交总量": "total_volume"
+  "成交总量": "volume"
   "成交总额": "trade_amount"
   "成交额占比": "amount_ratio"
   "成交总额(龙虎榜)": "total_amount"
@@ -2830,7 +2830,7 @@ field_mappings:
   "证券代码": "symbol"
   "证券简称": "name"
   "成交价": "block_trade_price"
-  "成交量": "block_trade_volume"
+  "成交量": "volume"
   "成交额": "block_trade_amount"
   "买方营业部": "buyer_type"
   "卖方营业部": "seller_type"
