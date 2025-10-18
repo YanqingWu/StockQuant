@@ -132,7 +132,7 @@ standard_fields:
         - historical_score                   # 历史评分
         - rank_change                        # 排名变化
         - current_price                      # 最新价
-        - price_change_pct                   # 涨跌幅
+        - pct_change                         # 涨跌幅
         - turnover_rate                      # 换手率
 
       news:
@@ -268,7 +268,7 @@ standard_fields:
         - date                               # 日期
         - rank                               # 排名
         - price                              # 最新价
-        - change_pct                         # 涨跌幅
+        - pct_change                         # 涨跌幅
         - turnover_rate                      # 换手率
         - previous_high                      # 前期高点
         - previous_high_date                 # 前期高点日期
@@ -279,7 +279,7 @@ standard_fields:
         - date                               # 日期
         - rank                               # 排名
         - price                              # 最新价
-        - change_pct                         # 涨跌幅
+        - pct_change                         # 涨跌幅
         - turnover_rate                      # 换手率
         - previous_low                       # 前期低点
         - previous_low_date                  # 前期低点日期
@@ -322,7 +322,7 @@ standard_fields:
         - date                               # 日期
         - rank                               # 排名
         - price                              # 最新价
-        - change_pct                         # 涨跌幅
+        - pct_change                         # 涨跌幅
         - volume                             # 成交量
         - base_volume                        # 基准日成交量
         - period_days                        # 缩量天数
@@ -411,7 +411,7 @@ standard_fields:
     block_trading:                      # 个股大宗交易
       - symbol                             # 股票代码
       - date                               # 日期
-      - block_trade_price                  # 大宗交易价格
+      - price                             # 大宗交易价格
       - volume                             # 大宗交易数量
       - amount                             # 大宗交易金额
       - buyer_type                         # 买方类型
@@ -661,7 +661,7 @@ standard_fields:
         - deal_time                          # 成交时间
         - symbol                             # 股票代码
         - stock_name                         # 股票简称
-        - deal_price                         # 成交价格
+        - price                             # 成交价格
         - volume                             # 成交量
         - amount                             # 成交额
         - deal_type                          # 大单性质（买盘/卖盘）
@@ -1591,7 +1591,7 @@ field_mappings:
   "评分": "historical_score"
   "上升": "rank_change"
   "最新价": "current_price"
-  "涨跌幅": "price_change_pct"
+  "涨跌幅": "pct_change"
   "换手率": "turnover_rate"
   
   # 市场情绪字段映射
@@ -1711,7 +1711,7 @@ field_mappings:
   "成交时间": "deal_time"
   "股票代码": "symbol"
   "股票简称": "stock_name"
-  "成交价格": "deal_price"
+  "成交价格": "price"
   "成交量": "volume"
   "成交额": "amount"
   "大单性质": "deal_type"
@@ -1947,7 +1947,7 @@ field_mappings:
   "成交量": "volume"
   "成交金额": "amount"
   "成交额": "amount"
-  "成交价": "trade_price"
+  "成交价": "price"
   "成交笔数": "trade_count"
   "成交总量": "volume"
   "成交总额": "amount"
@@ -2654,7 +2654,7 @@ field_mappings:
   "收盘价": "price"
   "最高价": "high_price"
   "最低价": "low_price"
-  "涨跌幅": "change_pct"
+  "涨跌幅": "pct_change"
   "成交量": "volume"
   "股票简称": "name"
   "所属行业": "industry"
@@ -2705,7 +2705,7 @@ field_mappings:
   "情绪得分": "sentiment_score"
   "来源": "news_source"
   "链接": "news_link"
-  "交易价": "trade_price"
+  "交易价": "price"
   "折溢率": "discount_rate"
   "折价率": "discount_rate"
   "溢价率": "discount_rate"
@@ -2829,7 +2829,7 @@ field_mappings:
   "交易日期": "date"
   "证券代码": "symbol"
   "证券简称": "name"
-  "成交价": "block_trade_price"
+  "成交价": "price"
   "成交量": "volume"
   "成交额": "amount"
   "买方营业部": "buyer_type"
