@@ -395,24 +395,6 @@ standard_fields:
       - amount                             # 大宗交易金额
       - buyer_type                         # 买方类型
       - seller_type                        # 卖方类型
-    
-    new_stock:
-      ipo_data:                          # 新股发行数据
-        - ipo_date                           # 发行日期
-        - issue_price                        # 发行价格
-        - issue_volume                       # 发行数量
-        - issue_amount                       # 发行金额
-        - subscription_ratio                 # 申购倍数
-        - winning_rate                       # 中签率
-        - expected_return                    # 预期收益率（可选）
-
-      performance:                       # 新股表现
-        - symbol                             # 股票代码
-        - date                               # 日期
-        - days_since_ipo                     # 上市天数
-        - first_day_return                   # 首日收益率
-        - cumulative_return                  # 累计收益率
-        - break_issue_price_date             # 破发日期（可选）
 
     repurchase:                          # 股票回购数据（合并计划和进展）
       - symbol                             # 股票代码
