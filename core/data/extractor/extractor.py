@@ -1475,19 +1475,28 @@ class Extractor:
         # 按字段质量合并
         merged_row = {}
         
-        for col in data.columns:
-            # 获取该列的所有值
-            all_values = data[col]
+        # 检查是否有重复的列名
+        if data.columns.duplicated().any():
+            logger.info(f"发现重复的列名: {data.columns[data.columns.duplicated()].tolist()}")
             
-            # 过滤掉None值，只考虑有效值
-            valid_values = all_values.dropna()
-            
-            if valid_values.empty:
-                # 如果所有值都是空，选择第一个值
-                merged_row[col] = all_values.iloc[0]
-            else:
-                # 选择最有效的值
-                merged_row[col] = self._select_best_value(valid_values)
+            # 对于重复的列，按字段质量合并
+            for col in data.columns.unique():
+                # 获取该列的所有值（包括重复列）
+                col_data = data[col]
+                
+                # 过滤掉None值，只考虑有效值
+                valid_values = col_data.dropna()
+                
+                if valid_values.empty:
+                    # 如果所有值都是空，选择第一个值
+                    merged_row[col] = col_data.iloc[0]
+                else:
+                    # 选择最有效的值
+                    merged_row[col] = self._select_best_value(valid_values)
+        else:
+            # 没有重复列，直接使用原数据
+            for col in data.columns:
+                merged_row[col] = data[col].iloc[0]
         
         # 转换为DataFrame
         merged_df = pd.DataFrame([merged_row])

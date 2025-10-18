@@ -4,7 +4,7 @@ description: "基于数据特性和时效性重新组织的股票数据提取配
 
 # 全局配置
 global_config:
-  timeout: 30
+  timeout: 300
   retry_count: 3
   enable_cache: true
   log_level: "INFO"
