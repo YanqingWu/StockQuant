@@ -257,7 +257,7 @@ standard_fields:
         - rank                               # 排名
         - price                              # 最新价
         - pct_change                         # 涨跌幅
-        - turnover                      # 换手率
+        - turnover                           # 换手率
         - previous_high                      # 前期高点
         - previous_high_date                 # 前期高点日期
         - industry                           # 所属行业

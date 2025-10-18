@@ -933,7 +933,22 @@ class Extractor:
             return self._create_empty_result(category, data_type)
         
         if len(successful_results) == 1:
-            return successful_results[0][1]  # 直接返回单个结果
+            # 即使只有一个接口，也要进行股票筛选
+            interface, result = successful_results[0]
+            if result.data is not None and not result.data.empty:
+                filtered_data = self._filter_data_by_symbol(result.data, standard_params.symbol)
+                if filtered_data is not None and not filtered_data.empty:
+                    return ExtractionResult(
+                        success=True,
+                        data=filtered_data,
+                        interface_name=result.interface_name,
+                        source_interface=result.source_interface,
+                        extracted_fields=result.extracted_fields
+                    )
+                else:
+                    # 筛选失败，返回空结果
+                    return self._create_empty_result(category, data_type)
+            return result  # 如果数据为空，返回原结果
         else:
             logger.info(f"开始合并 {len(successful_results)} 个接口的数据")
             return self._merge_interface_results(successful_results, standard_params, category, data_type)
@@ -1116,6 +1131,46 @@ class Extractor:
         
         return result
 
+    def _filter_data_by_symbol(self, data: pd.DataFrame, target_symbol: StockSymbol) -> Optional[pd.DataFrame]:
+        """
+        根据目标股票筛选数据
+        
+        Args:
+            data: 原始数据DataFrame
+            target_symbol: 目标股票symbol
+            
+        Returns:
+            筛选后的DataFrame，如果未找到目标股票则返回None
+        """
+        if data is None or data.empty:
+            return None
+        
+        # 如果没有symbol列，可能是单股票查询结果，直接返回
+        if 'symbol' not in data.columns:
+            logger.debug(f"数据中没有symbol列，可能是单股票查询结果，直接返回")
+            return data
+        
+        # 检查symbol列是否全为None（个股历史数据接口的情况）
+        if data['symbol'].isna().all():
+            logger.debug(f"symbol列全为None，可能是个股历史数据接口，直接返回")
+            return data
+        
+        # 使用标准的symbol格式进行匹配
+        target_symbol_str = target_symbol.to_dot()  # 标准格式，如 "600519.SH"
+        
+        # 直接匹配标准格式
+        logger.debug(f"筛选数据: 目标股票={target_symbol_str}, 数据形状={data.shape}")
+        logger.debug(f"数据中的symbol示例: {data['symbol'].head().tolist()}")
+        
+        matched_rows = data[data['symbol'].astype(str) == target_symbol_str]
+        
+        if not matched_rows.empty:
+            logger.info(f"找到目标股票 {target_symbol_str} 的数据，行数: {len(matched_rows)}")
+            return matched_rows
+        else:
+            logger.info(f"未找到目标股票 {target_symbol_str} 的数据")
+            return None
+
     def _merge_by_symbol(self, successful_results: List[Tuple[Any, ExtractionResult]], 
                         standard_params: StandardParams, merge_config: Dict[str, Any], 
                         category: str, data_type: str) -> ExtractionResult:
@@ -1140,11 +1195,14 @@ class Extractor:
         
         for interface, result in successful_results:
             if result.data is not None and not result.data.empty:
-                all_data.append(result.data)
-                if interface is not None:
-                    interface_names.append(interface.name)
-                else:
-                    interface_names.append(result.interface_name or "unknown")
+                # 根据目标股票筛选数据
+                filtered_data = self._filter_data_by_symbol(result.data, target_symbol)
+                if filtered_data is not None and not filtered_data.empty:
+                    all_data.append(filtered_data)
+                    if interface is not None:
+                        interface_names.append(interface.name)
+                    else:
+                        interface_names.append(result.interface_name or "unknown")
         
         if not all_data:
             return self._create_empty_result(category, data_type)
@@ -1187,11 +1245,14 @@ class Extractor:
         
         for interface, result in successful_results:
             if result.data is not None and not result.data.empty:
-                all_data.append(result.data)
-                if interface is not None:
-                    interface_names.append(interface.name)
-                else:
-                    interface_names.append(result.interface_name or "unknown")
+                # 根据目标股票筛选数据
+                filtered_data = self._filter_data_by_symbol(result.data, target_symbol)
+                if filtered_data is not None and not filtered_data.empty:
+                    all_data.append(filtered_data)
+                    if interface is not None:
+                        interface_names.append(interface.name)
+                    else:
+                        interface_names.append(result.interface_name or "unknown")
         
         if not all_data:
             return self._create_empty_result(category, data_type)
@@ -1237,11 +1298,14 @@ class Extractor:
         for interface, extraction_result in successful_results:
             interface_data = extraction_result.data
             if interface_data is not None and not interface_data.empty:
-                all_data.append(interface_data)
-                if interface is not None:
-                    interface_names.append(interface.name)
-                else:
-                    interface_names.append(extraction_result.interface_name or "unknown")
+                # 根据目标股票筛选数据
+                filtered_data = self._filter_data_by_symbol(interface_data, target_symbol)
+                if filtered_data is not None and not filtered_data.empty:
+                    all_data.append(filtered_data)
+                    if interface is not None:
+                        interface_names.append(interface.name)
+                    else:
+                        interface_names.append(extraction_result.interface_name or "unknown")
         
         if not all_data:
             return self._create_empty_result(category, data_type)
