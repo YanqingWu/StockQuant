@@ -21,29 +21,12 @@ standard_fields:
       - name                               # 股票名称
       - list_date                          # 上市日期
       - industry                           # 所属行业
-      - industry_code                      # 行业代码
-      - concept_list                       # 所属概念列表
-      - concept_code_list                  # 概念代码列表
       - total_shares                       # 总股本
-      - outstanding_shares                 # 流通股本
+      - float_shares                       # 流通股本
+      - concept_list                       # 所属概念列表
       - index_codes                        # 所属指数代码列表
-      - full_name                          # 公司全称
-      - short_name                         # 公司简称
-      - english_name                       # 英文名称
-      - legal_representative               # 法定代表人
-      - chairman                           # 董事长
-      - general_manager                    # 总经理
-      - secretary                          # 董秘
       - registered_capital                 # 注册资本
       - employees                          # 员工人数
-      - region                             # 所属地区
-      - province                           # 省份
-      - city                               # 城市
-      - address                            # 通讯地址
-      - office_address                     # 办公地址
-      - website                            # 公司网站
-      - email                              # 电子邮箱
-      - phone                              # 联系电话
       - business_scope                     # 经营范围
       - main_business                      # 主营业务
       - listing_status                     # 上市状态（在市/停牌/退市）
@@ -410,7 +393,7 @@ standard_fields:
       - total_market_cap                   # 总市值
       - circulating_market_cap             # 流通市值
       - total_shares                       # 总股本
-      - circulating_shares                 # 流通股本
+      - float_shares                 # 流通股本
 
     esg_data:
       esg_rating:                        # ESG评级
@@ -486,7 +469,7 @@ standard_fields:
       - turnover_amount                    # 成交金额
       - total_market_cap                   # 总市值
       - circulating_market_cap             # 流通市值
-      - circulating_shares                 # 流通股本
+      - float_shares                       # 流通股本
       
       # 投资者相关数据
       - investor_count                     # 投资者总数
@@ -1672,7 +1655,8 @@ field_mappings:
   "成交金额": "turnover_amount"
   "总市值": "total_market_cap"
   "流通市值": "circulating_market_cap"
-  "流通股本": "circulating_shares"
+  "流通股本": "float_shares"
+  "流通股": "float_shares"
   
   # 深交所概览字段映射
   "数量": "stock_count"
@@ -2686,7 +2670,7 @@ field_mappings:
   "总市值": "total_market_cap"
   "流通市值": "circulating_market_cap"
   "总股本": "total_shares"
-  "流通股本": "circulating_shares"
+  "流通股本": "float_shares"
   "预测年份": "year"
   "每股收益预测": "eps_forecast"
   "营业收入预测": "revenue_forecast"
