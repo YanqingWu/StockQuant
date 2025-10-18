@@ -1270,10 +1270,11 @@ class Extractor:
                     # 第一个有效数据作为基础
                     merged_data = target_row.copy()
                     interface_name = interface.name if interface is not None else (extraction_result.interface_name or "unknown")
-                    logger.info(f"使用接口 {interface_name} 作为基础数据")
+                    logger.info(f"使用接口 {interface_name} 作为基础数据，symbol: {target_row.get('symbol', 'N/A')}")
                 else:
                     # 合并数据，优先保留已有数据，补充缺失字段
                     interface_name = interface.name if interface is not None else (extraction_result.interface_name or "unknown")
+                    logger.info(f"合并接口 {interface_name} 的数据，symbol: {target_row.get('symbol', 'N/A')}")
                     merged_data = self._merge_stock_data(merged_data, target_row, interface_name)
             else:
                 interface_name = interface.name if interface is not None else (extraction_result.interface_name or "unknown")
@@ -1471,7 +1472,7 @@ class Extractor:
         for col in new_data.index:
             # 如果基础数据中该字段为空或不存在，则使用新数据补充
             if col not in merged.index or pd.isna(merged[col]) or merged[col] == '' or merged[col] == 0:
-                if pd.notna(new_data[col]) and new_data[col] != '' and new_data[col] != 0:
+                if pd.notna(new_data[col]) and new_data[col] != '' and new_data[col] != 0 and new_data[col] is not None:
                     merged[col] = new_data[col]
                     filled_count += 1
         

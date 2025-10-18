@@ -1968,6 +1968,11 @@ field_mappings:
   "报告类型": "report_type"
   
   # 英文字段映射（来自接口返回）
+  # 基础字段映射
+  "SECUCODE": "symbol"     # 股票代码（主要）
+  "SECURITY_CODE": "symbol" # 股票代码（备选）
+  "REPORT_TYPE": "report_type" # 报告类型
+  
   # EPS相关字段（按优先级排序）
   "EPSJB": "eps"           # 基本每股收益（主要）
   "BASIC_EPS": "eps"       # 基本每股收益（港股）
