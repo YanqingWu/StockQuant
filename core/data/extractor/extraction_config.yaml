@@ -91,18 +91,18 @@ standard_fields:
       dragon_tiger:
         - symbol                             # 股票代码
         - date                               # 上榜日期
-        - lhb_net_buy                        # 龙虎榜净买额
-        - lhb_buy_amount                     # 龙虎榜买入额
-        - lhb_sell_amount                    # 龙虎榜卖出额
-        - lhb_reason                         # 上榜原因
-        - after_1d_return                    # 上榜后1日收益率
-        - after_5d_return                    # 上榜后5日收益率
-        - after_10d_return                   # 上榜后10日收益率
+        - net_buy_amount                     # 龙虎榜净买额
+        - buy_amount                         # 龙虎榜买入额
+        - sell_amount                        # 龙虎榜卖出额
         - total_amount                       # 龙虎榜成交额
-        - seat_name                          # 营业部名称
-        - seat_type                          # 营业部类型（机构/个人）
-        - buy_rank                           # 买入排名
-        - sell_rank                          # 卖出排名
+        - market_total_amount                # 市场总成交额
+        - net_buy_pct                        # 净买额占总成交比
+        - amount_pct                         # 成交额占总成交比
+        - reason                             # 上榜原因
+        - return_1d                          # 上榜后1日收益率
+        - return_2d                          # 上榜后2日收益率
+        - return_5d                          # 上榜后5日收益率
+        - return_10d                         # 上榜后10日收益率
 
       sentiment:
         - symbol                             # 股票代码
@@ -1940,7 +1940,7 @@ field_mappings:
   "成交总额": "amount"
   "成交额占比": "amount_ratio"
   "成交总额(龙虎榜)": "total_amount"
-  "市场总成交额": "amount"
+  "市场总成交额": "market_total_amount"
   "换手率": "turnover"
   "流通换手率": "turnover_free_float"
   "量比": "volume_ratio"
@@ -2024,14 +2024,16 @@ field_mappings:
   "复权因子": "adjust_factor"
 
   # 龙虎榜
-  "净买额": "net_buy_amount"
-  "买入额": "buy_amount"
-  "卖出额": "sell_amount"
-  "净买额占比": "net_ratio"
+  "龙虎榜净买额": "net_buy_amount"
+  "龙虎榜买入额": "buy_amount"
+  "龙虎榜卖出额": "sell_amount"
+  "净买额占总成交比": "net_buy_pct"
+  "成交额占总成交比": "amount_pct"
   "上榜原因": "reason"
-  "上榜后1日表现": "after_1d"
-  "上榜后5日表现": "after_5d"
-  "上榜后10日表现": "after_10d"
+  "上榜后1日": "return_1d"
+  "上榜后2日": "return_2d"
+  "上榜后5日": "return_5d"
+  "上榜后10日": "return_10d"
 
   # 北向持股
   "持股数量": "holding_quantity"
