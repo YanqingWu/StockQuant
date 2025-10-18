@@ -64,7 +64,6 @@ standard_fields:
         - symbol                             # 股票代码
         - date                               # 日期
         - profit_ratio                       # 获利比例
-        - loss_ratio                         # 套牢比例
         - avg_cost                           # 平均成本
         - cost_90_low                        # 90%成本区间下限
         - cost_90_high                       # 90%成本区间上限
