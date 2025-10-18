@@ -1718,7 +1718,8 @@ field_mappings:
   "持股比例增幅": "holding_ratio_change"
   "占流通股比例增幅": "circulating_ratio_change"
 
-  # stock_profit_forecast_ths 接口字段映射 (年度预测数据)
+  # forecast_consensus 字段映射
+  # 年度预测数据 (stock_profit_forecast_ths)
   "年度": "year"
   "预测机构数": "analyst_count"
   "最小值": "min_forecast"
@@ -1727,14 +1728,23 @@ field_mappings:
   "行业平均数": "industry_average"
   
   # 个股预测数据字段映射
-  "财政年度": "fiscal_year"
+  "财政年度": "year"  # 统一使用 year 字段
   "纯利/亏损": "net_profit_forecast"
   "每股盈利": "eps_forecast"
   "每股派息": "dividend_forecast"
   "证券商": "institution"
+  "研究机构": "institution"
+  "机构": "institution"
   "评级": "rating"
+  "投资评级": "rating"
   "目标价": "target_price"
+  "目标价格": "target_price"
   "更新日期": "update_date"
+  
+  # 通用字段映射
+  "股票代码": "symbol"
+  "证券代码": "symbol"
+  "代码": "symbol"
 
   # stock_rank_forecast_cninfo 接口字段映射
   "证券代码": "symbol"
